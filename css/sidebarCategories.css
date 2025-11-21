@@ -1,0 +1,207 @@
+/* .sidebar-container {
+    margin-left: 25px;
+  width: 473px;
+  height: 886px;
+  background: linear-gradient(180deg, #191c22 0%, #0e1115 100%);
+  border-radius: 10x;
+  padding: 32px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  font-family: "Montserrat", sans-serif;
+    flex-shrink: 0;
+}
+
+.sidebar-search-box {
+  height: 74px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  box-sizing: border-box;
+}
+
+.sidebar-search-input {
+  background: none;
+  outline: none;
+  border: none;
+  flex: 1;
+  font-size: 23px;
+  font-weight: 500;
+  color: white;
+}
+
+.sidebar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-search-icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.sidebar-list {
+  margin-top: 45px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.sidebar-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-radius: 10px;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.sidebar-item:hover {
+  border: 1.2px solid rgba(55, 155, 254, 1);
+  background: rgba(55, 155, 254, 1);
+}
+
+.sidebar-item.selected , .sidebar-focused {
+  background: rgba(55, 155, 254, 1);
+  
+  color: white;
+}
+
+
+
+ */
+
+
+ /* Sidebar Container */
+.sidebar-container {
+  margin-left: 25px;
+  width: 473px;
+  height: 886px;
+  background: linear-gradient(180deg, #191c22 0%, #0e1115 100%);
+  border-radius: 10px;
+  padding: 32px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  font-family: "Montserrat", sans-serif;
+  flex-shrink: 0;
+}
+
+/* Sidebar Search Box */
+.sidebar-search-box {
+  height: 74px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+/* Search Box Focused State */
+.sidebar-search-box.search-focused {
+  background: rgba(55, 155, 254, 0.2);
+  border: 2px solid rgba(55, 155, 254, 1);
+  box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
+              0 4px 16px rgba(55, 155, 254, 0.3);
+  transform: scale(1.02);
+}
+
+.sidebar-search-input {
+  background: none;
+  outline: none;
+  border: none;
+  flex: 1;
+  font-size: 23px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.sidebar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-search-box.search-focused .sidebar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-search-icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.3s ease;
+}
+
+.sidebar-search-box.search-focused .sidebar-search-icon {
+  color: rgba(55, 155, 254, 1);
+  transform: scale(1.1);
+}
+
+/* Sidebar List */
+.sidebar-list {
+  margin-top: 45px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* Sidebar Items */
+.sidebar-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-radius: 10px;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.2px solid transparent;
+}
+
+.sidebar-item:hover {
+  border: 1.2px solid rgba(55, 155, 254, 1);
+  background: rgba(55, 155, 254, 0.3);
+}
+
+/* Sidebar Item Selected State */
+.sidebar-item.selected {
+  background: rgba(55, 155, 254, 1);
+  border: 1.2px solid rgba(55, 155, 254, 1);
+  color: white;
+}
+
+/* Sidebar Item Focused State (for keyboard navigation) */
+.sidebar-item.sidebar-focused {
+  background: rgba(55, 155, 254, 1);
+  border: 1.2px solid rgba(55, 155, 254, 1);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
+              0 4px 16px rgba(55, 155, 254, 0.3);
+  transform: translateX(6px);
+}
+
+/* Scrollbar Styling for Sidebar Container */
+.sidebar-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.sidebar-container::-webkit-scrollbar-thumb {
+  background: rgba(55, 155, 254, 0.5);
+  border-radius: 4px;
+}
+
+.sidebar-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 155, 254, 0.7);
+}
+
+

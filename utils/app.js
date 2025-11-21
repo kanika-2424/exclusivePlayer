@@ -1,0 +1,33 @@
+
+function navigateTo(pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(page => {
+    page.style.display = 'none';
+    page.innerHTML = '';
+  });
+  
+  // Show requested page
+  const targetPage = document.getElementById(pageId);
+  if (targetPage) {
+    targetPage.style.display = 'block';
+    
+    // Render the appropriate page
+    if (pageId === 'login-page') {
+      targetPage.innerHTML = LoginPage();
+        } else if (pageId === 'dashboard-page') {
+          targetPage.innerHTML = DashboardPage();
+        } else if (pageId === 'live-tv-page') {
+          targetPage.innerHTML = LiveTvPage();
+        } else if(pageId === 'movies-page') {
+          targetPage.innerHTML = MoviesPage();
+        } else if ( pageId === "movie-detail-page") {
+          targetPage.innerHTML = MovieDetailPage();
+        }
+
+  }
+}
+
+// Initialize app - show login page on load
+document.addEventListener('DOMContentLoaded', () => {
+  navigateTo('login-page');
+});

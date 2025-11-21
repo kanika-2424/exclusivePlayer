@@ -1,0 +1,351 @@
+/* Main Container */
+
+/* Sidebar Background (Figma bg) */
+.movies-sidebar {
+    min-height: 90px;
+    margin: 0 35px;
+    padding: 17px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+
+    background: rgba(217, 217, 217, 0.13);
+    border-radius: 10px;
+    backdrop-filter: blur(18px);
+    transition: all 0.35s ease;
+    overflow: visible;
+}
+
+
+.movies-grid-container {
+    margin: 35px;
+    width: calc(100% - 70px);
+}
+
+/* Search Box */
+.search-category-name {
+    width: 285px;
+    height: 62px;
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 0 18px;
+
+    background: rgba(82, 82, 82, 1);
+    border-radius: 10px;
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+
+    transition: 0.3s;
+}
+
+.search-category-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+
+    color: #fff;
+    font-size: 18px;
+}
+
+.search-category-icon {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Focus */
+.search-category-name:focus-within {
+    border: 0.5px solid #0aa2ff;
+    box-shadow: 0 0 10px rgba(0,157,255,0.5);
+}
+
+/* Categories Wrapper */
+.movies-categories-wrapper {
+    max-height: 65px;
+    overflow: visible;
+    transition: max-height 0.35s ease;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 10px 0;
+}
+
+.movies-categories-wrapper.expanded {
+    max-height: 1000px;
+    overflow: visible;
+}
+
+/* Categories Container */
+.movies-categories-list {
+    display: flex;
+    gap: 18px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    width: 100%;
+    padding: 5px;
+    transition: all 0.35s ease;
+}
+
+/* Show only first 7 items when not expanded */
+.movies-categories-list .movies-category-item:nth-child(n+8) {
+    display: none;
+}
+
+/* Single Category Item */
+.movies-category-item {
+    width: 188px;
+    height: 62px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+
+    border-radius: 10px;
+
+    color: white;
+    font-size: 17px;
+
+    cursor: pointer;
+    transition: 0.25s;
+    position: relative;
+}
+
+.movies-category-item:hover,
+.movies-category-item.active {
+    border: 2px solid rgba(55, 155, 254, 1);
+}
+
+/* Toggle Button */
+.category-toggle-btn {
+    width: 45px;
+    /* height: 45px; */
+    flex-shrink: 0;
+
+    display: flex;
+    /* align-items: center; */
+    justify-content: center;
+
+    font-size: 34px;
+    color: white;
+
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.category-toggle-btn:hover {
+    border-color: #379BFE;
+}
+
+.category-toggle-btn.rotated {
+    transform: rotate(180deg);
+}
+
+/* GRID (with 34px gap) */
+.movies-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 34px;
+    position: relative;
+    width: 100%;
+}
+
+/* NORMAL CARD */
+.movie-card {
+    width: 100%;
+    aspect-ratio: 201 / 261;
+    height: auto;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s ease, width 0.25s ease, height 0.25s ease;
+    z-index: 1;
+}
+
+/* Hover Effect */
+.movie-card:hover {
+    transform: scale(1.2) translateY(30px);
+    z-index: 100;
+    border: 4px solid #379BFE;
+    border-radius: 14px;
+}
+
+/* Thumbnail */
+.movie-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Play button */
+.hover-play-btn {
+    width: 70px !important;
+    height: 70px !important;
+    margin-bottom: 10px !important;
+}
+
+/* Bottom Content Block */
+.movie-hover {
+    position: absolute;
+    bottom: 24px;
+    width: 100%;
+    text-align: center;
+    color: #fff;
+}
+
+.hover-title {
+    font-family: Poppins;
+    font-weight: 600;
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.hover-time {
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.hover-desc {
+    font-size: 8px;
+    line-height: 16px;
+    max-width: 80%;
+    margin: 0 auto;
+    opacity: 0.95;
+}
+
+/* Initially hidden */
+.hover-play-btn,
+.movie-hover {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+/* Show on hover */
+.movie-card:hover .hover-play-btn,
+.movie-card:hover .movie-hover {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* EXPANDED SIDEBAR FIX */
+.movies-sidebar.expanded {
+    flex-direction: column !important;
+    align-items: center !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding-bottom: 20px;
+}
+
+.movies-sidebar.expanded .search-category-name {
+    width: 97% !important;
+    margin-bottom: 15px;
+}
+
+.movies-sidebar.expanded .movies-categories-wrapper {
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-items: flex-start !important;
+}
+
+.movies-sidebar.expanded .movies-categories-list {
+    display: grid !important;
+    grid-template-columns: repeat(8, 1fr); /* 8 columns when expanded */
+    gap: 18px;
+    width: 95%;
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+}
+
+/* Show all items when expanded */
+.movies-sidebar.expanded .movies-categories-list .movies-category-item {
+    display: flex !important;
+    width: 100%; /* Make categories responsive in grid */
+}
+
+.movies-sidebar.expanded .category-toggle-btn {
+    position: absolute;
+    top: 55%;
+    right: 40px;
+    transform: translateY(-50%);
+}
+
+.movies-sidebar.expanded .search-category-name,
+.movies-sidebar.expanded .movies-categories-wrapper {
+    align-self: stretch !important;
+}
+
+/* Remote Navigation Focus State */
+.movie-card.focused {
+    transform: scale(1.2) translateY(30px);
+    z-index: 100;
+    border: 4px solid #379BFE;
+    border-radius: 14px;
+}
+
+.movie-card.focused .hover-play-btn,
+.movie-card.focused .movie-hover {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Ensure focused card stays on top */
+.movie-card.focused {
+    position: relative;
+}
+
+/* Remote Navigation Focus State for Search Box */
+.search-category-name.focused {
+    border: 2px solid #0aa2ff;
+}
+
+/* Remote Navigation Focus State for Categories */
+.movies-category-item.focused {
+    border: 3px solid rgba(55, 155, 254, 1);
+    background: rgba(55, 155, 254, 0.2);
+    z-index: 10;
+}
+
+/* Remote Navigation Focus State for Expand Button */
+.category-toggle-btn.focused {
+    color: #0aa2ff;
+    text-shadow: 0 0 10px rgba(10, 162, 255, 0.8);
+}
+
+.category-toggle-btn.focused.rotated {
+    transform: scale(1.2) rotate(180deg);
+}
+
+
+
+
+
+/* Add this CSS to your existing stylesheet - For Movies Page Only */
+
+/* Movies Page - Header Search Container Focus State */
+.movies-sidebar ~ .movies-grid-container .search-container.search-focused,
+.livetv-header .search-container.search-focused {
+    background: rgba(55, 155, 254, 0.2);
+    border: 2px solid rgba(55, 155, 254, 1);
+    box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
+                0 4px 16px rgba(55, 155, 254, 0.3);
+    transform: scale(1.05);
+}
+
+.livetv-header .search-container.search-focused .search-input {
+    color: #ffffff;
+}
+
+.livetv-header .search-container.search-focused .search-icon img {
+    filter: brightness(1.5) drop-shadow(0 0 8px rgba(55, 155, 254, 0.8));
+}

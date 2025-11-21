@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exclusive Player</title>
+
+  <!-- FontAwesome (eye icon) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+  <!-- Your CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/loginPage.css" />
+  <link rel="stylesheet" href="css/dashboardPage.css" />
+  <link rel="stylesheet" href="css/liveTvPage.css" />
+  <link rel="stylesheet" href="css/sidebarCategories.css" />
+  <link rel="stylesheet" href="css/channelGrid.css" />
+  <link rel="stylesheet" href="css/moviesPage.css" />
+  <link rel="stylesheet" href="css/movieDetailPage.css" />
+  <link rel="stylesheet" href="css/toaster.css" />
+
+
+</head>
+
+<body>
+  <div class="main-container">
+    <div id="login-page" class="page" style="display: none"></div>
+    <div id="dashboard-page" class="page" style="display: none"></div>
+    <div id="live-tv-page" class="page" style="display: none"></div>
+    <div id="movies-page" class="page" style="display: none"></div>
+    <div id="movie-detail-page" class="page" style="display: none"></div>
+    
+  </div>
+
+  <!-- IMPORTANT: Scripts must load in this order -->
+
+      <!-- Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  
+  <!-- 1. Page Functions First -->
+   <script src="api/apiFunctions.js"></script>
+   <script src="components/Toaster.js"></script>
+  <script src="pages/LoginPage.js"></script>
+  <script src="pages/DashboardPage.js"></script>
+  <script src="pages/SidebarCategories.js"></script> <!-- <- add this -->
+  <script src="pages/ChannelGrid.js"></script> <!-- <- add this -->
+  <script src="pages/LiveTvPage.js"></script>
+  <script src="pages/MoviesPage.js"></script>
+  <script src="pages/MovieDetailPage.js"></script>
+
+  <!-- 2. Router Second -->
+  <script src="router.js"></script>
+
+  <!-- 3. App Initialization Last -->
+  <script src="utils/app.js"></script>
+  <script src="main.js"></script>
+
+
+  <script src="config/firebase.js"></script>
+
+</body>
+</html>

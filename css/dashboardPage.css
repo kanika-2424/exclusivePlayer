@@ -1,0 +1,284 @@
+.dashboard-main-container {
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(180deg, #0a1628 0%, #000000 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Styles */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 60px;
+}
+
+.header-left{
+    display: flex;
+    align-items: center;
+    gap: 153px;
+}
+.header-left .app-logo {
+    height: 112px;
+    width: auto;
+}
+
+.header-center {
+    /* display: flex; */
+    /* align-items: center; */
+    gap: 20px;
+    color: white;
+    
+    
+}
+
+.current-time {
+    font-size: 35px !important; 
+    font-weight: 500;
+}
+
+.current-date {
+    font-size: 35px !important;
+    font-weight: 500;
+}
+
+.header-right .logout-icon {
+    width: 64px;
+    height: 64px;
+    background: #4A9EFF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.header-right .logout-icon:hover {
+    background: #3A8EEF;
+}
+
+.header-right .logout-icon img {
+    width: 32px;
+    height: 32px;
+}
+
+/* Dashboard Content */
+.dashboard-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 44px; 
+    padding: 0 60px;
+    margin-top: 20px;
+}
+
+.top-row {
+    display: grid;
+    grid-template-columns: 1005px 343px 343px; 
+    gap: 35px;
+}
+
+.bottom-row {
+    display: grid;
+    grid-template-columns: repeat(3, 554px);
+    gap: 50px;
+}
+
+.menu-box.large {
+    height: 428px; 
+    width: 1005px;
+}
+
+.menu-box.medium {
+    height: 428px; 
+    width: 343px;
+}
+
+.menu-box.small {
+    height: 198px; 
+    width: 554px;
+}
+
+.menu-box {
+   background: linear-gradient(320.82deg, #122040 1.99%, #706565 93.05%);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.menu-box:hover,
+.menu-box-focused {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(74, 158, 255, 0.4);
+    border: 2px solid #4A9EFF;
+}
+
+.livetv-box {
+  background: linear-gradient(320.82deg, #122040 1.99%, #706565 93.05%);
+}
+
+.menu-content-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.icon-border {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-border img {
+    width: 60px;
+    height: 60px;
+}
+
+.menu-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+}
+
+/* Footer Styles */
+.footer-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 60px;
+    color: white;
+    font-size: 24px;
+}
+
+.footer-left,
+.footer-right {
+    font-weight: 400;
+}
+
+/* Default: Icon and text in a row (horizontal) */
+.menu-content-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* Movies and Series: Icon above text (vertical) */
+.movies-box .menu-content-title,
+.series-box .menu-content-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Live TV Icon - Large */
+.livetv-box .icon-border {
+    width: 227px;
+    height: 191px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.livetv-box .icon-border img {
+    width: 227px;
+    height: 191px;
+}
+
+/* Live TV Text */
+.livetv-box .menu-content-title {
+    gap: 163px;
+}
+
+.livetv-box .menu-title {
+    font-weight: 600;
+    font-size: 75px;
+    line-height: 111%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: white;
+}
+
+/* Movies and Series Icons - Medium */
+.movies-box .icon-border,
+.series-box .icon-border {
+    width: 150px;
+    height: 161px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.movies-box .icon-border img,
+.series-box .icon-border img {
+    width: 150px;
+    height: 161px;
+}
+
+/* Movies and Series Text */
+.movies-box .menu-content-title,
+.series-box .menu-content-title {
+    gap: 55px;
+}
+
+.movies-box .menu-title,
+.series-box .menu-title {
+    font-weight: 600;
+    font-size: 50px;
+    line-height: 111%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: white;
+}
+
+/* My Account, Settings, List Playlists Icons - Small */
+.account-box .icon-border,
+.settings-box .icon-border,
+.list-users-box .icon-border {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.account-box .icon-border img,
+.settings-box .icon-border img,
+.list-users-box .icon-border img {
+    width: 64px;
+    height: 64px;
+}
+
+/* My Account, Settings, List Playlists Text */
+.account-box .menu-content-title,
+.settings-box .menu-content-title,
+.list-users-box .menu-content-title {
+    gap: 68px;
+}
+
+.account-box .menu-title,
+.settings-box .menu-title,
+.list-users-box .menu-title {
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 111%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: white;
+}
+
+.dashboard-focused {
+  border: 4px solid #379BFE !important;
+  box-shadow: 0 0 30px rgba(55, 155, 254, 0.8);
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+}

@@ -1,0 +1,182 @@
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  background: #000;
+  color: white;
+}
+
+.login-wrapper {
+  display: flex;
+  height: 100vh;
+  background: linear-gradient(135deg, #07101f, #150c0d);
+}
+
+/* LEFT SECTION */
+.left-section {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+}
+
+.brand-logo {
+  width: 542px;
+  height: 297px;
+  margin-bottom: 115px;
+}
+
+/* List Users Button */
+.list-users-btn {
+  background: white;
+  color: black;
+  padding: 18px 35px;
+  border-radius: 40px;
+  font-size: 30px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-weight: 600;
+}
+
+.list-users-btn img {
+  width: 30px;
+  height: 30px;
+}
+
+/* RIGHT SECTION */
+.right-section {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 754px;
+  background: linear-gradient(
+    138.61deg,
+    rgba(23, 140, 255, 0.27) 3.14%,
+    rgba(227, 73, 73, 0.27) 100.06%
+  );
+  padding: 40px;
+}
+
+.login-card h1 {
+  text-align: center;
+  font-weight: 600;
+  font-size: 61px;
+  margin-bottom: 71px;
+}
+
+/* INPUT STYLING */
+.input-group {
+  position: relative;
+  margin-bottom: 46px;
+}
+
+.input-group input {
+  width: 87%;
+  padding: 25px 25px 25px 75px; /* Left padding for icon */
+  background: transparent;
+  border: 1px solid rgba(228, 228, 228, 1);
+  color: white;
+  border-radius: 40px;
+  font-size: 20px;
+}
+
+.input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Icon positioning inside input */
+.input-group > img {
+  position: absolute;
+  left: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  pointer-events: none; /* So clicks pass through to input */
+}
+
+/* Password Toggle Container */
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+/* Inner icon */
+.toggle-password i {
+  font-size: 28px;
+  color: #fff;
+  position: static;
+  transform: none;
+}
+
+.add-user-btn {
+  width: 342px;
+  height: 80px;
+  margin-top: 8px;
+  border-radius: 43.5px;
+  background: linear-gradient(
+    180deg,
+    #379BFE -47.52%,
+    #1E558C 143.56%
+  );
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+}
+
+
+/* FOCUS STATES FOR REMOTE NAVIGATION */
+.login-input-focused {
+  border: 3px solid rgba(255, 255, 255, 1) !important;
+  /* box-shadow: 0 0 20px rgba(55, 155, 254, 0.6); */
+  outline: none;
+}
+
+.login-btn-focused {
+  border: 3px solid rgba(255, 255, 255, 1) ;
+  /* box-shadow: 0 0 20px rgba(55, 155, 254, 0.8); */
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+}
+
+.login-icon-focused {
+  border: 3px solid rgba(255, 255, 255, 1)  !important;
+  /* box-shadow: 0 0 20px rgba(55, 155, 254, 0.6); */
+}
+
+.list-users-btn-focused{
+  border: 3px solid rgba(55, 155, 254, 0.8 ) !important;
+  box-shadow: 0 0 20px rgba(55, 155, 254, 0.6);
+}
+
+.hidden {
+  display: none !important;
+}
