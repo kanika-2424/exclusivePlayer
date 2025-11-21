@@ -1,310 +1,895 @@
-function MovieDetailPage() {
-  // Movie data - replace with API data
-  const movieData = {
-    id: 1,
-    title: "Movie Name",
-    rating: 5.9,
-    duration: "2h 35min",
-    releaseDate: "2025-12-14",
-    director: "James Cameron",
-    genres: ["Science-Fiction", "Adventure", "Action"],
-    description: "Emphasize the emotional depth, character development, and the impactful moments that drive the narrative.",
-    posterImage: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg",
-    isFavorite: false,
-    cast: [
-      { id: 1, name: "Robert Downey Jr.", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 2, name: "Chris Evans", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 3, name: "Scarlett Johansson", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 4, name: "Chris Hemsworth", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 5, name: "Chris Evans", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 6, name: "Scarlett Johansson", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 7, name: "Chris Hemsworth", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" },
-      { id: 8, name: "Paulo He", image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg" }
-    ]
-  };
 
-  // Remote navigation state
-  let currentSection = "header"; // "header", "poster", "buttons", "description", "cast"
-  let currentFocusIndex = 0;
-  let castCards = [];
 
-  setTimeout(() => {
-    // Get all cast cards
-    castCards = Array.from(document.querySelectorAll(".cast-card"));
+async function MovieDetailPage() {
+  // cleanup previous handlers if any
+  if (MovieDetailPage.cleanup) MovieDetailPage.cleanup();
 
-    // Set initial focus on Play Now button
-    currentSection = "buttons";
-    currentFocusIndex = 0;
-    setFocusOnButton(0);
+  const castImageUrl = "https://image.tmdb.org/t/p/w500";
+  const loadingOverlay = document.getElementById("loading-overlay");
 
-    // Remote navigation event listener
-    document.addEventListener("keydown", handleRemoteNavigation);
+  // --- Back navigation/interruption guard during loading ---
+  let navigationInterrupted = false;
+  function handleBackNavigationDuringLoading(e) {
+    if (
+      (e.keyCode === 10009 ||
+        e.key === "Escape" ||
+        e.key === "Back" ||
+        e.key === "BrowserBack" ||
+        e.key === "XF86Back") &&
+      localStorage.getItem("currentPage") === "moviesDetailPage"
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      navigationInterrupted = true;
 
-    // Heart icon click for favorite
-    const heartIcon = document.querySelector(".favorite-heart");
-    if (heartIcon) {
-      heartIcon.addEventListener("click", () => {
-        heartIcon.classList.toggle("active");
-        movieData.isFavorite = !movieData.isFavorite;
-      });
-    }
-  }, 0);
+      if (loadingOverlay) loadingOverlay.classList.add("hidden");
+      document.removeEventListener("keydown", handleBackNavigationDuringLoading);
 
-  // Handle remote navigation
-  function handleRemoteNavigation(e) {
-    const buttons = Array.from(document.querySelectorAll(".action-button"));
-    const castCards = Array.from(document.querySelectorAll(".cast-card"));
-
-    switch(e.key) {
-      case "ArrowRight":
-        e.preventDefault();
-        
-        if (currentSection === "buttons") {
-          // Move to next button
-          if (currentFocusIndex < buttons.length - 1) {
-            currentFocusIndex++;
-            setFocusOnButton(currentFocusIndex);
-          }
-        } else if (currentSection === "cast") {
-          // Move to next cast member
-          if (currentFocusIndex < castCards.length - 1) {
-            currentFocusIndex++;
-            setFocusOnCast(currentFocusIndex);
-          }
-        }
-        break;
-
-      case "ArrowLeft":
-        e.preventDefault();
-        
-        if (currentSection === "buttons") {
-          // Move to previous button
-          if (currentFocusIndex > 0) {
-            currentFocusIndex--;
-            setFocusOnButton(currentFocusIndex);
-          }
-        } else if (currentSection === "cast") {
-          // Move to previous cast member
-          if (currentFocusIndex > 0) {
-            currentFocusIndex--;
-            setFocusOnCast(currentFocusIndex);
-          }
-        }
-        break;
-
-      case "ArrowDown":
-        e.preventDefault();
-        
-        if (currentSection === "buttons") {
-          // Go to cast section
-          currentSection = "cast";
-          currentFocusIndex = 0;
-          setFocusOnCast(0);
-        } else if (currentSection === "cast") {
-          // Can't go further down
-        }
-        break;
-
-      case "ArrowUp":
-        e.preventDefault();
-        
-        if (currentSection === "buttons") {
-          // Go to header search
-          currentSection = "header";
-          setFocusOnHeaderSearch();
-        } else if (currentSection === "cast") {
-          // Go back to buttons
-          currentSection = "buttons";
-          currentFocusIndex = 0;
-          setFocusOnButton(0);
-        }
-        break;
-
-      case "Enter":
-        e.preventDefault();
-        
-        if (currentSection === "buttons") {
-          // Trigger button click
-          if (buttons[currentFocusIndex]) {
-            buttons[currentFocusIndex].click();
-            console.log("Button clicked:", currentFocusIndex);
-          }
-        } else if (currentSection === "cast") {
-          // Trigger cast card click
-          if (castCards[currentFocusIndex]) {
-            castCards[currentFocusIndex].click();
-            console.log("Cast selected:", currentFocusIndex);
-          }
-        }
-        break;
+      localStorage.removeItem("selectedMovieId");
+      localStorage.setItem("currentPage", "moviesPage");
+      if (typeof Router !== "undefined" && Router.showPage) Router.showPage("movies");
+      document.body.style.backgroundImage = "none";
+      document.body.style.backgroundColor = "black";
+      return true;
     }
   }
+  document.addEventListener("keydown", handleBackNavigationDuringLoading);
 
-  // Set focus on button
+  // --- Load movie detail id/data from localStorage ---
+  var movieDetailId = localStorage.getItem("selectedMovieId");
+  var selectedMovieItem = localStorage.getItem("selectedMovieData");
+  if (!selectedMovieItem && !movieDetailId) {
+    console.error("No selectedMovieData or selectedMovieId in localStorage");
+    document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    return;
+  }
+  if (selectedMovieItem) selectedMovieItem = JSON.parse(selectedMovieItem);
+
+  if (loadingOverlay) loadingOverlay.classList.remove("hidden");
+
+  // --- Fetch movie details from API ---
+  var movieDetailData = null;
+  try {
+    movieDetailData = await getMovieDetail(movieDetailId);
+  } catch (err) {
+    console.error("getMovieDetail error", err);
+    movieDetailData = null;
+  }
+
+  // abort if back/navigation happened while awaiting
+  if (navigationInterrupted) {
+    document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    return;
+  }
+
+  if (!movieDetailData) {
+    if (loadingOverlay) loadingOverlay.classList.add("hidden");
+    localStorage.setItem("currentPage", "moviesPage");
+    if (typeof Router !== "undefined" && Router.showPage) Router.showPage("movies");
+    document.body.style.backgroundImage = "none";
+    document.body.style.backgroundColor = "black";
+    document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    return;
+  }
+
+  // --- Fetch cast from TMDB (if available) ---
+// --- Fetch cast from TMDB (if available) ---
+var tmdbId =
+  movieDetailData.info && movieDetailData.info.tmdb_id
+    ? movieDetailData.info.tmdb_id
+    : null;
+
+var getMovieCastData = null;
+
+try {
+  if (tmdbId) {
+    // Correct TMDB call with your API key
+    const TMDB_API_KEY = "a21eeaca44af5d2a4349214ecba1b338";
+    const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("TMDB Cast API failed");
+    getMovieCastData = await res.json();
+  } else {
+    console.warn("No tmdb_id available in Xtream API");
+  }
+} catch (err) {
+  console.warn("getMovieCast error", err);
+  getMovieCastData = null;
+}
+
+
+  if (navigationInterrupted) {
+    document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    return;
+  }
+
+  // done loading
+  if (loadingOverlay) loadingOverlay.classList.add("hidden");
+  document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+
+  // --- Map API data to the UI-friendly movieData used in your original template ---
+  const movieData = {
+    id:
+      movieDetailData.movie_data && movieDetailData.movie_data.stream_id
+        ? movieDetailData.movie_data.stream_id
+        : movieDetailId,
+    title:
+      movieDetailData.movie_data && movieDetailData.movie_data.name
+        ? movieDetailData.movie_data.name
+        : (movieDetailData.info && movieDetailData.info.title) || "No title",
+    rating: movieDetailData.info && movieDetailData.info.rating ? movieDetailData.info.rating : "",
+    duration: movieDetailData.info && movieDetailData.info.duration ? movieDetailData.info.duration : "",
+    releaseDate: movieDetailData.info && movieDetailData.info.releasedate ? movieDetailData.info.releasedate : "",
+    director: movieDetailData.info && movieDetailData.info.director ? movieDetailData.info.director : "N/A",
+    genres:
+      movieDetailData.info && movieDetailData.info.genre
+        ? // genre sometimes a comma string, normalize to array
+          (Array.isArray(movieDetailData.info.genre) ? movieDetailData.info.genre : String(movieDetailData.info.genre).split(",").map(s => s.trim()))
+        : [],
+    description:
+      movieDetailData.info && movieDetailData.info.description
+        ? movieDetailData.info.description
+        : "No description available",
+    posterImage:
+      movieDetailData.info && movieDetailData.info.movie_image
+        ? movieDetailData.info.movie_image
+        : (movieDetailData.info && movieDetailData.info.backdrop_path && movieDetailData.info.backdrop_path[0]) ? castImageUrl + movieDetailData.info.backdrop_path[0] : "/assets/placeholder-img.png",
+    isFavorite: false, // will set below if helper exists
+    cast: []
+  };
+
+  // try detect favorite state if helper exists
+  try {
+    if (movieData.id && typeof isItemFavoriteForPlaylist === "function") {
+      movieData.isFavorite = isItemFavoriteForPlaylist(movieData.id, "favouriteMovies");
+    }
+  } catch (err) {
+    movieData.isFavorite = false;
+  }
+
+  // build cast list (from TMDB fetch if available)
+  if (getMovieCastData && Array.isArray(getMovieCastData.cast)) {
+    movieData.cast = getMovieCastData.cast.map((c) => ({
+      id: c.id || c.cast_id || Math.random(),
+      name: c.name || c.original_name || "",
+      image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
+    }));
+  } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
+    // fallback if API stores cast in info
+    movieData.cast = movieDetailData.info.cast.map((c, i) => ({
+      id: i,
+      name: c.name || c,
+      image: c.image || "/assets/placeholder-img.png",
+    }));
+  }
+
+  // --- Render the UI using your original layout and classes (keeps your UI) ---
+  const genresText = movieData.genres.join(" / ");
+  const castHtml = movieData.cast
+    .map((member, index) => `
+      <div class="cast-card" data-index="${index}" tabindex="0">
+        <img src="${member.image}" alt="${member.name}" class="cast-image" onerror="this.src='/assets/placeholder-img.png'"/>
+        <p class="cast-name">${member.name}</p>
+      </div>
+    `)
+    .join("");
+
+  const heartIconHtml = movieData.isFavorite
+    ? '<img src="/assets/heart-filled.svg" alt="fav" />'
+    : '<img src="/assets/heart.svg" alt="fav" />';
+
+  // inject into DOM (target same container you used originally)
+  const container = document.querySelector("#movie-detail-page");
+  if (!container) {
+    console.error("No #movies-detail-page container found to render details.");
+    return;
+  }
+
+  container.innerHTML = `
+  <div class="livetv-main-container">
+    <header class="livetv-header">
+      <div class="header-left">
+        <img src="/assets/logo.png" class="app-logo" />
+        <div class="">
+          <span class="current-time"></span>
+          <span class="current-date"></span>
+        </div>
+      </div>
+
+      <div class="live-indicator">
+        <span class="current-time">${movieData.title}</span>
+      </div>
+
+      <div class="header-right">
+        <div class="search-container">
+          <div class="search-icon">
+            <img src="/assets/search.svg" />
+          </div>
+          <input type="text" class="search-input" placeholder="Search Movie" />
+        </div>
+        <div class="menu-dots">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="movie-detail-content">
+      <!-- Left: Poster -->
+      <div class="poster-section">
+        <div class="poster-container">
+          <img src="${movieData.posterImage}" alt="${movieData.title}" class="poster-image" />
+          <div class="rating-badge">
+            <span class="star-icon"><img src="/assets/star.svg" class="star-icon" /></span>
+            ${movieData.rating || ""}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Details -->
+      <div class="details-section">
+        <div class="movie-header">
+          <h1 class="movie-title">${movieData.title}</h1>
+          <div class="favorite-heart">${heartIconHtml}</div>
+        </div>
+
+        <div class="movie-meta">
+          <span class="duration">${movieData.duration}</span>
+          <span class="separator">•</span>
+          <span class="release-date">${movieData.releaseDate}</span>
+        </div>
+
+        <div class="movie-info">
+          <p class="info-row">
+            <span class="label">Directed By :</span>
+            <span class="value">${movieData.director}</span>
+          </p>
+          <p class="info-row">
+            <span class="label">Genre :</span>
+            <span class="value">${genresText}</span>
+          </p>
+        </div>
+
+        <p class="movie-description">${movieData.description}</p>
+
+        <div class="action-buttons">
+          <button class="action-button play-button" tabindex="0">
+            <span class="play-icon">▶</span>
+            <span>Play Now</span>
+          </button>
+          <button class="action-button trailer-button" ${movieDetailData.info && movieDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">Watch Trailer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cast & Crew Section -->
+    <div class="cast-section">
+      <h2 class="cast-title">Cast & Crew</h2>
+      <div class="cast-grid">
+        ${castHtml}
+      </div>
+    </div>
+  </div>
+  `;
+
+  // header time/date update
+  (function updateTime() {
+    const now = new Date();
+    const timeEl = container.querySelector(".current-time");
+    const dateEl = container.querySelector(".current-date");
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    if (dateEl) dateEl.textContent = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  })();
+
+  // --- Remote navigation & interactions (keeps your simplified remote logic) ---
+  let currentSection = "buttons"; // header, buttons, cast
+  let currentFocusIndex = 0;
+
+  // Prepare focusable elements arrays
   function setFocusOnButton(index) {
     removeAllFocus();
     currentSection = "buttons";
-
-    const buttons = Array.from(document.querySelectorAll(".action-button"));
+    const buttons = Array.from(container.querySelectorAll(".action-button"));
     if (buttons[index]) {
+      currentFocusIndex = index;
       buttons[index].classList.add("focused");
-      buttons[index].scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "center"
-      });
+      try { buttons[index].scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); } catch (e){}
     }
   }
 
-  // Set focus on cast card
   function setFocusOnCast(index) {
     removeAllFocus();
     currentSection = "cast";
-
-    const castCards = Array.from(document.querySelectorAll(".cast-card"));
-    if (castCards[index]) {
-      castCards[index].classList.add("focused");
-      castCards[index].scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest"
-      });
+    const casts = Array.from(container.querySelectorAll(".cast-card"));
+    if (casts[index]) {
+      currentFocusIndex = index;
+      casts[index].classList.add("focused");
+      try { casts[index].scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }); } catch(e){}
     }
   }
 
-  // Set focus on header search
   function setFocusOnHeaderSearch() {
     removeAllFocus();
     currentSection = "header";
-
-    const headerSearchContainer = document.querySelector(".search-container");
+    const headerSearchContainer = container.querySelector(".search-container");
     if (headerSearchContainer) {
       headerSearchContainer.classList.add("search-focused");
-      headerSearchContainer.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
+      try { headerSearchContainer.scrollIntoView({ behavior: "smooth", block: "center" }); } catch(e){}
     }
   }
 
-  // Remove all focus states
   function removeAllFocus() {
-    const buttons = document.querySelectorAll(".action-button");
-    buttons.forEach(btn => btn.classList.remove("focused"));
-
-    const castCards = document.querySelectorAll(".cast-card");
-    castCards.forEach(card => card.classList.remove("focused"));
-
-    const headerSearchContainer = document.querySelector(".search-container");
-    if (headerSearchContainer) {
-      headerSearchContainer.classList.remove("search-focused");
-    }
+    const focusedBtns = container.querySelectorAll(".action-button.focused");
+    focusedBtns.forEach(b => b.classList.remove("focused"));
+    const focusedCast = container.querySelectorAll(".cast-card.focused");
+    focusedCast.forEach(c => c.classList.remove("focused"));
+    const headerSearchContainer = container.querySelector(".search-container");
+    if (headerSearchContainer) headerSearchContainer.classList.remove("search-focused");
   }
 
-  // Header time
-  const now = new Date();
-  const time = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
+  // initial focus: play button
+  setTimeout(() => setFocusOnButton(0), 0);
+
+  // click handlers for buttons
+  const playBtn = container.querySelector(".play-button");
+  const trailerBtn = container.querySelector(".trailer-button");
+  const favHeartContainer = container.querySelector(".favorite-heart");
+
+  function buildMovieUrl() {
+    var currentPlaylistData = localStorage.getItem("currentPlaylistData");
+    if (!currentPlaylistData) return "";
+    currentPlaylistData = JSON.parse(currentPlaylistData);
+    if (
+      currentPlaylistData.server_info &&
+      currentPlaylistData.user_info &&
+      movieDetailData.movie_data &&
+      movieDetailData.movie_data.stream_id &&
+      movieDetailData.movie_data.container_extension
+    ) {
+      return (
+        currentPlaylistData.server_info.server_protocol +
+        "://" +
+        currentPlaylistData.server_info.url +
+        ":" +
+        currentPlaylistData.server_info.port +
+        "/movie/" +
+        currentPlaylistData.user_info.username +
+        "/" +
+        currentPlaylistData.user_info.password +
+        "/" +
+        movieDetailData.movie_data.stream_id +
+        "." +
+        movieDetailData.movie_data.container_extension
+      );
+    }
+    return "";
+  }
+
+  if (playBtn) {
+    playBtn.addEventListener("click", () => {
+      // set playing item and navigate to player (same as your reference logic)
+      const movieVideoUrl = buildMovieUrl();
+      localStorage.setItem("playingItemData", JSON.stringify(movieDetailData.movie_data || {}));
+      if (movieVideoUrl) localStorage.setItem("selectedVideoItemUrl", movieVideoUrl);
+      localStorage.setItem("from", "movie");
+      localStorage.setItem("currentPage", "videojsPlayer");
+      if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
+      document.body.style.backgroundImage = "none";
+      document.body.style.backgroundColor = "black";
+    });
+  }
+
+  if (trailerBtn) {
+    trailerBtn.addEventListener("click", () => {
+      if (movieDetailData.info && movieDetailData.info.youtube_trailer) {
+        const trailerUrl = "https://www.youtube.com/watch?v=" + movieDetailData.info.youtube_trailer;
+        localStorage.setItem("selectedVideoItemUrl", trailerUrl);
+        localStorage.setItem("currentPage", "videojsPlayer");
+        if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "black";
+      } else {
+        alert("No trailer available");
+      }
+    });
+  }
+
+  if (favHeartContainer) {
+    favHeartContainer.addEventListener("click", () => {
+      // toggle UI heart quickly (actual favorite state handled via toggleFavoriteItem if available)
+      favHeartContainer.classList.toggle("active");
+      if (typeof toggleFavoriteItem === "function") {
+        const res = toggleFavoriteItem(movieData.id || 0, "favouriteMovies");
+        if (res && res.success) {
+          // update heart icon and text if your toggle returns isFav
+          const html = res.isFav ? '<img src="/assets/heart-filled.svg" />' : '<img src="/assets/heart.svg" />';
+          favHeartContainer.innerHTML = html;
+        }
+      } else {
+        // fallback: swap image
+        const img = favHeartContainer.querySelector("img");
+        if (img) {
+          img.src = img.src.includes("heart-filled") ? "/assets/heart.svg" : "/assets/heart-filled.svg";
+        }
+      }
+    });
+  }
+
+  // cast card click -> you can wire to show actor detail or navigate; default: console log
+  const castCardsEls = container.querySelectorAll(".cast-card");
+  castCardsEls.forEach((card, idx) => {
+    card.addEventListener("click", () => {
+      console.log("Cast clicked:", movieData.cast[idx]);
+      // you can implement cast detail navigation here
+    });
   });
-  const date = now.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric"
-  });
 
-  // Format genres
-  const genresText = movieData.genres.join(" / ");
+  // --- Keydown navigation (remote) ---
+  // function handleRemoteNavigation(e) {
+  //   const buttons = Array.from(container.querySelectorAll(".action-button"));
+  //   const casts = Array.from(container.querySelectorAll(".cast-card"));
 
-  return `
-<div class="livetv-main-container">
-  <header class="livetv-header">
-    <div class="header-left">
-      <img src="/assets/logo.png" class="app-logo" />
-      <div class="">
-        <span class="current-time">${time}</span>
-        <span class="current-date">${date}</span>
-      </div>
-    </div>
+  //   switch (e.key) {
+  //     case "ArrowRight":
+  //       e.preventDefault();
+  //       if (currentSection === "buttons") {
+  //         if (currentFocusIndex < buttons.length - 1) {
+  //           currentFocusIndex++;
+  //           setFocusOnButton(currentFocusIndex);
+  //         }
+  //       } else if (currentSection === "cast") {
+  //         if (currentFocusIndex < casts.length - 1) {
+  //           currentFocusIndex++;
+  //           setFocusOnCast(currentFocusIndex);
+  //         }
+  //       }
+  //       break;
 
-    <div class="live-indicator">
-      <span class="current-time">${movieData.title}</span>
-    </div>
+  //     case "ArrowLeft":
+  //       e.preventDefault();
+  //       if (currentSection === "buttons") {
+  //         if (currentFocusIndex > 0) {
+  //           currentFocusIndex--;
+  //           setFocusOnButton(currentFocusIndex);
+  //         }
+  //       } else if (currentSection === "cast") {
+  //         if (currentFocusIndex > 0) {
+  //           currentFocusIndex--;
+  //           setFocusOnCast(currentFocusIndex);
+  //         }
+  //       }
+  //       break;
 
-    <div class="header-right">
-      <div class="search-container">
-        <div class="search-icon">
-          <img src="/assets/search.svg" />
-        </div>
-        <input type="text" class="search-input" placeholder="Search Movie" />
-      </div>
-      <div class="menu-dots">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-    </div>
-  </header>
+  //     case "ArrowDown":
+  //       e.preventDefault();
+  //       if (currentSection === "buttons") {
+  //         currentSection = "cast";
+  //         currentFocusIndex = 0;
+  //         setFocusOnCast(0);
+  //       }
+  //       break;
 
-  <div class="movie-detail-content">
-    <!-- Left: Poster -->
-    <div class="poster-section">
-      <div class="poster-container">
-        <img src="${movieData.posterImage}" alt="${movieData.title}" class="poster-image" />
-        <div class="rating-badge">
-        <span class="star-icon">  <img src="/assets/star.svg" class="star-icon" />  </span>
-      
-        ${movieData.rating}</div>
-      </div>
-    </div>
+  //     case "ArrowUp":
+  //       e.preventDefault();
+  //       if (currentSection === "buttons") {
+  //         currentSection = "header";
+  //         setFocusOnHeaderSearch();
+  //       } else if (currentSection === "cast") {
+  //         currentSection = "buttons";
+  //         currentFocusIndex = 0;
+  //         setFocusOnButton(0);
+  //       }
+  //       break;
 
-    <!-- Right: Details -->
-    <div class="details-section">
-      <div class="movie-header">
-        <h1 class="movie-title">${movieData.title}</h1>
-        <div class="favorite-heart"><img src="/assets/heart.svg" /></div>
-      </div>
+  //     case "Enter":
+  //       e.preventDefault();
+  //       if (currentSection === "buttons") {
+  //         const btns = Array.from(container.querySelectorAll(".action-button"));
+  //         if (btns[currentFocusIndex]) btns[currentFocusIndex].click();
+  //       } else if (currentSection === "cast") {
+  //         const c = Array.from(container.querySelectorAll(".cast-card"))[currentFocusIndex];
+  //         if (c) c.click();
+  //       }
+  //       break;
 
-      <div class="movie-meta">
-        <span class="duration">${movieData.duration}</span>
-        <span class="separator">•</span>
-        <span class="release-date">${movieData.releaseDate}</span>
-      </div>
+  //     // Back / Exit
+  //     case "Backspace":
+  //     case "Escape":
+  //     case "BrowserBack":
+  //     default:
+  //       if (
+  //         e.keyCode === 10009 ||
+  //         e.key === "Escape" ||
+  //         e.key === "Back" ||
+  //         e.key === "BrowserBack" ||
+  //         e.key === "XF86Back"
+  //       ) {
+  //         localStorage.removeItem("selectedMovieId");
+  //         localStorage.setItem("currentPage", "moviesPage");
+  //         if (typeof Router !== "undefined" && Router.showPage) Router.showPage("movies");
+  //         document.body.style.backgroundImage = "none";
+  //         document.body.style.backgroundColor = "black";
+  //         return;
+  //       }
+  //   }
+  // }
 
-      <div class="movie-info">
-        <p class="info-row">
-          <span class="label">Directed By :</span>
-          <span class="value">${movieData.director}</span>
-        </p>
-        <p class="info-row">
-          <span class="label">Genre :</span>
-          <span class="value">${genresText}</span>
-        </p>
-      </div>
 
-      <p class="movie-description">${movieData.description}</p>
+// function handleRemoteNavigation(e) {
+//   const buttons = Array.from(container.querySelectorAll(".action-button"));
+//   const casts = Array.from(container.querySelectorAll(".cast-card"));
 
-      <div class="action-buttons">
-        <button class="action-button play-button">
-          <span class="play-icon">▶</span>
-          <span>Play Now</span>
-        </button>
-        <button class="action-button trailer-button">Watch Trailer</button>
-      </div>
-    </div>
-  </div>
+//   function getRowIndex(el) {
+//     return Math.floor(el.offsetTop);
+//   }
 
-  <!-- Cast & Crew Section -->
-  <div class="cast-section">
-    <h2 class="cast-title">Cast & Crew</h2>
-    <div class="cast-grid">
-      ${movieData.cast.map((member, index) => `
-        <div class="cast-card" data-index="${index}">
-          <img src="${member.image}" alt="${member.name}" class="cast-image" />
-          <p class="cast-name">${member.name}</p>
-        </div>
-      `).join("")}
-    </div>
-  </div>
-</div>
-`;
+//   switch (e.key) {
+//     // -------------------------------------------------
+//     // → RIGHT Navigation
+//     // -------------------------------------------------
+//     case "ArrowRight":
+//       e.preventDefault();
+
+//       if (currentSection === "buttons") {
+//         if (currentFocusIndex < buttons.length - 1) {
+//           currentFocusIndex++;
+//           setFocusOnButton(currentFocusIndex);
+//         }
+//         return;
+//       }
+
+//       if (currentSection === "cast") {
+//         if (currentFocusIndex < casts.length - 1) {
+//           currentFocusIndex++;
+//           setFocusOnCast(currentFocusIndex);
+//         }
+//         return;
+//       }
+//       break;
+
+//     // -------------------------------------------------
+//     // ← LEFT Navigation
+//     // -------------------------------------------------
+//     case "ArrowLeft":
+//       e.preventDefault();
+
+//       if (currentSection === "buttons") {
+//         if (currentFocusIndex > 0) {
+//           currentFocusIndex--;
+//           setFocusOnButton(currentFocusIndex);
+//         }
+//         return;
+//       }
+
+//       if (currentSection === "cast") {
+//         if (currentFocusIndex > 0) {
+//           currentFocusIndex--;
+//           setFocusOnCast(currentFocusIndex);
+//         }
+//         return;
+//       }
+//       break;
+
+//     // -------------------------------------------------
+//     // ↓ DOWN Navigation (fixed row-aware cast)
+//     // -------------------------------------------------
+//     case "ArrowDown":
+//       e.preventDefault();
+
+//       // SEARCH → BUTTONS
+//       if (currentSection === "header") {
+//         currentSection = "buttons";
+//         currentFocusIndex = 0;
+//         setFocusOnButton(0);
+//         return;
+//       }
+
+//       // BUTTONS → CAST
+//       if (currentSection === "buttons") {
+//         currentSection = "cast";
+//         currentFocusIndex = 0;
+//         setFocusOnCast(0);
+//         return;
+//       }
+
+//       // CAST → next row
+//       if (currentSection === "cast") {
+//         const curr = casts[currentFocusIndex];
+//         const currRow = getRowIndex(curr);
+
+//         // Find item in next row (same column)
+//         for (let i = currentFocusIndex + 1; i < casts.length; i++) {
+//           if (getRowIndex(casts[i]) > currRow) {
+//             currentFocusIndex = i;
+//             setFocusOnCast(i);
+//             return;
+//           }
+//         }
+
+//         // No row below → stay on last row
+//         return;
+//       }
+
+//       break;
+
+//     // -------------------------------------------------
+//     // ↑ UP Navigation (fixed)
+//     // -------------------------------------------------
+//     case "ArrowUp":
+//       e.preventDefault();
+
+//       // CAST → BUTTONS
+//       if (currentSection === "cast") {
+//         const curr = casts[currentFocusIndex];
+//         const currRow = getRowIndex(curr);
+
+//         // Check if top row → go to Play button
+//         const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
+//         if (isTopRow) {
+//           currentSection = "buttons";
+//           currentFocusIndex = 0;
+//           setFocusOnButton(0);
+//           return;
+//         }
+
+//         // Find item in row above
+//         for (let i = currentFocusIndex - 1; i >= 0; i--) {
+//           if (getRowIndex(casts[i]) < currRow) {
+//             currentFocusIndex = i;
+//             setFocusOnCast(i);
+//             return;
+//           }
+//         }
+//         return;
+//       }
+
+//       // BUTTONS → SEARCH HEADER
+//       if (currentSection === "buttons") {
+//         currentSection = "header";
+//         setFocusOnHeaderSearch();
+//         return;
+//       }
+
+//       break;
+
+//     // -------------------------------------------------
+//     // ENTER
+//     // -------------------------------------------------
+//     case "Enter":
+//       e.preventDefault();
+//       if (currentSection === "buttons") {
+//         buttons[currentFocusIndex]?.click();
+//       } else if (currentSection === "cast") {
+//         casts[currentFocusIndex]?.click();
+//       }
+//       return;
+
+//     // -------------------------------------------------
+//     // BACK
+//     // -------------------------------------------------
+//     default:
+//       if (
+//         e.keyCode === 10009 ||
+//         e.key === "Escape" ||
+//         e.key === "Back" ||
+//         e.key === "BrowserBack" ||
+//         e.key === "XF86Back"
+//       ) {
+//         localStorage.removeItem("selectedMovieId");
+//         localStorage.setItem("currentPage", "moviesPage");
+//         if (typeof Router !== "undefined" && Router.showPage)
+//           Router.showPage("movies");
+
+//         document.body.style.backgroundImage = "none";
+//         document.body.style.backgroundColor = "black";
+//         return;
+//       }
+//   }
+// }
+
+
+
+function handleRemoteNavigation(e) {
+  const buttons = Array.from(container.querySelectorAll(".action-button"));
+  const casts = Array.from(container.querySelectorAll(".cast-card"));
+
+  // measure row using the pixel Y position
+  function getRowIndex(el) {
+    return Math.round(el.offsetTop);
+  }
+
+  function getColumnIndex(el) {
+    const rowStart = getRowIndex(el);
+    let col = 0;
+
+    for (let i = 0; i < casts.length; i++) {
+      if (getRowIndex(casts[i]) === rowStart) {
+        if (casts[i] === el) return col;
+        col++;
+      }
+    }
+    return 0;
+  }
+
+  switch (e.key) {
+
+    // RIGHT → →
+    case "ArrowRight":
+      e.preventDefault();
+
+      if (currentSection === "buttons") {
+        if (currentFocusIndex < buttons.length - 1) {
+          currentFocusIndex++;
+          setFocusOnButton(currentFocusIndex);
+        }
+        return;
+      }
+
+      if (currentSection === "cast") {
+        if (currentFocusIndex < casts.length - 1) {
+          currentFocusIndex++;
+          setFocusOnCast(currentFocusIndex);
+        }
+        return;
+      }
+      break;
+
+    // LEFT ← ←
+    case "ArrowLeft":
+      e.preventDefault();
+
+      if (currentSection === "buttons") {
+        if (currentFocusIndex > 0) {
+          currentFocusIndex--;
+          setFocusOnButton(currentFocusIndex);
+        }
+        return;
+      }
+
+      if (currentSection === "cast") {
+        if (currentFocusIndex > 0) {
+          currentFocusIndex--;
+          setFocusOnCast(currentFocusIndex);
+        }
+        return;
+      }
+      break;
+
+    // DOWN ↓ ↓
+    case "ArrowDown":
+      e.preventDefault();
+
+      // SEARCH → BUTTONS
+      if (currentSection === "header") {
+        currentSection = "buttons";
+        currentFocusIndex = 0;
+        setFocusOnButton(0);
+        return;
+      }
+
+      // BUTTONS → CAST TOP ITEM
+      if (currentSection === "buttons") {
+        currentSection = "cast";
+        currentFocusIndex = 0;
+        setFocusOnCast(0);
+        return;
+      }
+
+      // CAST → next row
+      if (currentSection === "cast") {
+        const curr = casts[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        const currCol = getColumnIndex(curr);
+
+        // find next row start index
+        let nextRowItems = casts.filter(c => getRowIndex(c) > currRow);
+        if (nextRowItems.length === 0) {
+          // no row below → stay in same item (last row)
+          return;
+        }
+
+        // get that row's items
+        const targetRowStart = getRowIndex(nextRowItems[0]);
+        const targetRow = casts.filter(c => getRowIndex(c) === targetRowStart);
+
+        // snap to nearest column inside lower row
+        const newIndex = casts.indexOf(
+          targetRow[Math.min(currCol, targetRow.length - 1)]
+        );
+
+        currentFocusIndex = newIndex;
+        setFocusOnCast(newIndex);
+        return;
+      }
+      break;
+
+    // UP ↑ ↑
+    case "ArrowUp":
+      e.preventDefault();
+
+      // CAST → up row
+      if (currentSection === "cast") {
+        const curr = casts[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        const currCol = getColumnIndex(curr);
+
+        // find if any row above exists
+        let prevRowItems = casts.filter(c => getRowIndex(c) < currRow);
+
+        if (prevRowItems.length === 0) {
+          // top row → go to Play button
+          currentSection = "buttons";
+          currentFocusIndex = 0;
+          setFocusOnButton(0);
+          return;
+        }
+
+        // get upper row
+        const upperRowStart = getRowIndex(prevRowItems[prevRowItems.length - 1]);
+        const upperRow = casts.filter(c => getRowIndex(c) === upperRowStart);
+
+        // snap to nearest column in upper row
+        const newIndex = casts.indexOf(
+          upperRow[Math.min(currCol, upperRow.length - 1)]
+        );
+
+        currentFocusIndex = newIndex;
+        setFocusOnCast(newIndex);
+        return;
+      }
+
+      // BUTTONS → SEARCH
+      if (currentSection === "buttons") {
+        currentSection = "header";
+        setFocusOnHeaderSearch();
+        return;
+      }
+
+      break;
+
+    // ENTER
+    case "Enter":
+      e.preventDefault();
+      if (currentSection === "buttons") {
+        buttons[currentFocusIndex]?.click();
+      }
+      if (currentSection === "cast") {
+        casts[currentFocusIndex]?.click();
+      }
+      return;
+
+    // BACK
+    default:
+      if (
+        e.keyCode === 10009 ||
+        e.key === "Escape" ||
+        e.key === "Back" ||
+        e.key === "BrowserBack" ||
+        e.key === "XF86Back"
+      ) {
+        localStorage.removeItem("selectedMovieId");
+        localStorage.setItem("currentPage", "moviesPage");
+
+        if (typeof Router !== "undefined" && Router.showPage) {
+          Router.showPage("movies");
+        }
+
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "black";
+        return;
+      }
+  }
 }
+
+
+
+  document.addEventListener("keydown", handleRemoteNavigation);
+
+  // cleanup function to remove listeners when leaving page
+  MovieDetailPage.cleanup = function () {
+    document.removeEventListener("keydown", handleRemoteNavigation);
+    document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    // remove other listeners if necessary
+  };
+}
+
