@@ -193,7 +193,10 @@ function navigateTo(pageName) {
     'movies-page': 'movies',
     'moviesPage': 'movies',
     'movie-detail-page': 'movie-detail',
-    'movieDetailPage': 'movie-detail'
+    'movieDetailPage': 'movie-detail',
+    'series-page': 'series',
+    'seriesPage': 'series'
+    
   };
   
   const normalizedPage = pageMap[pageName] || pageName;

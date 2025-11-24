@@ -367,10 +367,12 @@ function LoginPage() {
         </div>
       </div>
 
-      <div id="loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-        <div style="text-align: center; color: white;">
-          <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-          <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">Loading...</div>
+      <div id="loading-overlay" class="hidden" style="position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+   <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+
+          <div class="spinner"></div>
+
+          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">Loading...</div>
           <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>
         </div>
       </div>

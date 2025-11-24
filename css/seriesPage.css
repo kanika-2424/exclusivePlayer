@@ -101,19 +101,19 @@
 .movies-category-item {
     width: 188px;
     height: 62px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px; /* or any width you want */
+    white-space: nowrap;
+    display: block;
     background: rgba(255, 255, 255, 0.06);
     border: 0.5px solid rgba(255, 255, 255, 0.5);
-
     border-radius: 10px;
-
     color: white;
     font-size: 17px;
-
     cursor: pointer;
     transition: 0.25s;
     position: relative;
@@ -376,6 +376,52 @@
 .scroll-top-btn.focused {
   background: rgba(0, 150, 255, 1);
   transform: scale(1.1);
+}
+
+
+/* Category name truncation with tooltip */
+.movies-category-item .cat-name {
+    max-width: 160px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* Hover description 3-line clamp */
+.hover-desc {
+    font-size: 8px;
+    line-height: 16px;
+    max-width: 80%;
+    margin: 0 auto;
+    opacity: 0.95;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Remove default focus outline from category items */
+.movies-category-item {
+    outline: none !important;
+    border: none !important;
+}
+
+/* Only show border when explicitly focused */
+.movies-category-item.focused {
+    border: 2px solid #fff; /* or whatever your focus style is */
+}
+
+/* Remove active state border if it's conflicting */
+.movies-category-item.active {
+    /* Keep your active styles but ensure no conflicting borders */
+    background-color: rgba(255, 255, 255, 0.1); /* example */
+}
+
+
+.navigation-focus {
+  border: 2px solid #fff;   /* border highlight */
+  caret-color: transparent; /* hide cursor */
 }
 
 
