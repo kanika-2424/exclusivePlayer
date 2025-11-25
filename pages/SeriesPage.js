@@ -745,7 +745,7 @@ else if (currentSection === "search") {
           <img src="/assets/logo.png" class="app-logo" />
           <div>
             <span class="current-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: true})}</span>
-            <span class="current-date">${new Date().toLocaleDateString([], {month:'long', day:'numeric', year:'numeric'})}</span>
+            <span  class="current-date">${new Date().toLocaleDateString([], {month:'long', day:'numeric', year:'numeric'})}</span>
           </div>
       </div>
       <div class="live-indicator"><span class="current-time">Series</span></div>

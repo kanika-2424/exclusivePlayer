@@ -67,6 +67,15 @@ async function navigateTo(pageId) {
       await MovieDetailPage();
     } else if (pageId === "series-page") {
       targetPage.innerHTML = SeriesPage();
+    } else if (pageId === "series-detail-page") {
+      // Show loading state immediately
+      targetPage.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;">
+          <div class="spinner"></div>
+        </div>
+      `;
+      // Then call async function (it will update the container itself)
+      await SeriesDetailPage();
     }
   }
 }

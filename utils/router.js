@@ -94,10 +94,149 @@
 // }
 
 // Simple Router for Page Navigation
+
+
+
+
+
+
+
+// const Router = {
+//   currentPage: null,
+
+//   showPage(pageName) {
+//     console.log("🔄 Router.showPage called with:", pageName);
+    
+//     // Hide all pages
+//     const pages = document.querySelectorAll('.page');
+//     pages.forEach(page => {
+//       page.style.display = 'none';
+//       page.innerHTML = ''; // Clear content
+//     });
+
+//     // Cleanup previous page if exists
+//     if (this.currentPage && window[this.currentPage + 'Page']?.cleanup) {
+//       console.log("🧹 Cleaning up:", this.currentPage);
+//       window[this.currentPage + 'Page'].cleanup();
+//     }
+
+//     // Show and render the requested page
+//     let pageElement, pageContent;
+    
+//     switch(pageName) {
+//       case 'login':
+//       case 'login-page':
+//         pageElement = document.getElementById('login-page');
+//         pageContent = LoginPage();
+//         this.currentPage = 'Login';
+//         localStorage.setItem('currentPage', 'login');
+//         break;
+        
+//       case 'dashboard':
+//       case 'dashboard-page':
+//         pageElement = document.getElementById('dashboard-page');
+//         pageContent = DashboardPage();
+//         this.currentPage = 'Dashboard';
+//         localStorage.setItem('currentPage', 'dashboard');
+//         break;
+        
+//       case 'live-tv':
+//       case 'liveTv':
+//       case 'live-tv-page':
+//       case 'liveTvPage':
+//         pageElement = document.getElementById('live-tv-page');
+//         pageContent = LiveTvPage();
+//         this.currentPage = 'LiveTv';
+//         localStorage.setItem('currentPage', 'liveTvPage');
+//         break;
+
+//       case 'movies':
+//       case 'movies-page':
+//       case 'moviesPage':
+//         pageElement = document.getElementById('movies-page');
+//         pageContent = MoviesPage();
+//         this.currentPage = 'Movies';
+//         localStorage.setItem('currentPage', 'moviesPage');
+//         break;
+
+//       case 'movie-detail':
+//       case 'movie-detail-page':
+//       case 'movieDetailPage':
+//         pageElement = document.getElementById('movie-detail-page');
+//         pageContent = MovieDetailPage();
+//         this.currentPage = 'MovieDetail';
+//         localStorage.setItem('currentPage', 'moviesDetailPage');
+//         break;
+
+//       case 'series':
+//       case 'series-page':
+//       case 'seriesPage':
+//         pageElement = document.getElementById('series-page');
+//         pageContent = SeriesPage();
+//         this.currentPage = 'Series';
+//         localStorage.setItem('currentPage', 'seriesPage');
+//         break;
+
+//       case 'series-detail':
+//       case 'series-detail-page':
+//       case 'seriesDetailPage':
+//         pageElement = document.getElementById('series-detail-page');
+//         pageContent = SeriesDetailPage();
+//         this.currentPage = 'SeriesDetail';
+//         localStorage.setItem('currentPage', 'seriesDetailPage');
+//         break;
+        
+//       default:
+//         console.error('❌ Unknown page:', pageName);
+//         // Fallback to login
+//         pageElement = document.getElementById('login-page');
+//         pageContent = LoginPage();
+//         this.currentPage = 'Login';
+//         localStorage.setItem('currentPage', 'login');
+//     }
+
+//     if (pageElement) {
+//       pageElement.innerHTML = pageContent;
+//       pageElement.style.display = 'block';
+//       console.log("✅ Page shown:", pageName);
+//     } else {
+//       console.error("❌ Page element not found for:", pageName);
+//     }
+//   }
+// };
+
+// // Global navigation helper
+// function navigateTo(pageName) {
+//   console.log("🧭 navigateTo called with:", pageName);
+  
+//   // Normalize page names
+//   const pageMap = {
+//     'login-page': 'login',
+//     'dashboard-page': 'dashboard',
+//     'live-tv-page': 'live-tv',
+//     'liveTvPage': 'live-tv',
+//     'movies-page': 'movies',
+//     'moviesPage': 'movies',
+//     'movie-detail-page': 'movie-detail',
+//     'movieDetailPage': 'movie-detail',
+//     'series-page': 'series',
+//     'seriesPage': 'series',
+//     'series-detail-page': 'series-detail',
+//     'seriesDetailPage': 'series-detail'
+    
+//   };
+  
+//   const normalizedPage = pageMap[pageName] || pageName;
+//   Router.showPage(normalizedPage);
+// }
+
+
+
+
 const Router = {
   currentPage: null,
 
-  showPage(pageName) {
+  async showPage(pageName) {
     console.log("🔄 Router.showPage called with:", pageName);
     
     // Hide all pages
@@ -114,13 +253,13 @@ const Router = {
     }
 
     // Show and render the requested page
-    let pageElement, pageContent;
+    let pageElement;
     
     switch(pageName) {
       case 'login':
       case 'login-page':
         pageElement = document.getElementById('login-page');
-        pageContent = LoginPage();
+        pageElement.innerHTML = LoginPage();
         this.currentPage = 'Login';
         localStorage.setItem('currentPage', 'login');
         break;
@@ -128,7 +267,7 @@ const Router = {
       case 'dashboard':
       case 'dashboard-page':
         pageElement = document.getElementById('dashboard-page');
-        pageContent = DashboardPage();
+        pageElement.innerHTML = DashboardPage();
         this.currentPage = 'Dashboard';
         localStorage.setItem('currentPage', 'dashboard');
         break;
@@ -138,7 +277,7 @@ const Router = {
       case 'live-tv-page':
       case 'liveTvPage':
         pageElement = document.getElementById('live-tv-page');
-        pageContent = LiveTvPage();
+        pageElement.innerHTML = LiveTvPage();
         this.currentPage = 'LiveTv';
         localStorage.setItem('currentPage', 'liveTvPage');
         break;
@@ -147,7 +286,7 @@ const Router = {
       case 'movies-page':
       case 'moviesPage':
         pageElement = document.getElementById('movies-page');
-        pageContent = MoviesPage();
+        pageElement.innerHTML = MoviesPage();
         this.currentPage = 'Movies';
         localStorage.setItem('currentPage', 'moviesPage');
         break;
@@ -156,22 +295,55 @@ const Router = {
       case 'movie-detail-page':
       case 'movieDetailPage':
         pageElement = document.getElementById('movie-detail-page');
-        pageContent = MovieDetailPage();
+        // Show loading state
+        pageElement.innerHTML = `
+          <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;">
+            <div class="spinner"></div>
+          </div>
+        `;
+        pageElement.style.display = 'block';
+        // Call async function
+        await MovieDetailPage();
         this.currentPage = 'MovieDetail';
         localStorage.setItem('currentPage', 'moviesDetailPage');
+        return; // Early return since page is already shown
+        
+      case 'series':
+      case 'series-page':
+      case 'seriesPage':
+        pageElement = document.getElementById('series-page');
+        pageElement.innerHTML = SeriesPage();
+        this.currentPage = 'Series';
+        localStorage.setItem('currentPage', 'seriesPage');
         break;
+
+      case 'series-detail':
+      case 'series-detail-page':
+      case 'seriesDetailPage':
+        pageElement = document.getElementById('series-detail-page');
+        // Show loading state
+        pageElement.innerHTML = `
+          <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;">
+            <div class="spinner"></div>
+          </div>
+        `;
+        pageElement.style.display = 'block';
+        // Call async function
+        await SeriesDetailPage();
+        this.currentPage = 'SeriesDetail';
+        localStorage.setItem('currentPage', 'seriesDetailPage');
+        return; // Early return since page is already shown
         
       default:
         console.error('❌ Unknown page:', pageName);
         // Fallback to login
         pageElement = document.getElementById('login-page');
-        pageContent = LoginPage();
+        pageElement.innerHTML = LoginPage();
         this.currentPage = 'Login';
         localStorage.setItem('currentPage', 'login');
     }
 
     if (pageElement) {
-      pageElement.innerHTML = pageContent;
       pageElement.style.display = 'block';
       console.log("✅ Page shown:", pageName);
     } else {
@@ -181,7 +353,7 @@ const Router = {
 };
 
 // Global navigation helper
-function navigateTo(pageName) {
+async function navigateTo(pageName) {
   console.log("🧭 navigateTo called with:", pageName);
   
   // Normalize page names
@@ -195,10 +367,11 @@ function navigateTo(pageName) {
     'movie-detail-page': 'movie-detail',
     'movieDetailPage': 'movie-detail',
     'series-page': 'series',
-    'seriesPage': 'series'
-    
+    'seriesPage': 'series',
+    'series-detail-page': 'series-detail',
+    'seriesDetailPage': 'series-detail'
   };
   
   const normalizedPage = pageMap[pageName] || pageName;
-  Router.showPage(normalizedPage);
+  await Router.showPage(normalizedPage);
 }

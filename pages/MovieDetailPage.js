@@ -7,6 +7,10 @@ async function MovieDetailPage() {
   const castImageUrl = "https://image.tmdb.org/t/p/w500";
   const loadingOverlay = document.getElementById("loading-overlay");
 
+
+    
+
+
   // --- Back navigation/interruption guard during loading ---
   let navigationInterrupted = false;
   function handleBackNavigationDuringLoading(e) {
@@ -169,7 +173,7 @@ try {
   const castHtml = movieData.cast
     .map((member, index) => `
       <div class="cast-card" data-index="${index}" tabindex="0">
-        <img src="${member.image}" alt="${member.name}" class="cast-image" onerror="this.src='/assets/placeholder-img.png'"/>
+        <img src="${member.image}" alt="${member.name}" class="cast-image" "/>
         <p class="cast-name">${member.name}</p>
       </div>
     `)
@@ -191,7 +195,7 @@ try {
     <header class="livetv-header">
       <div class="header-left">
         <img src="/assets/logo.png" class="app-logo" />
-        <div class="">
+        <div class="date-time">
           <span class="current-time"></span>
           <span class="current-date"></span>
         </div>
@@ -424,109 +428,34 @@ try {
     });
   });
 
-  // --- Keydown navigation (remote) ---
-  // function handleRemoteNavigation(e) {
-  //   const buttons = Array.from(container.querySelectorAll(".action-button"));
-  //   const casts = Array.from(container.querySelectorAll(".cast-card"));
-
-  //   switch (e.key) {
-  //     case "ArrowRight":
-  //       e.preventDefault();
-  //       if (currentSection === "buttons") {
-  //         if (currentFocusIndex < buttons.length - 1) {
-  //           currentFocusIndex++;
-  //           setFocusOnButton(currentFocusIndex);
-  //         }
-  //       } else if (currentSection === "cast") {
-  //         if (currentFocusIndex < casts.length - 1) {
-  //           currentFocusIndex++;
-  //           setFocusOnCast(currentFocusIndex);
-  //         }
-  //       }
-  //       break;
-
-  //     case "ArrowLeft":
-  //       e.preventDefault();
-  //       if (currentSection === "buttons") {
-  //         if (currentFocusIndex > 0) {
-  //           currentFocusIndex--;
-  //           setFocusOnButton(currentFocusIndex);
-  //         }
-  //       } else if (currentSection === "cast") {
-  //         if (currentFocusIndex > 0) {
-  //           currentFocusIndex--;
-  //           setFocusOnCast(currentFocusIndex);
-  //         }
-  //       }
-  //       break;
-
-  //     case "ArrowDown":
-  //       e.preventDefault();
-  //       if (currentSection === "buttons") {
-  //         currentSection = "cast";
-  //         currentFocusIndex = 0;
-  //         setFocusOnCast(0);
-  //       }
-  //       break;
-
-  //     case "ArrowUp":
-  //       e.preventDefault();
-  //       if (currentSection === "buttons") {
-  //         currentSection = "header";
-  //         setFocusOnHeaderSearch();
-  //       } else if (currentSection === "cast") {
-  //         currentSection = "buttons";
-  //         currentFocusIndex = 0;
-  //         setFocusOnButton(0);
-  //       }
-  //       break;
-
-  //     case "Enter":
-  //       e.preventDefault();
-  //       if (currentSection === "buttons") {
-  //         const btns = Array.from(container.querySelectorAll(".action-button"));
-  //         if (btns[currentFocusIndex]) btns[currentFocusIndex].click();
-  //       } else if (currentSection === "cast") {
-  //         const c = Array.from(container.querySelectorAll(".cast-card"))[currentFocusIndex];
-  //         if (c) c.click();
-  //       }
-  //       break;
-
-  //     // Back / Exit
-  //     case "Backspace":
-  //     case "Escape":
-  //     case "BrowserBack":
-  //     default:
-  //       if (
-  //         e.keyCode === 10009 ||
-  //         e.key === "Escape" ||
-  //         e.key === "Back" ||
-  //         e.key === "BrowserBack" ||
-  //         e.key === "XF86Back"
-  //       ) {
-  //         localStorage.removeItem("selectedMovieId");
-  //         localStorage.setItem("currentPage", "moviesPage");
-  //         if (typeof Router !== "undefined" && Router.showPage) Router.showPage("movies");
-  //         document.body.style.backgroundImage = "none";
-  //         document.body.style.backgroundColor = "black";
-  //         return;
-  //       }
-  //   }
-  // }
+ 
 
 
 // function handleRemoteNavigation(e) {
 //   const buttons = Array.from(container.querySelectorAll(".action-button"));
 //   const casts = Array.from(container.querySelectorAll(".cast-card"));
 
+//   // measure row using the pixel Y position
 //   function getRowIndex(el) {
-//     return Math.floor(el.offsetTop);
+//     return Math.round(el.offsetTop);
+//   }
+
+//   function getColumnIndex(el) {
+//     const rowStart = getRowIndex(el);
+//     let col = 0;
+
+//     for (let i = 0; i < casts.length; i++) {
+//       if (getRowIndex(casts[i]) === rowStart) {
+//         if (casts[i] === el) return col;
+//         col++;
+//       }
+//     }
+//     return 0;
 //   }
 
 //   switch (e.key) {
-//     // -------------------------------------------------
-//     // → RIGHT Navigation
-//     // -------------------------------------------------
+
+//     // RIGHT → →
 //     case "ArrowRight":
 //       e.preventDefault();
 
@@ -547,9 +476,7 @@ try {
 //       }
 //       break;
 
-//     // -------------------------------------------------
-//     // ← LEFT Navigation
-//     // -------------------------------------------------
+//     // LEFT ← ←
 //     case "ArrowLeft":
 //       e.preventDefault();
 
@@ -570,9 +497,7 @@ try {
 //       }
 //       break;
 
-//     // -------------------------------------------------
-//     // ↓ DOWN Navigation (fixed row-aware cast)
-//     // -------------------------------------------------
+//     // DOWN ↓ ↓
 //     case "ArrowDown":
 //       e.preventDefault();
 
@@ -584,7 +509,7 @@ try {
 //         return;
 //       }
 
-//       // BUTTONS → CAST
+//       // BUTTONS → CAST TOP ITEM
 //       if (currentSection === "buttons") {
 //         currentSection = "cast";
 //         currentFocusIndex = 0;
@@ -596,54 +521,66 @@ try {
 //       if (currentSection === "cast") {
 //         const curr = casts[currentFocusIndex];
 //         const currRow = getRowIndex(curr);
+//         const currCol = getColumnIndex(curr);
 
-//         // Find item in next row (same column)
-//         for (let i = currentFocusIndex + 1; i < casts.length; i++) {
-//           if (getRowIndex(casts[i]) > currRow) {
-//             currentFocusIndex = i;
-//             setFocusOnCast(i);
-//             return;
-//           }
+//         // find next row start index
+//         let nextRowItems = casts.filter(c => getRowIndex(c) > currRow);
+//         if (nextRowItems.length === 0) {
+//           // no row below → stay in same item (last row)
+//           return;
 //         }
 
-//         // No row below → stay on last row
+//         // get that row's items
+//         const targetRowStart = getRowIndex(nextRowItems[0]);
+//         const targetRow = casts.filter(c => getRowIndex(c) === targetRowStart);
+
+//         // snap to nearest column inside lower row
+//         const newIndex = casts.indexOf(
+//           targetRow[Math.min(currCol, targetRow.length - 1)]
+//         );
+
+//         currentFocusIndex = newIndex;
+//         setFocusOnCast(newIndex);
 //         return;
 //       }
-
 //       break;
 
-//     // -------------------------------------------------
-//     // ↑ UP Navigation (fixed)
-//     // -------------------------------------------------
+//     // UP ↑ ↑
 //     case "ArrowUp":
 //       e.preventDefault();
 
-//       // CAST → BUTTONS
+//       // CAST → up row
 //       if (currentSection === "cast") {
 //         const curr = casts[currentFocusIndex];
 //         const currRow = getRowIndex(curr);
+//         const currCol = getColumnIndex(curr);
 
-//         // Check if top row → go to Play button
-//         const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
-//         if (isTopRow) {
+//         // find if any row above exists
+//         let prevRowItems = casts.filter(c => getRowIndex(c) < currRow);
+
+//         if (prevRowItems.length === 0) {
+//           // top row → go to Play button
 //           currentSection = "buttons";
 //           currentFocusIndex = 0;
 //           setFocusOnButton(0);
 //           return;
 //         }
 
-//         // Find item in row above
-//         for (let i = currentFocusIndex - 1; i >= 0; i--) {
-//           if (getRowIndex(casts[i]) < currRow) {
-//             currentFocusIndex = i;
-//             setFocusOnCast(i);
-//             return;
-//           }
-//         }
+//         // get upper row
+//         const upperRowStart = getRowIndex(prevRowItems[prevRowItems.length - 1]);
+//         const upperRow = casts.filter(c => getRowIndex(c) === upperRowStart);
+
+//         // snap to nearest column in upper row
+//         const newIndex = casts.indexOf(
+//           upperRow[Math.min(currCol, upperRow.length - 1)]
+//         );
+
+//         currentFocusIndex = newIndex;
+//         setFocusOnCast(newIndex);
 //         return;
 //       }
 
-//       // BUTTONS → SEARCH HEADER
+//       // BUTTONS → SEARCH
 //       if (currentSection === "buttons") {
 //         currentSection = "header";
 //         setFocusOnHeaderSearch();
@@ -652,21 +589,18 @@ try {
 
 //       break;
 
-//     // -------------------------------------------------
 //     // ENTER
-//     // -------------------------------------------------
 //     case "Enter":
 //       e.preventDefault();
 //       if (currentSection === "buttons") {
 //         buttons[currentFocusIndex]?.click();
-//       } else if (currentSection === "cast") {
+//       }
+//       if (currentSection === "cast") {
 //         casts[currentFocusIndex]?.click();
 //       }
 //       return;
 
-//     // -------------------------------------------------
 //     // BACK
-//     // -------------------------------------------------
 //     default:
 //       if (
 //         e.keyCode === 10009 ||
@@ -677,8 +611,10 @@ try {
 //       ) {
 //         localStorage.removeItem("selectedMovieId");
 //         localStorage.setItem("currentPage", "moviesPage");
-//         if (typeof Router !== "undefined" && Router.showPage)
+
+//         if (typeof Router !== "undefined" && Router.showPage) {
 //           Router.showPage("movies");
+//         }
 
 //         document.body.style.backgroundImage = "none";
 //         document.body.style.backgroundColor = "black";
@@ -688,32 +624,19 @@ try {
 // }
 
 
-
 function handleRemoteNavigation(e) {
   const buttons = Array.from(container.querySelectorAll(".action-button"));
   const casts = Array.from(container.querySelectorAll(".cast-card"));
 
-  // measure row using the pixel Y position
   function getRowIndex(el) {
-    return Math.round(el.offsetTop);
-  }
-
-  function getColumnIndex(el) {
-    const rowStart = getRowIndex(el);
-    let col = 0;
-
-    for (let i = 0; i < casts.length; i++) {
-      if (getRowIndex(casts[i]) === rowStart) {
-        if (casts[i] === el) return col;
-        col++;
-      }
-    }
-    return 0;
+    if (!el) return 0;
+    return Math.floor(el.getBoundingClientRect().top);
   }
 
   switch (e.key) {
-
-    // RIGHT → →
+    // -------------------------------------------------
+    // → RIGHT
+    // -------------------------------------------------
     case "ArrowRight":
       e.preventDefault();
 
@@ -734,7 +657,9 @@ function handleRemoteNavigation(e) {
       }
       break;
 
-    // LEFT ← ←
+    // -------------------------------------------------
+    // ← LEFT
+    // -------------------------------------------------
     case "ArrowLeft":
       e.preventDefault();
 
@@ -755,7 +680,9 @@ function handleRemoteNavigation(e) {
       }
       break;
 
-    // DOWN ↓ ↓
+    // -------------------------------------------------
+    // ↓ DOWN
+    // -------------------------------------------------
     case "ArrowDown":
       e.preventDefault();
 
@@ -767,7 +694,7 @@ function handleRemoteNavigation(e) {
         return;
       }
 
-      // BUTTONS → CAST TOP ITEM
+      // BUTTONS → CAST
       if (currentSection === "buttons") {
         currentSection = "cast";
         currentFocusIndex = 0;
@@ -779,86 +706,71 @@ function handleRemoteNavigation(e) {
       if (currentSection === "cast") {
         const curr = casts[currentFocusIndex];
         const currRow = getRowIndex(curr);
-        const currCol = getColumnIndex(curr);
 
-        // find next row start index
-        let nextRowItems = casts.filter(c => getRowIndex(c) > currRow);
-        if (nextRowItems.length === 0) {
-          // no row below → stay in same item (last row)
-          return;
+        for (let i = currentFocusIndex + 1; i < casts.length; i++) {
+          if (getRowIndex(casts[i]) > currRow) {
+            currentFocusIndex = i;
+            setFocusOnCast(i);
+            return;
+          }
         }
-
-        // get that row's items
-        const targetRowStart = getRowIndex(nextRowItems[0]);
-        const targetRow = casts.filter(c => getRowIndex(c) === targetRowStart);
-
-        // snap to nearest column inside lower row
-        const newIndex = casts.indexOf(
-          targetRow[Math.min(currCol, targetRow.length - 1)]
-        );
-
-        currentFocusIndex = newIndex;
-        setFocusOnCast(newIndex);
         return;
       }
       break;
 
-    // UP ↑ ↑
+    // -------------------------------------------------
+    // ↑ UP
+    // -------------------------------------------------
     case "ArrowUp":
       e.preventDefault();
 
-      // CAST → up row
+      // CAST → BUTTONS
       if (currentSection === "cast") {
         const curr = casts[currentFocusIndex];
         const currRow = getRowIndex(curr);
-        const currCol = getColumnIndex(curr);
 
-        // find if any row above exists
-        let prevRowItems = casts.filter(c => getRowIndex(c) < currRow);
+        const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
 
-        if (prevRowItems.length === 0) {
-          // top row → go to Play button
+        if (isTopRow) {
           currentSection = "buttons";
           currentFocusIndex = 0;
           setFocusOnButton(0);
           return;
         }
 
-        // get upper row
-        const upperRowStart = getRowIndex(prevRowItems[prevRowItems.length - 1]);
-        const upperRow = casts.filter(c => getRowIndex(c) === upperRowStart);
-
-        // snap to nearest column in upper row
-        const newIndex = casts.indexOf(
-          upperRow[Math.min(currCol, upperRow.length - 1)]
-        );
-
-        currentFocusIndex = newIndex;
-        setFocusOnCast(newIndex);
+        for (let i = currentFocusIndex - 1; i >= 0; i--) {
+          if (getRowIndex(casts[i]) < currRow) {
+            currentFocusIndex = i;
+            setFocusOnCast(i);
+            return;
+          }
+        }
         return;
       }
 
-      // BUTTONS → SEARCH
+      // BUTTONS → SEARCH HEADER
       if (currentSection === "buttons") {
         currentSection = "header";
         setFocusOnHeaderSearch();
         return;
       }
-
       break;
 
+    // -------------------------------------------------
     // ENTER
+    // -------------------------------------------------
     case "Enter":
       e.preventDefault();
       if (currentSection === "buttons") {
         buttons[currentFocusIndex]?.click();
-      }
-      if (currentSection === "cast") {
+      } else if (currentSection === "cast") {
         casts[currentFocusIndex]?.click();
       }
       return;
 
-    // BACK
+    // -------------------------------------------------
+    // BACK HANDLER
+    // -------------------------------------------------
     default:
       if (
         e.keyCode === 10009 ||
@@ -869,11 +781,13 @@ function handleRemoteNavigation(e) {
       ) {
         localStorage.removeItem("selectedMovieId");
         localStorage.setItem("currentPage", "moviesPage");
+        if (typeof Router !== "undefined" && Router.showPage){
 
-        if (typeof Router !== "undefined" && Router.showPage) {
           Router.showPage("movies");
         }
-
+else if (typeof navigateTo === "function") {
+        navigateTo("movies-page");
+      }
         document.body.style.backgroundImage = "none";
         document.body.style.backgroundColor = "black";
         return;
