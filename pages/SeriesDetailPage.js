@@ -724,14 +724,14 @@ async function SeriesDetailPage() {
       case "Enter":
         e.preventDefault();
         if (currentSection === "buttons") {
-          buttons[currentFocusIndex]?.click();
+          buttons[currentFocusIndex].click();
         } else if (currentSection === "seasons") {
           const seasonDropdown = container.querySelector(".season-dropdown");
-          seasonDropdown?.click();
+          seasonDropdown.click();
         } else if (currentSection === "episodes") {
-          episodes[currentFocusIndex]?.click();
+          episodes[currentFocusIndex].click();
         } else if (currentSection === "cast") {
-          casts[currentFocusIndex]?.click();
+          casts[currentFocusIndex].click();
         }
         return;
 
@@ -802,7 +802,7 @@ async function SeriesDetailPage() {
     if (focusedIndex < 0) focusedIndex = 0;
     updateItemFocus();
     // ensure the focused item is visible
-    items[focusedIndex]?.scrollIntoView({ block: "nearest" });
+    items[focusedIndex].scrollIntoView({ block: "nearest" });
   }
 
   function closeMenu() {
@@ -847,7 +847,7 @@ async function SeriesDetailPage() {
     items.forEach((it, i) => it.classList.toggle("focused", i === focusedIndex));
     // focus is visual only — do not call .focus() because we want remote/keyboard behavior consistent
     // ensure visible
-    items[focusedIndex]?.scrollIntoView({ block: "nearest" });
+    items[focusedIndex].scrollIntoView({ block: "nearest" });
   }
 
   document.addEventListener("keydown", function seasonMenuKeyHandler(e) {

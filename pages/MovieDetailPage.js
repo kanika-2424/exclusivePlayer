@@ -85,22 +85,22 @@ var tmdbId =
 
 var getMovieCastData = null;
 
-try {
-  if (tmdbId) {
-    // Correct TMDB call with your API key
-    const TMDB_API_KEY = "a21eeaca44af5d2a4349214ecba1b338";
-    const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`;
+// try {
+//   if (tmdbId) {
+//     // Correct TMDB call with your API key
+//     const TMDB_API_KEY = "a21eeaca44af5d2a4349214ecba1b338";
+//     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`;
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("TMDB Cast API failed");
-    getMovieCastData = await res.json();
-  } else {
-    console.warn("No tmdb_id available in Xtream API");
-  }
-} catch (err) {
-  console.warn("getMovieCast error", err);
-  getMovieCastData = null;
-}
+//     const res = await fetch(url);
+//     if (!res.ok) throw new Error("TMDB Cast API failed");
+//     getMovieCastData = await res.json();
+//   } else {
+//     console.warn("No tmdb_id available in Xtream API");
+//   }
+// } catch (err) {
+//   console.warn("getMovieCast error", err);
+//   getMovieCastData = null;
+// }
 
 
   if (navigationInterrupted) {
@@ -152,21 +152,21 @@ try {
     movieData.isFavorite = false;
   }
 
-  // build cast list (from TMDB fetch if available)
-  if (getMovieCastData && Array.isArray(getMovieCastData.cast)) {
-    movieData.cast = getMovieCastData.cast.map((c) => ({
-      id: c.id || c.cast_id || Math.random(),
-      name: c.name || c.original_name || "",
-      image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
-    }));
-  } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
-    // fallback if API stores cast in info
-    movieData.cast = movieDetailData.info.cast.map((c, i) => ({
-      id: i,
-      name: c.name || c,
-      image: c.image || "/assets/placeholder-img.png",
-    }));
-  }
+  // // build cast list (from TMDB fetch if available)
+  // if (getMovieCastData && Array.isArray(getMovieCastData.cast)) {
+  //   movieData.cast = getMovieCastData.cast.map((c) => ({
+  //     id: c.id || c.cast_id || Math.random(),
+  //     name: c.name || c.original_name || "",
+  //     image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
+  //   }));
+  // } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
+  //   // fallback if API stores cast in info
+  //   movieData.cast = movieDetailData.info.cast.map((c, i) => ({
+  //     id: i,
+  //     name: c.name || c,
+  //     image: c.image || "/assets/placeholder-img.png",
+  //   }));
+  // }
 
   // --- Render the UI using your original layout and classes (keeps your UI) ---
   const genresText = movieData.genres.join(" / ");
@@ -593,10 +593,10 @@ try {
 //     case "Enter":
 //       e.preventDefault();
 //       if (currentSection === "buttons") {
-//         buttons[currentFocusIndex]?.click();
+//         buttons[currentFocusIndex].click();
 //       }
 //       if (currentSection === "cast") {
-//         casts[currentFocusIndex]?.click();
+//         casts[currentFocusIndex].click();
 //       }
 //       return;
 
@@ -762,9 +762,9 @@ function handleRemoteNavigation(e) {
     case "Enter":
       e.preventDefault();
       if (currentSection === "buttons") {
-        buttons[currentFocusIndex]?.click();
+        buttons[currentFocusIndex].click();
       } else if (currentSection === "cast") {
-        casts[currentFocusIndex]?.click();
+        casts[currentFocusIndex].click();
       }
       return;
 

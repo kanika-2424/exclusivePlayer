@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/dashboardPage.css" />
   <link rel="stylesheet" href="css/liveTvPage.css" />
   <link rel="stylesheet" href="css/sidebarCategories.css" />
-  <link rel="stylesheet" href="css/channelGrid.css" />
+
   <link rel="stylesheet" href="css/moviesPage.css" />
   <link rel="stylesheet" href="css/movieDetailPage.css" />
   <link rel="stylesheet" href="css/toaster.css" />
@@ -46,35 +46,37 @@
     
   </div>
 
-  <!-- IMPORTANT: Scripts must load in this order -->
 
-      <!-- Firebase scripts -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  
-  <!-- 1. Page Functions First -->
-   <script src="api/apiFunctions.js"></script>
-   <script src="components/Toaster.js"></script>
-  <script src="pages/LoginPage.js"></script>
-  <script src="pages/DashboardPage.js"></script>
-  <script src="pages/SidebarCategories.js"></script> <!-- <- add this -->
-  <script src="pages/ChannelGrid.js"></script> <!-- <- add this -->
-  <script src="pages/LiveTvPage.js"></script>
-  <script src="pages/MoviesPage.js"></script>
-  <script src="pages/MovieDetailPage.js"></script>
-  <script src="pages/SeriesPage.js"></script>
-  <script src="pages/SeriesDetailPage.js"></script>
+ <!-- Firebase core FIRST -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  <!-- 2. Router Second -->
-  <script src="router.js"></script>
+<!-- Firebase CONFIG next (initializes firebase) -->
+<script src="config/firebase.js"></script>
 
-  <!-- 3. App Initialization Last -->
-  <script src="utils/app.js"></script>
-  <script src="main.js"></script>
+<!-- Global utilities -->
+<script src="api/apiFunctions.js"></script>
+<script src="components/Toaster.js"></script>
 
+<!-- Page scripts BEFORE router -->
+<script src="pages/LoginPage.js"></script>
+<script src="pages/DashboardPage.js"></script>
+<script src="pages/SidebarCategories.js"></script>
+<script src="pages/ChannelGrid.js"></script>
+<script src="pages/LiveTvPage.js"></script>
+<script src="pages/MoviesPage.js"></script>
+<script src="pages/MovieDetailPage.js"></script>
+<script src="pages/SeriesPage.js"></script>
+<script src="pages/SeriesDetailPage.js"></script>
 
-  <script src="config/firebase.js"></script>
+<!-- Router must load AFTER all page functions exist -->
+<script src="utils/router.js"></script>
+
+<!-- Finally App and Main -->
+<script src="utils/app.js"></script>
+<script src="main.js"></script>
+
 
 </body>
 </html>

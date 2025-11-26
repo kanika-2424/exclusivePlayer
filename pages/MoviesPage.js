@@ -243,9 +243,7 @@ function MoviesPage() {
       localStorage.setItem("currentPage", "moviesDetailPage");
       const lp = qs("#loading-progress");
       if (lp) lp.style.display = "none";
-      if (typeof Router !== "undefined" && Router.showPage) {
-        Router.showPage("movieDetail");
-      } else if (typeof navigateTo === "function") {
+      if (typeof navigateTo === "function") {
         navigateTo("movie-detail-page");
       } else {
         console.log("Navigate to movie detail", movieId);
@@ -402,44 +400,27 @@ function MoviesPage() {
       /* -----------------------------
          FIXED: DOWN inside CARD GRID
          ----------------------------- */
+   /* -----------------------------
+         FIXED: DOWN inside CARD GRID
+         ----------------------------- */
       if (currentSection === "movies") {
-
-        const cardsList = Array.from(document.querySelectorAll(".movie-card"));
-        const currentCard = cardsList[currentFocusIndex];
-
-        if (!currentCard) {
-          e.preventDefault();
-          return;
-        }
-
-        const currRect = currentCard.getBoundingClientRect();
-
-        let bestMatch = null;
-        let smallestDistance = Infinity;
-
-        cardsList.forEach((card, idx) => {
-          if (idx === currentFocusIndex) return;
-
-          const rect = card.getBoundingClientRect();
-
-          // Must be visually below current card
-          if (rect.top > currRect.top) {
-            const horizontalDistance = Math.abs(rect.left - currRect.left);
-
-            if (horizontalDistance < smallestDistance) {
-              smallestDistance = horizontalDistance;
-              bestMatch = idx;
-            }
-          }
-        });
-
-        if (bestMatch !== null) {
-          setFocusOnCard(bestMatch);
+        const nextIndex = currentFocusIndex + cardsPerRow;
+        
+        if (nextIndex < cards.length) {
+          // Normal move down
+          setFocusOnCard(nextIndex);
         } else {
-          // try to load more items
+          // We're at or near the bottom - try to load more
           const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
           if (cat && visibleCount < cat.movies.length) {
             loadMore();
+            // After loading, focus on the next card down
+            setTimeout(() => {
+              const updatedCards = Array.from(document.querySelectorAll(".movie-card"));
+              if (nextIndex < updatedCards.length) {
+                setFocusOnCard(nextIndex);
+              }
+            }, 50);
           }
         }
 

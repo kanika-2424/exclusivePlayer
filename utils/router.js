@@ -294,6 +294,7 @@ const Router = {
       case 'movie-detail':
       case 'movie-detail-page':
       case 'movieDetailPage':
+        case 'movieDetail':
         pageElement = document.getElementById('movie-detail-page');
         // Show loading state
         pageElement.innerHTML = `
@@ -311,6 +312,7 @@ const Router = {
       case 'series':
       case 'series-page':
       case 'seriesPage':
+        case 'seriesDetail':
         pageElement = document.getElementById('series-page');
         pageElement.innerHTML = SeriesPage();
         this.currentPage = 'Series';
