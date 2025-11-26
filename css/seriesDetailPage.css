@@ -1,0 +1,285 @@
+/* -------------------------------------------------------
+   SEASONS & EPISODES SECTION
+---------------------------------------------------------*/
+.seasons-episodes-section {
+  padding: 40px 60px;
+  margin-top: 40px;
+}
+
+/* -------------------------------------------------------
+   SEASON DROPDOWN — WRAPPER with FULL WHITE BORDER
+---------------------------------------------------------*/
+.season-selector-container {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.season-wrapper {
+  position: relative;
+  padding: 12px;
+  border-radius: 22px;
+  border: 3px solid transparent;
+  display: inline-block;
+}
+
+/* White border around button + dropdown */
+.season-wrapper.active::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+
+  /* This will stretch to cover the dropdown */
+  height: calc(100% + var(--dropdown-height, 0px));
+
+  border-radius: 22px;
+  border: 3px solid white;
+  width: 390px;
+  pointer-events: none;
+  z-index: 998;
+}
+
+/* White border appears when dropdown is open */
+.season-wrapper.active {
+  /* border-color: white; */
+  /* background: rgba(0, 0, 0, 0.25); */
+}
+
+/* -------------------------------------------------------
+   BLUE ROUND BUTTON (Figma)
+---------------------------------------------------------*/
+.season-dropdown {
+  background: #4EA1FF;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  border-radius: 40px;
+  padding: 14px 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: transform .15s ease;
+}
+
+/* slight lift on hover/focus */
+.season-dropdown:hover,
+.season-dropdown:focus {
+  transform: translateY(-1px);
+}
+
+/* Arrow rotation when open */
+.season-dropdown.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-arrow {
+  transition: transform .25s ease;
+  font-size: 16px;
+}
+
+/* -------------------------------------------------------
+   DROPDOWN MENU — lives inside wrapper
+---------------------------------------------------------*/
+.season-dropdown-menu {
+  position: absolute;        /* ← THIS FIXES IT */
+  top: 100%;                 /* place right below the button */
+  left: 0;
+  margin-top: 12px;
+
+  width: 360px;
+  background: rgba(20,20,20,0.96);
+  border-radius: 14px;
+  padding: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 999;
+
+  /* PREVENT pushing layout */
+  pointer-events: auto;
+}
+
+
+.season-dropdown-menu.hidden {
+  display: none;
+}
+
+/* -------------------------------------------------------
+   SEASON ITEMS
+---------------------------------------------------------*/
+.season-dropdown-item {
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.95);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  transition: background .15s ease, transform .12s ease;
+}
+
+/* Hover + Keyboard Focus */
+.season-dropdown-item:hover,
+.season-dropdown-item.focused {
+  background: rgba(78,161,255,0.20);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+/* Selected Season */
+.season-dropdown-item.selected {
+  background: rgba(78,161,255,0.20);
+  box-shadow: inset 0 0 0 2px rgba(78,161,255,0.5);
+  color: white;
+}
+
+/* Episode count */
+.episode-count {
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+/* Smaller screen responsiveness */
+@media (max-width: 520px) {
+  .season-dropdown-menu {
+    width: calc(100vw - 40px);
+  }
+}
+
+/* -------------------------------------------------------
+   EPISODES GRID (unchanged)
+---------------------------------------------------------*/
+.episodes-grid {
+  display: flex;
+  gap: 24px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  padding: 10px 0;
+}
+
+.episode-card {
+  flex: 0 0 calc((100% - 48px) / 3);
+  min-width: calc((100% - 48px) / 3);
+  background: transparent;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 3px solid transparent;
+}
+
+.episode-card:hover,
+.episode-card.focused {
+  transform: scale(1.05);
+  border-color: #00a8ff;
+  z-index: 10;
+}
+
+.episode-image-container {
+  position: relative;
+  width: 100%;
+    height: 100px;
+  padding-bottom: 56.25%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.episode-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Rating badge */
+.episode-rating-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgb(55, 155, 254);
+  padding: 8px 16px;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  z-index: 3;
+}
+
+.star-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Episode number badge */
+.episode-number-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 8px 16px;
+  font-size: 30px;
+  font-weight: 500;
+  color: white;
+  border-radius: 6px;
+}
+
+/* Overlay content */
+.episode-overlay-content {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px;
+}
+
+.playpng {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+}
+
+.episode-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  margin-bottom: 12px;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* overflow: hidden; */
+}
+
+.episode-description {
+  font-size: 15px;
+  color: rgba(255,255,255,0.95);
+  text-align: center;
+  margin-bottom: 16px;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  
+}
+
+.episode-duration {
+  font-size: 16px;
+  color: white;
+  background: rgba(217,217,217,0.2);
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+}
