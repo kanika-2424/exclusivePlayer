@@ -521,3 +521,7 @@
 .movie-hover {
   z-index: 3;
 }
+
+.current-date{
+    margin-left: 20px;
+}

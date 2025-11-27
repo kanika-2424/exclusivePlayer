@@ -220,8 +220,22 @@
     max-width: 80%;
     margin: 0 auto;
     opacity: 0.95;
+
+    
 }
 
+ .hover-desc {
+     font-size: 8px;
+     font-size: 8px;
+     font-size: 8px;
+     line-height: 16px;
+     max-width: 80%;
+     margin: 0 auto;
+     opacity: 0.95;     display: -webkit-box;
+     -webkit-line-clamp: 3;
+     -webkit-box-orient: vertical;
+     overflow: hidden;
+ }
 /* Initially hidden */
 .hover-play-btn,
 .movie-hover {
@@ -380,16 +394,28 @@
 
 
 /* Category name truncation with tooltip */
-.movies-category-item .cat-name {
+/* .movies-category-item .cat-name {
     max-width: 160px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     display: block;
+
+} */
+
+
+.movies-category-item .cat-name {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1; /* Only 1 line */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
 }
 
+
 /* Hover description 3-line clamp */
-.hover-desc {
+.hover-descpp {
     font-size: 8px;
     line-height: 16px;
     max-width: 80%;
@@ -424,3 +450,38 @@
   caret-color: transparent; /* hide cursor */
 }
 
+
+
+.description-text {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical;
+  overflow: hidden !important; 
+}
+
+
+.category-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+.movies-category-item {
+  display: flex;
+  justify-content: center;   /* centers horizontally */
+  align-items: center;       /* centers vertically */
+  text-align: center;        /* ensures multi-line text stays centered */
+}
+
+
+
+.cat-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;  /* optional */
+}

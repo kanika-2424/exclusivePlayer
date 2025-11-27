@@ -18,7 +18,6 @@
 .livetv-header .header-left {
     display: flex;
     align-items: center;
-    gap: 40px;
 }
 
 .livetv-header .app-logo {

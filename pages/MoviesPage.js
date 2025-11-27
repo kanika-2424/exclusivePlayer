@@ -1,7 +1,9 @@
 
 function MoviesPage() {
   // CONFIG
-  const PAGE_SIZE = 20; // Load more chunk
+ const CARDS_PER_ROW = 7;
+const ROWS_PER_LOAD = 3;  
+const PAGE_SIZE = CARDS_PER_ROW * ROWS_PER_LOAD;// Load more chunk
   let categories = []; // [{ id: "233", name: "Estrenos 2025", parent_id: 0, _movieCount, movies: [] }]
   let moviesByCategory = {}; // map category_id -> [movies]
   let selectedCategoryId = null;
@@ -28,6 +30,9 @@ let isHeaderSearchActive = false; // For header search
     const allCats = Array.isArray(window.moviesCategories) ? window.moviesCategories : [];
     const allMovies = Array.isArray(window.allMoviesStreams) ? window.allMoviesStreams : [];
 
+
+    console.log("allMovies" , allMovies);
+    
     // Normalize categories into our structure
     categories = allCats.map(c => ({
       id: String(c.category_id || c.id),
@@ -81,16 +86,27 @@ let isHeaderSearchActive = false; // For header search
   }
 
   // Build a single movie card HTML (safe)
+
+
+  function adjustToFullRow(count) {
+    const remainder = count % 7;
+    return remainder === 0 ? count : count + (7 - remainder);
+}
+
+visibleCount = adjustToFullRow(visibleCount + PAGE_SIZE);
+
 function buildMovieCardHTML(m) {
+  console.log("m" , m);
+  
   const img = m.stream_icon || "/assets/noImageFound.png";
   const title = m.name || m.title || "Untitled";
   const rating = isNaN(Number(m.rating_5based)) ? 0 : Math.min(5, Number(m.rating_5based));
-  const desc = m.overview || m.description || "";
+  const desc = m.overview || m.description || m.plot || m.desc || "";
   
   return `
     <div class="movie-card" data-movie-id="${m.stream_id}">
       <div class="movie-card-image-wrapper">
-        <img src="${img}" alt="${escapeHtml(title)}" onerror="this.onerror=null;this.src='/assets/noImageFound.png'"/>
+        <img src="${img}" alt="${escapeHtml(title)}" />
       </div>
       
       <!-- Rating Badge -->
@@ -102,8 +118,6 @@ function buildMovieCardHTML(m) {
       <div class="movie-hover">
         <img class="hover-play-btn" src="/assets/play.png" alt="play"/>
         <div class="hover-title">${escapeHtml(title)}</div>
-        <div class="hover-time">${m.container_extension ? m.container_extension.toUpperCase() : ""} ${m.tmdb_id ? "" : ""}</div>
-        <p class="hover-desc">${escapeHtml(desc)}</p>
       </div>
     </div>
   `;
@@ -126,6 +140,9 @@ function buildMovieCardHTML(m) {
     if (!container) return;
     const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
     const movies = (cat && Array.isArray(cat.movies)) ? cat.movies.slice(0, visibleCount) : [];
+   
+   console.log("mobies" , movies);
+   
     if (!movies || movies.length === 0) {
       container.innerHTML = `<div class="movie-no-data"><p>No movies found for this category.</p></div>`;
       movieCards = [];
@@ -329,21 +346,28 @@ function removeAllFocus() {
         return;
       }
 
-      if (currentSection === "movies") {
-        // If we're in the top 'row' of cards
-        if (currentFocusIndex < cardsPerRow) {
-          // Special case: from FIRST card (index 0) → go to SEARCH INPUT
-          if (currentFocusIndex === 0) {
-            setFocusOnSearch();
-          } else {
-            // From other cards in top row → go to categories (match column)
-            setFocusOnCategory(Math.min(currentCategoryIndex, categories.length - 1));
-          }
-        } else {
-          // Not in top row, move up normally
-          setFocusOnCard(currentFocusIndex - cardsPerRow);
+   if (currentSection === "movies") {
+    const isTopRow = currentFocusIndex < cardsPerRow;
+
+    if (isTopRow) {
+
+        // ⭐ EXPANDED → jump to LAST CATEGORY (bottom-right)
+        if (isExpanded) {
+            const lastCategoryIndex = categories.length - 1;
+            setFocusOnCategory(lastCategoryIndex);
+            return;
         }
-      } else if (currentSection === "categories") {
+
+        // ⭐ NOT EXPANDED → from ANY top card → go to CATEGORY SEARCH
+        setFocusOnSearch();
+        return;
+    }
+
+    // Normal UP movement (not top row)
+    setFocusOnCard(currentFocusIndex - cardsPerRow);
+    return;
+}
+else if (currentSection === "categories") {
         const perRow = computeCategoriesPerRow();
         const prev = currentCategoryIndex - perRow;
 
@@ -839,7 +863,7 @@ searchEl.addEventListener("input", (ev) => {
     if (list) {
       list.innerHTML = filtered.map((c, idx) => `
         <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
-          <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+          <span style="text-align: center; " class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
           <span class="cat-count">${c._movieCount}</span>
         </div>
       `).join("");
