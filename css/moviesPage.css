@@ -11,14 +11,21 @@
     align-items: center;
     /* gap: 28px; */
 
-    background: rgba(217, 217, 217, 0.13);
+    background: #D9D9D921;
     border-radius: 10px;
-    backdrop-filter: blur(18px);
+ /* background: rgba(0,0,0,0.4); */
     transition: all 0.35s ease;
     overflow: visible;
 }
 
 
+
+.movies-category-item {
+    margin-right: 18px;
+}
+.movies-category-item:last-child {
+    margin-right: 0;
+}
 .movies-grid-container {
     margin: 35px;
     width: calc(100% - 70px);
@@ -161,8 +168,7 @@
 /* NORMAL CARD */
 .movie-card {
     width: 100%;
-    aspect-ratio: 201 / 261;
-    height: auto;
+  height: calc((100vw / 7) * 1.29); /* 201/261 = 1.29 */
     position: relative;
     border-radius: 14px;
     overflow: hidden;
@@ -177,6 +183,7 @@
     z-index: 100;
     border: 4px solid #379BFE;
     border-radius: 14px;
+    
 }
 
 /* Thumbnail */
@@ -275,11 +282,10 @@
 
 .movies-sidebar.expanded .category-toggle-btn {
     position: absolute;
-    top: 55%;
-    right: 40px;
-    transform: translateY(-50%);
+    top: 470px; /* Match your sidebar padding */
+    right: 50px;
+    transform: none; /* Remove the translateY */
 }
-
 .movies-sidebar.expanded .search-category-name,
 .movies-sidebar.expanded .movies-categories-wrapper {
     align-self: stretch !important;
@@ -335,7 +341,7 @@
 /* Movies Page - Header Search Container Focus State */
 .movies-sidebar ~ .movies-grid-container .search-container.search-focused,
 .livetv-header .search-container.search-focused {
-    background: rgba(55, 155, 254, 0.2);
+    background: #D9D9D921;
     border: 2px solid rgba(55, 155, 254, 1);
     box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
                 0 4px 16px rgba(55, 155, 254, 0.3);
@@ -381,3 +387,137 @@
 
 
 
+
+
+
+
+
+
+
+/* ==========================================
+   INPUT FOCUS STYLES FOR REMOTE NAVIGATION
+   ========================================== */
+
+/* Category Search Container - When focused via remote */
+.search-category-name.focused {
+    border: 2px solid #0aa2ff !important;
+    box-shadow: 0 0 10px rgba(10, 162, 255, 0.5) !important;
+}
+
+/* Header Search Container - When focused via remote */
+.livetv-header .search-container.focused {
+    background: rgba(55, 155, 254, 0.2) !important;
+    border: 2px solid rgba(55, 155, 254, 1) !important;
+    box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
+                0 4px 16px rgba(55, 155, 254, 0.3) !important;
+    transform: scale(1.05);
+}
+
+.livetv-header .search-container.focused .search-input {
+    color: #ffffff;
+}
+
+.livetv-header .search-container.focused .search-icon img {
+    filter: brightness(1.5) drop-shadow(0 0 8px rgba(55, 155, 254, 0.8));
+}
+
+/* Remove default browser focus outline */
+.search-category-input:focus,
+.search-input:focus {
+    outline: none;
+}
+
+/* When filtering search results - use grid layout */
+.movies-sidebar.filtering .movies-categories-list {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 18px !important;
+    flex-wrap: wrap !important;
+}
+
+.movies-sidebar.filtering .movies-category-item {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.movies-sidebar.filtering .movies-categories-wrapper {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+}
+
+/* When filtering AND expanded - use 8 column grid */
+.movies-sidebar.filtering.expanded .movies-categories-list {
+    grid-template-columns: repeat(8, 1fr) !important;
+}
+
+
+/* Expand button position when filtering but not expanded */
+.movies-sidebar.filtering:not(.expanded) .category-toggle-btn {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+
+
+/* Rating badge for movie card */
+.movie-rating-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgb(55, 155, 254);
+  padding: 8px 16px;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.movie-rating-badge .star-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Show rating badge on hover/focus */
+.movie-card:hover .movie-rating-badge,
+.movie-card.focused .movie-rating-badge {
+  opacity: 1;
+}
+
+/* Gradient overlay on image */
+.movie-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Show gradient on hover/focus */
+.movie-card:hover::before,
+.movie-card.focused::before {
+  opacity: 1;
+}
+
+/* Ensure movie-hover content stays on top of gradient */
+.movie-hover {
+  z-index: 3;
+}
