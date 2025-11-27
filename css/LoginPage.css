@@ -125,9 +125,21 @@ body {
   padding: 0 10px;
 }
 
+.eye{
+  height: 40px;
+  width: 40px;
+}
+
+
+.nameicon {
+  height: 30px;
+  width: 20px !important;
+}
+
+
 /* Inner icon */
-.toggle-password i {
-  font-size: 28px;
+.toggle-password .img {
+  font-size: 10px;
   color: #fff;
   position: static;
   transform: none;

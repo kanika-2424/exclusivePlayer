@@ -595,7 +595,7 @@ function LiveTvPage() {
       <div class="header-right">
           <div class="search-container">
               <div class="search-icon">
-                  <img src="/assets/search.svg" />
+                  <img src="/assets/search.png" />
               </div>
               <input type="text" class="search-input" placeholder="Search Channels" />
           </div>

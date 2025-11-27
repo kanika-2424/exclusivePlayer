@@ -157,7 +157,7 @@ async function SeriesDetailPage() {
 
   const heartIconHtml = seriesData.isFavorite
     ? '<img src="/assets/heart-filled.svg" alt="fav" />'
-    : '<img src="/assets/heart.svg" alt="fav" />';
+    : '<img src="/assets/heart.png" alt="fav" />';
 
   // inject into DOM
   const container = document.querySelector("#series-detail-page");
@@ -184,7 +184,7 @@ async function SeriesDetailPage() {
       <div class="header-right">
         <div class="search-container">
           <div class="search-icon">
-            <img src="/assets/search.svg" />
+            <img src="/assets/search.png" />
           </div>
           <input type="text" class="search-input" placeholder="Search Series" />
         </div>
@@ -200,7 +200,7 @@ async function SeriesDetailPage() {
         <div class="poster-container">
           <img src="${seriesData.posterImage}" alt="${seriesData.title}" class="poster-image" />
           <div class="rating-badge">
-            <span class="star-icon"><img src="/assets/star.svg" class="star-icon" /></span>
+            <span class="star-icon"><img src="/assets/star.png" class="star-icon" /></span>
             ${seriesData.rating || ""}
           </div>
         </div>
@@ -315,7 +315,7 @@ async function SeriesDetailPage() {
           <div class="episode-image-container">
             <img src="${episodeCover}" alt="${episodeTitle}" class="episode-image" />
             <div class="episode-rating-badge">
-                       <span class="star-icon"><img src="/assets/star.svg" class="star-icon" /></span>
+                       <span class="star-icon"><img src="/assets/star.png" class="star-icon" /></span>
 
               ${episodeRating}
             </div>
@@ -536,13 +536,13 @@ async function SeriesDetailPage() {
       if (typeof toggleFavoriteItem === "function") {
         const res = toggleFavoriteItem(seriesData.id || 0, "favouriteSeries");
         if (res && res.success) {
-          const html = res.isFav ? '<img src="/assets/heart-filled.svg" />' : '<img src="/assets/heart.svg" />';
+          const html = res.isFav ? '<img src="/assets/heart-filled.svg" />' : '<img src="/assets/heart.png" />';
           favHeartContainer.innerHTML = html;
         }
       } else {
         const img = favHeartContainer.querySelector("img");
         if (img) {
-          img.src = img.src.includes("heart-filled") ? "/assets/heart.svg" : "/assets/heart-filled.svg";
+          img.src = img.src.includes("heart-filled") ? "/assets/heart.png" : "/assets/heart-filled.svg";
         }
       }
     });

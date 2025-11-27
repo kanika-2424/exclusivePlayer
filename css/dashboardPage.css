@@ -17,20 +17,19 @@
 .header-left{
     display: flex;
     align-items: center;
-    gap: 153px;
 }
+
+.header-left > *:not(:last-child) {
+    margin-right: 153px;
+}
+
 .header-left .app-logo {
     height: 112px;
     width: auto;
 }
  
 .header-center {
-    /* display: flex; */
-    /* align-items: center; */
-    gap: 20px;
     color: white;
-    
-    
 }
  
 .current-time {
@@ -69,29 +68,28 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 44px;
     padding: 0 60px;
     margin-top: 20px;
 }
  
- 
 .dashboard-wrapper > * {
-    margin-bottom: 44px; /* spacing between items */
+    margin-bottom: 44px;
 }
  
 .dashboard-wrapper > *:last-child {
-    margin-bottom: 0; /* remove extra margin on last item */
+    margin-bottom: 0;
 }
+
 .top-row {
     display: grid;
     grid-template-columns: 1005px 343px 343px;
-    gap: 35px;
+    grid-gap: 35px; /* Use grid-gap for better TV compatibility */
 }
  
 .bottom-row {
     display: grid;
     grid-template-columns: repeat(3, 554px);
-    gap: 50px;
+    grid-gap: 50px; /* Use grid-gap for better TV compatibility */
 }
  
 .menu-box.large {
@@ -135,7 +133,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+}
+
+.menu-content-title > * {
+    margin-bottom: 20px;
+}
+
+.menu-content-title > *:last-child {
+    margin-bottom: 0;
 }
  
 .icon-border {
@@ -149,6 +154,9 @@
 .icon-border img {
     width: 60px;
     height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
  
 .menu-title {
@@ -178,6 +186,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
 }
  
 /* Movies and Series: Icon above text (vertical) */
@@ -201,10 +210,29 @@
     width: 227px;
     height: 191px;
 }
+
+.livetv-box .menu-content-title {
+    display: flex;
+    flex-direction: row !important;   /* Icon + text side by side */
+    align-items: center !important;    /* vertically centered */
+    justify-content: center !important; /* horizontally centered */
+     height: 100%; 
+}
  
 /* Live TV Text */
-.livetv-box .menu-content-title {
-    gap: 163px;
+.livetv-box .menu-content-title > * {
+    margin-bottom: 0 !important;
+    margin-right: 40px; /* space between icon & text */
+}
+.livetv-box .menu-content-title > *:not(:last-child) {
+    margin-right: 40px; /* adjust as needed */
+}
+
+
+
+
+.livetv-box .menu-content-title > *:last-child {
+    margin-bottom: 0;
 }
  
 .livetv-box .menu-title {
@@ -233,9 +261,14 @@
 }
  
 /* Movies and Series Text */
-.movies-box .menu-content-title,
-.series-box .menu-content-title {
-    gap: 55px;
+.movies-box .menu-content-title > *,
+.series-box .menu-content-title > * {
+    margin-bottom: 55px;
+}
+
+.movies-box .menu-content-title > *:last-child,
+.series-box .menu-content-title > *:last-child {
+    margin-bottom: 0;
 }
  
 .movies-box .menu-title,
@@ -257,6 +290,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: -5px;
 }
  
 .account-box .icon-border img,
@@ -267,10 +301,16 @@
 }
  
 /* My Account, Settings, List Playlists Text */
-.account-box .menu-content-title,
-.settings-box .menu-content-title,
-.list-users-box .menu-content-title {
-    gap: 68px;
+.account-box .menu-content-title > *,
+.settings-box .menu-content-title > *,
+.list-users-box .menu-content-title > * {
+    margin-right: 68px;
+}
+
+.account-box .menu-content-title > *:last-child,
+.settings-box .menu-content-title > *:last-child,
+.list-users-box .menu-content-title > *:last-child {
+    margin-right: 0;
 }
  
 .account-box .menu-title,
@@ -290,4 +330,16 @@
   transform: scale(1.05);
   transition: all 0.2s ease;
 }
- 
+
+
+
+.list-users-box .icon-border {
+    width: 64px;       /* same width */
+    height: 50px;      /* ↓ smaller height */
+}
+
+.list-users-box .icon-border img {
+    width: 100%;
+    height: 110%;
+    /* object-fit: contain; */
+}

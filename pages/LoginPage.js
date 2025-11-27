@@ -452,7 +452,7 @@ function LoginPage() {
       <div class="left-section">\
         <img src="assets/logo.png" class="brand-logo" />\
         <button class="list-users-btn">\
-          <img src="/assets/list.svg" alt="List Users" />\
+          <img src="/assets/list.png" alt="List Users" />\
           List Users\
         </button>\
       </div>\
@@ -462,21 +462,21 @@ function LoginPage() {
           <h1>Login Details</h1>\
 \
           <div class="input-group">\
-            <img src="/assets/name.svg" alt="name" />\
+            <img class="nameicon" src="/assets/name.png" alt="name" />\
             <input type="text" placeholder="Any Name" autocomplete="off">\
           </div>\
 \
           <div class="input-group">\
-            <img src="/assets/profile.svg" alt="username" />\
+            <img src="/assets/profile.png" alt="username" />\
             <input type="text" placeholder="Username" autocomplete="off">\
           </div>\
 \
           <div class="input-group">\
-            <img src="/assets/lock.svg" alt="password" />\
+            <img src="/assets/lock.png" alt="password" />\
             <input type="password" placeholder="Password" autocomplete="new-password">\
 \
             <div class="toggle-password">\
-              <img src="/assets/eye.svg" alt="toggle" />\
+              <img class="eye"  src="/assets/eye.png" alt="toggle" />\
             </div>\
           </div>\
 \

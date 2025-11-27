@@ -312,7 +312,7 @@ else if (e.key === "ArrowRight") {
 
         <div class="header-right">
             <div class="logout-icon">
-                <img src="/assets/logout.svg" alt="Power" />
+                <img src="/assets/logout.png" alt="Power" />
             </div>
         </div>
     </header>
@@ -324,7 +324,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box large livetv-box" id="live-tv-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/live.svg" class="dashboard-livetv-icon" alt="Live TV" />
+                        <img src="/assets/live.png" class="dashboard-livetv-icon" alt="Live TV" />
                     </div>
                     <div class="menu-title title-livetv">Live TV</div>
                 </div>
@@ -333,7 +333,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box medium movies-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/movies.svg" alt="Movies" />
+                        <img src="/assets/movies.png" alt="Movies" />
                     </div>
                     <div class="menu-title">Movies</div>
                 </div>
@@ -342,7 +342,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box medium series-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/series.svg" alt="Series" />
+                        <img src="/assets/series.png" alt="Series" />
                     </div>
                     <div class="menu-title">Series</div>
                 </div>
@@ -355,7 +355,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box small account-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/account.svg" alt="My Account" />
+                        <img src="/assets/account.png" alt="My Account" />
                     </div>
                     <div class="menu-title">My Account</div>
                 </div>
@@ -364,7 +364,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box small settings-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/settings.svg" alt="Settings" />
+                        <img src="/assets/settings.png" alt="Settings" />
                     </div>
                     <div class="menu-title">Settings</div>
                 </div>
@@ -373,7 +373,7 @@ else if (e.key === "ArrowRight") {
             <div class="menu-box small list-users-box">
                 <div class="menu-content-title">
                     <div class="icon-border">
-                        <img src="/assets/users.svg" alt="List Users" />
+                        <img src="/assets/users.png" alt="List Users" />
                     </div>
                     <div class="menu-title">List User</div>
                 </div>

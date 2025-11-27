@@ -181,7 +181,7 @@ var getMovieCastData = null;
 
   const heartIconHtml = movieData.isFavorite
     ? '<img src="/assets/heart-filled.svg" alt="fav" />'
-    : '<img src="/assets/heart.svg" alt="fav" />';
+    : '<img src="/assets/heart.png" alt="fav" />';
 
   // inject into DOM (target same container you used originally)
   const container = document.querySelector("#movie-detail-page");
@@ -208,7 +208,7 @@ var getMovieCastData = null;
       <div class="header-right">
         <div class="search-container">
           <div class="search-icon">
-            <img src="/assets/search.svg" />
+            <img src="/assets/search.png" />
           </div>
           <input type="text" class="search-input" placeholder="Search Movie" />
         </div>
@@ -224,7 +224,7 @@ var getMovieCastData = null;
         <div class="poster-container">
           <img src="${movieData.posterImage}" alt="${movieData.title}" class="poster-image" />
           <div class="rating-badge">
-            <span class="star-icon"><img src="/assets/star.svg" class="star-icon" /></span>
+            <span class="star-icon"><img src="/assets/star.png" class="star-icon" /></span>
             ${movieData.rating || ""}
           </div>
         </div>
@@ -406,14 +406,14 @@ var getMovieCastData = null;
         const res = toggleFavoriteItem(movieData.id || 0, "favouriteMovies");
         if (res && res.success) {
           // update heart icon and text if your toggle returns isFav
-          const html = res.isFav ? '<img src="/assets/heart-filled.svg" />' : '<img src="/assets/heart.svg" />';
+          const html = res.isFav ? '<img src="/assets/heart-filled.svg" />' : '<img src="/assets/heart.png" />';
           favHeartContainer.innerHTML = html;
         }
       } else {
         // fallback: swap image
         const img = favHeartContainer.querySelector("img");
         if (img) {
-          img.src = img.src.includes("heart-filled") ? "/assets/heart.svg" : "/assets/heart-filled.svg";
+          img.src = img.src.includes("heart-filled") ? "/assets/heart.png" : "/assets/heart-filled.svg";
         }
       }
     });

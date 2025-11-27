@@ -754,7 +754,7 @@
 //       <div class="live-indicator"><span class="current-time">Series</span></div>
 //       <div class="header-right">
 //           <div class="search-container">
-//               <div class="search-icon"><img src="/assets/search.svg" /></div>
+//               <div class="search-icon"><img src="/assets/search.png" /></div>
 //               <input type="text" class="search-input" placeholder="Search Series" />
 //           </div>
 //           <div class="menu-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
@@ -1517,7 +1517,7 @@ function SeriesPage() {
       <div class="live-indicator"><span class="current-time">Series</span></div>
       <div class="header-right">
           <div class="search-container">
-              <div class="search-icon"><img src="/assets/search.svg" /></div>
+              <div class="search-icon"><img src="/assets/search.png" /></div>
               <input type="text" class="search-input" placeholder="Search Series" />
           </div>
           <div class="menu-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
