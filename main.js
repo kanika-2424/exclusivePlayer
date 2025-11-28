@@ -48,7 +48,7 @@ window.onload = function () {
     }
   });
 
-
+Toaster(); // Initialize Toaster
   // -----------------------------
   // Show Splash Screen (only if it exists)
   // -----------------------------

@@ -210,7 +210,6 @@ async function SeriesDetailPage() {
       <div class="details-section">
         <div class="movie-header">
           <h1 class="movie-title">${seriesData.title}</h1>
-          <div class="favorite-heart">${heartIconHtml}</div>
         </div>
 
         <div class="movie-meta">
@@ -557,6 +556,10 @@ async function SeriesDetailPage() {
   });
 
   function handleRemoteNavigation(e) {
+
+    // ⭐ CRITICAL FIX: Only handle if we're actually on the detail page!
+if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
+
     const buttons = Array.from(container.querySelectorAll(".action-button"));
     const casts = Array.from(container.querySelectorAll(".cast-card"));
     const episodes = Array.from(container.querySelectorAll(".episode-card"));

@@ -1,19 +1,142 @@
 
 function LiveTvPage() {
-  // State variables
+  // ===== API DATA (NEW) =====
+  const categories = window.liveCategories || [];
+  const allStreams = window.allLiveStreams || [];
+  
+  const currentPlaylistName = JSON.parse(
+    localStorage.getItem("selectedPlaylist")
+  ).playlistName;
+  const currentPlaylist = JSON.parse(
+    localStorage.getItem("playlistsData")
+  ).filter((pl) => pl.playlistName === currentPlaylistName)[0];
+
+  const allFavoritesLiveTV = currentPlaylist.favoritesLiveTV || [];
+  
+  // ===== STATE VARIABLES =====
+  let selectedCategoryId = "All"; // Currently selected category
   let focusedChannelIndex = 0;
+  let focusedCategoryIndex = 0;
+  let currentChunk = 1; // For lazy loading channels
+  const pageSize = 20; // Channels per load
+  let searchQuery = ""; // Search text
+  
   let inChannelGrid = true;
   let inVideoPlayer = false;
-
-  // NEW state for sidebar & EPG
   let inSidebar = false;
-  let inSidebarSearch = false; // NEW: track if in sidebar search box
-  let focusedSidebarIndex = 0;
-
-  let inHeaderSearch = false; // NEW: track if in header search box
-
+  let inSidebarSearch = false;
+  let inHeaderSearch = false;
   let inEPG = false;
+  let focusedSidebarIndex = 0;
   let focusedEPGIndex = 0;
+
+
+  // Add this at the TOP of your LiveTvPage function (after the state variables)
+
+// ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
+const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
+  return `
+    <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000;">
+      <video 
+        id="live-video-player" 
+        class="video-js vjs-default-skin" 
+        controls 
+        autoplay
+        preload="auto"
+        data-stream-id="${streamId}"
+        poster="${logo}"
+        style="width: 100%; height: 100%;"
+      >
+        <source src="${streamUrl}" type="application/x-mpegURL">
+      </video>
+      
+      <div class="video-overlay-info" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">
+        <h3 style="margin: 0; font-size: 16px;">${channelName}</h3>
+      </div>
+
+      <div class="live-video-loader hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  `;
+};
+// ===== HELPER: Get Filtered Categories =====
+  const getFilteredCategories = () => {
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
+    const currentPlaylist = JSON.parse(
+      localStorage.getItem("playlistsData")
+    ).find((pl) => pl.playlistName === currentPlaylistName);
+
+    const updatedFavorites = currentPlaylist ? currentPlaylist.favoritesLiveTV : [];
+    const channelHistory = currentPlaylist ? currentPlaylist.ChannelListLive || [] : [];
+    
+    const filteredCategories = categories.map(c => {
+      let categoryChannels = allStreams.filter(s => s.category_id === c.category_id) || [];
+      
+      if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+        categoryChannels = categoryChannels.filter(ch => 
+          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      
+      return {
+        ...c,
+        channels: categoryChannels || []
+      };
+    });
+
+    const allLiveStreams = searchQuery.trim() && selectedCategoryId === "All" 
+      ? window.allLiveStreams.filter(ch => 
+          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : window.allLiveStreams;
+
+    const favoritesChannels = searchQuery.trim() && selectedCategoryId === "favorites"
+      ? updatedFavorites.filter(ch => 
+          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : updatedFavorites;
+
+    const historyChannels = searchQuery.trim() && selectedCategoryId === "channelHistory"
+      ? channelHistory.filter(ch => 
+          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : channelHistory;
+
+    return [
+      {
+        category_id: "All",
+        category_name: "All",
+        channels: allLiveStreams || []
+      },
+      {
+        category_id: "favorites",
+        category_name: "Favorites", 
+        channels: favoritesChannels || []
+      },
+      {
+        category_id: "channelHistory",
+        category_name: "Channel History",
+        channels: historyChannels || []
+      },
+      ...filteredCategories
+    ];
+  };
+
+  // ===== HELPER: Dispose Player =====
+  const disposeLivePlayer = () => {
+    if (window.livePlayer) {
+      try {
+        window.livePlayer.dispose();
+      } catch (error) {
+        console.log("Error disposing live player:", error);
+      }
+      window.livePlayer = null;
+    }
+  };
+ 
 
   const qsa = (s) => [...document.querySelectorAll(s)];
   const qs = (s) => document.querySelector(s);
@@ -42,11 +165,11 @@ function LiveTvPage() {
     const searchBox = qs(".sidebar-search-box");
     const searchInput = qs(".sidebar-search-input");
     if (active) {
-      searchBox?.classList.add("search-focused");
-      searchInput?.focus();
+      searchBox.classList.add("search-focused");
+      searchInput.focus();
     } else {
-      searchBox?.classList.remove("search-focused");
-      searchInput?.blur();
+      searchBox.classList.remove("search-focused");
+      searchInput.blur();
     }
   };
 
@@ -55,11 +178,11 @@ function LiveTvPage() {
     const searchBox = qs(".search-container");
     const searchInput = qs(".search-input");
     if (active) {
-      searchBox?.classList.add("search-focused");
-      searchInput?.focus();
+      searchBox.classList.add("search-focused");
+      searchInput.focus();
     } else {
-      searchBox?.classList.remove("search-focused");
-      searchInput?.blur();
+      searchBox.classList.remove("search-focused");
+      searchInput.blur();
     }
   };
 
@@ -74,119 +197,444 @@ function LiveTvPage() {
   };
 
   // Play channel function
+// ===== PLAY CHANNEL FUNCTION (UPDATED) =====
+ // ===== PLAY CHANNEL FUNCTION (FIXED) =====
   const playChannel = (channelData) => {
+    console.log("🎬 Playing channel:", channelData); // Debug log
+    
     const videoWrapper = qs(".livetv-video-wrapper");
-    if (!videoWrapper) return;
+    if (!videoWrapper) {
+      console.error("❌ Video wrapper not found!");
+      return;
+    }
 
-    // Dispose existing player if any
+    // Get playlist data for stream URL
+    const currentPlaylistData = JSON.parse(
+      localStorage.getItem("currentPlaylistData")
+    );
+    const playlistLiveExtension = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    );
+
+    if (!currentPlaylistData || !playlistLiveExtension) {
+      console.error("❌ Playlist data not found!");
+      return;
+    }
+
+    // Build stream URL
+    const liveVideoUrl = `${
+      currentPlaylistData.server_info.server_protocol
+    }://${currentPlaylistData.server_info.url}:${
+      currentPlaylistData.server_info.port
+    }/live/${currentPlaylistData.user_info.username}/${
+      currentPlaylistData.user_info.password
+    }/${channelData.stream_id}.${
+      playlistLiveExtension.streamFormat || "m3u8"
+    }`;
+
+    console.log("🔗 Stream URL:", liveVideoUrl); // Debug log
+
+    // Clean up existing player
     if (window.livePlayer) {
       try {
         window.livePlayer.dispose();
-      } catch (e) {
-        console.warn("Error disposing player:", e);
+      } catch (err) {
+        console.warn("Player disposal error:", err);
       }
       window.livePlayer = null;
     }
 
-    // Create video player HTML
-    videoWrapper.innerHTML = `
-      <div class="live-video-player-div">
-        <video 
-          id="live-video-player" 
-          class="video-js vjs-default-skin" 
-          controls 
-          preload="auto"
-          data-stream-id="${channelData.id}"
-          poster="${channelData.logo}"
-        >
-          <source src="${channelData.streamUrl}" type="application/x-mpegURL">
-        </video>
-        
-        <div class="video-overlay-info">
-          <h3 class="video-channel-name">${channelData.name}</h3>
-        </div>
+    // Check if player components exist
+    const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
+    const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
+    
+    console.log("🎮 Player components available:", { hasLiveVideoJs, hasFlowPlayer });
 
-        <div class="live-video-loader hidden">
-          <div class="spinner"></div>
-        </div>
-      </div>
-    `;
-
-    // Initialize video player (using Video.js as example)
-    setTimeout(() => {
-      const videoEl = qs("#live-video-player");
-      if (videoEl && typeof videojs !== "undefined") {
-        window.livePlayer = videojs(videoEl, {
-          controls: true,
-          autoplay: true,
-          preload: "auto"
-        });
-
-        // Show loader on waiting
-        window.livePlayer.on("waiting", () => {
-          qs(".live-video-loader")?.classList.remove("hidden");
-        });
-
-        // Hide loader on playing
-        window.livePlayer.on("playing", () => {
-          qs(".live-video-loader")?.classList.add("hidden");
-        });
-      }
-    }, 100);
+    // Get stream format
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+    const currentPlaylist = playlistsData.find(pl => pl.playlistName === selectedPlaylist.playlistName);
+    
+    const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
+    
+    // Create player HTML
+    if (isTs && hasFlowPlayer) {
+      videoWrapper.innerHTML = FlowLivePlayerComponent(
+        channelData.stream_id,
+        liveVideoUrl,
+        channelData.stream_icon || channelData.logo || "/assets/profile.png",
+        "400px",
+        channelData.name || "Unknown Channel"
+      );
+    } else if (hasLiveVideoJs) {
+      videoWrapper.innerHTML = LiveVideoJsComponent(
+        channelData.stream_id,
+        liveVideoUrl,
+        channelData.stream_icon || channelData.logo || "/assets/profile.png",
+        "400px",
+        channelData.name || "Unknown Channel"
+      );
+    } else {
+      // Use simple player fallback
+      videoWrapper.innerHTML = SimpleVideoPlayer(
+        channelData.stream_id,
+        liveVideoUrl,
+        channelData.stream_icon || channelData.logo || "/assets/profile.png",
+        "400px",
+        channelData.name || "Unknown Channel"
+      );
+      
+      // Initialize Video.js if available
+      setTimeout(() => {
+        const videoEl = document.getElementById("live-video-player");
+        if (videoEl && typeof videojs !== "undefined") {
+          window.livePlayer = videojs(videoEl, {
+            controls: true,
+            autoplay: true,
+            preload: "auto",
+            fluid: true
+          });
+          
+          window.livePlayer.on("waiting", () => {
+            qs(".live-video-loader").classList.remove("hidden");
+          });
+          
+          window.livePlayer.on("playing", () => {
+            qs(".live-video-loader").classList.add("hidden");
+          });
+          
+          window.livePlayer.on("error", (e) => {
+            console.error("❌ Player error:", e);
+          });
+        }
+      }, 100);
+    }
 
     // Update visual states
     qsa(".channel-card").forEach(c => {
-      c.classList.remove("channel-card-selected", "channel-card-focused");
+      c.classList.remove("channel-card-selected", "channel-card-focused", "channel-card-playing");
     });
-    
-    const selectedCard = qs(`.channel-card[data-id="${channelData.id}"]`);
+
+    const selectedCard = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
     if (selectedCard) {
-      selectedCard.classList.add("channel-card-selected", "channel-card-focused");
-      // Set focusedChannelIndex to the selected card index
-      const channels = qsa(".channel-card");
-      const idx = channels.findIndex(c => c.dataset.id == channelData.id);
-      if (idx >= 0) focusedChannelIndex = idx;
+      selectedCard.classList.add("channel-card-selected", "channel-card-focused", "channel-card-playing");
+      
+      const allCards = qsa(".channel-card");
+      const cardIndex = Array.from(allCards).indexOf(selectedCard);
+      if (cardIndex !== -1) {
+        focusedChannelIndex = cardIndex;
+      }
+    }
+
+    // Update EPG (load channel's program data)
+    updateEPG(channelData);
+
+    // Add to history
+    if (selectedCategoryId !== "channelHistory") {
+      const selectedChannelItem = allStreams.find(
+        (item) => item.stream_id == channelData.stream_id
+      );
+      if (selectedChannelItem && typeof addItemToHistory === "function") {
+        addItemToHistory(selectedChannelItem, "ChannelListLive");
+      }
+    }
+    
+    console.log("✅ Channel playback initiated");
+  };
+
+  // ===== UPDATE EPG (Program Guide) =====
+  const updateEPG = (channelData) => {
+    const epgList = qs(".epg-list");
+    const epgChannelName = qs(".epg-channel-name");
+    
+    if (!epgList) return;
+
+    // Update channel logo/name in EPG header
+    if (epgChannelName) {
+      epgChannelName.src = channelData.stream_icon || channelData.logo || "/assets/channel.png";
+      epgChannelName.alt = channelData.name || "Channel";
+    }
+
+    // Fetch EPG data from API if available
+    const streamId = channelData.stream_id;
+    
+    // Check if we have EPG data
+    if (typeof getEPGForChannel === "function") {
+      getEPGForChannel(streamId).then(epgData => {
+        if (epgData && epgData.length > 0) {
+          renderEPGList(epgData);
+        } else {
+          renderDefaultEPG(channelData.name);
+        }
+      }).catch(() => {
+        renderDefaultEPG(channelData.name);
+      });
+    } else {
+      // No EPG function available, show default
+      renderDefaultEPG(channelData.name);
     }
   };
 
+  // ===== RENDER EPG LIST =====
+  const renderEPGList = (epgData) => {
+    const epgList = qs(".epg-list");
+    if (!epgList) return;
+
+    const epgHTML = epgData.map(program => {
+      const startTime = new Date(program.start * 1000).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      const endTime = new Date(program.end * 1000).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      return `
+        <div class="epg-item">
+          <span class="epg-time">${startTime} - ${endTime}</span>
+          <span class="epg-title">${program.title || "No Title"}</span>
+        </div>
+      `;
+    }).join("");
+
+    epgList.innerHTML = epgHTML;
+  };
+
+  // ===== RENDER DEFAULT EPG (No Data Available) =====
+  const renderDefaultEPG = (channelName) => {
+    const epgList = qs(".epg-list");
+    if (!epgList) return;
+
+    const now = new Date();
+    const programs = [];
+    
+    // Generate fake schedule for demo
+    for (let i = 0; i < 8; i++) {
+      const startTime = new Date(now.getTime() + (i * 60 * 60 * 1000));
+      const endTime = new Date(startTime.getTime() + (60 * 60 * 1000));
+      
+      programs.push({
+        start: startTime.getTime() / 1000,
+        end: endTime.getTime() / 1000,
+        title: `${channelName} Program ${i + 1}`
+      });
+    }
+
+    renderEPGList(programs);
+  };
+
+
+  // ===== TOGGLE FAVORITE =====
+  const toggleFavorite = (channelData) => {
+    const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
+    
+    // Update heart button UI
+    const card = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
+    if (card) {
+      const favBtn = card.querySelector(".favorite-btn");
+      if (favBtn) {
+        const svg = favBtn.querySelector("svg path");
+        if (svg) {
+          svg.setAttribute("fill", result.isFav ? "red" : "none");
+        }
+      }
+    }
+    
+    // Show toast notification
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast(
+        result.isFav ? "success" : "error",
+        `Channel ${result.isFav ? "added to" : "removed from"} favorites`
+      );
+    }
+    
+    return result;
+  };
+
+  // ===== ADD TO HISTORY =====
+  const addItemToHistory = (item, historyKey) => {
+    if (typeof window.addItemToHistory === "function") {
+      window.addItemToHistory(item, historyKey);
+    }
+  };
+
+
+
+// ===== RENDER CHANNELS =====
+  const renderChannels = () => {
+    const filtered = getFilteredCategories();
+    
+    // Find selected category
+    let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+    if (!selectedCat) {
+      selectedCat = filtered[0];
+      selectedCategoryId = selectedCat.category_id;
+    }
+
+    // Get channels for selected category
+    const allChannels = selectedCat.channels || [];
+    
+    // Apply pagination
+    const channelsToShow = allChannels.slice(0, currentChunk * pageSize);
+    
+    // Update channel grid
+    const channelGrid = qs(".channel-grid");
+    if (!channelGrid) return;
+
+    if (channelsToShow.length === 0) {
+      channelGrid.innerHTML = `
+        <div class="no-channels">
+          <p>No channels found in this category</p>
+        </div>`;
+      return;
+    }
+
+    // Build channel cards HTML
+    const channelCardsHTML = channelsToShow.map(ch => {
+      const isFav = window.isItemFavoriteForPlaylist ? 
+        window.isItemFavoriteForPlaylist(ch, "favoritesLiveTV") : false;
+      
+      return `
+        <div class="channel-card" 
+             data-stream-id="${ch.stream_id}" 
+             data-name="${ch.name}" 
+             data-logo="${ch.stream_icon }">
+          <div class="channel-card-header">
+            <img src="${ch.stream_icon }" 
+                 class="channel-logo" 
+                 alt="${ch.name}"
+                 onerror="this.src='/assets/profile.png'" />
+            <button class="favorite-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="channel-name">${ch.name}</div>
+        </div>
+      `;
+    }).join("");
+
+    channelGrid.innerHTML = channelCardsHTML;
+  };
+
+  // ===== RENDER SIDEBAR CATEGORIES =====
+  const renderSidebarCategories = () => {
+    const filtered = getFilteredCategories();
+    
+    const categoriesHTML = filtered.map(c => {
+      const isActive = c.category_id === selectedCategoryId;
+      return `
+        <div class="sidebar-item ${isActive ? 'sidebar-active' : ''}" 
+             data-category-id="${c.category_id}">
+          <span class="sidebar-item-name">${c.category_name}</span>
+          <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+        </div>
+      `;
+    }).join("");
+
+    const sidebarArea = qs("#sidebar-area");
+    if (sidebarArea) {
+      sidebarArea.innerHTML = `
+        <div class="sidebar-content">
+          <div class="sidebar-search-box">
+            <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
+            <i class="fa fa-search"></i>
+          </div>
+          <div class="sidebar-items">
+            ${categoriesHTML}
+          </div>
+        </div>
+      `;
+    }
+  };
+
+
+
+
+
+
   // CLICK HANDLER
+ // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
+    // Channel card click
     const card = e.target.closest(".channel-card");
     if (card) {
-      const channelId = card.dataset.id;
+      const streamId = card.dataset.streamId;
       const channelName = card.dataset.name;
       const channelLogo = card.dataset.logo;
       
-      playChannel({
-        id: channelId,
-        name: channelName,
-        logo: channelLogo,
-        streamUrl: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
-      });
+      const channelData = allStreams.find(ch => ch.stream_id == streamId);
+      
+      if (channelData) {
+        playChannel(channelData);
+      }
       return;
     }
 
+    // Favorite button click
+    const favBtn = e.target.closest(".favorite-btn");
+    if (favBtn) {
+      e.stopPropagation();
+      const card = favBtn.closest(".channel-card");
+      const streamId = card.dataset.streamId;
+      const channelData = allStreams.find(ch => ch.stream_id == streamId);
+      
+      if (channelData) {
+        toggleFavorite(channelData);
+        
+        // Re-render if in favorites category and removed
+        if (selectedCategoryId === "favorites") {
+          setTimeout(() => {
+            renderChannels();
+            renderSidebarCategories();
+            
+            // Restore focus
+            const channels = qsa(".channel-card");
+            if (channels.length > 0) {
+              focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
+              setFocus(channels, focusedChannelIndex, "channel-card-focused");
+            }
+          }, 100);
+        }
+      }
+      return;
+    }
+
+    // Sidebar category click
     const sidebarItem = e.target.closest(".sidebar-item");
     if (sidebarItem) {
-      const list = qsa(".sidebar-item");
-      focusedSidebarIndex = list.indexOf(sidebarItem);
-      setSidebarFocus(focusedSidebarIndex);
+      const catId = sidebarItem.dataset.categoryId;
+      selectedCategoryId = catId;
+      currentChunk = 1;
+      focusedChannelIndex = 0;
+      
+      renderChannels();
+      renderSidebarCategories();
+      
+      setTimeout(() => {
+        const channels = qsa(".channel-card");
+        if (channels.length > 0) {
+          setFocus(channels, 0, "channel-card-focused");
+          inChannelGrid = true;
+          inSidebar = false;
+        }
+      }, 50);
       return;
     }
 
+    // EPG item click
     const epgItem = e.target.closest(".epg-item");
     if (epgItem) {
       const list = qsa(".epg-item");
       focusedEPGIndex = list.indexOf(epgItem);
       setEPGFocus(focusedEPGIndex);
       console.log("EPG item clicked:", epgItem.innerText);
-      return;
-    }
-
-    if (e.target.closest(".menu-dots")) {
-      console.log("Menu clicked");
       return;
     }
   }
@@ -207,19 +655,36 @@ function LiveTvPage() {
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
     // Handle back button
+ // Handle back button
     if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
       // Check if in fullscreen first
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
+      if (document.fullscreenElement || 
+          document.webkitFullscreenElement || 
+          document.mozFullScreenElement ||
+          document.msFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
         e.preventDefault();
         return;
       }
       
-      // Navigate back to dashboard
+      // Dispose player and navigate back
+      disposeLivePlayer();
+      
       if (window.livePlayer) {
-        try { window.livePlayer.dispose(); } catch (err) { /* ignore */ }
+        try {
+          window.livePlayer.dispose();
+        } catch {}
         window.livePlayer = null;
       }
+      
       localStorage.setItem("currentPage", "dashboard");
       Router.showPage("dashboard");
       return;
@@ -230,7 +695,7 @@ function LiveTvPage() {
       if (isDown) {
         inVideoPlayer = false;
         inChannelGrid = true;
-        qs(".live-video-player-div")?.classList.remove("video-focused");
+        qs(".live-video-player-div").classList.remove("video-focused");
         focusedChannelIndex = 0;
         setFocus(channels, focusedChannelIndex, "channel-card-focused");
         e.preventDefault();
@@ -376,7 +841,7 @@ function LiveTvPage() {
 
       // ENTER: Click sidebar item
       if (isEnter) {
-        sidebarItems[focusedSidebarIndex]?.click();
+        sidebarItems[focusedSidebarIndex].click();
         e.preventDefault();
         return;
       }
@@ -456,19 +921,41 @@ function LiveTvPage() {
         return;
       }
 
-      if (isDown) {
+     if (isDown) {
+        const cols = 5;
+        
         if (focusedChannelIndex + cols < channels.length) {
+          // Normal down navigation
           focusedChannelIndex += cols;
           setFocus(channels, focusedChannelIndex, "channel-card-focused");
         } else {
-          inChannelGrid = false;
-          inEPG = true;
-          focusedEPGIndex = 0;
-          qs(".epg-item")?.classList.remove("epg-focused");
-          const epgItems = qsa(".epg-item");
-          if (epgItems.length) {
-            epgItems[0].classList.add("epg-focused");
-            epgItems[0].scrollIntoView({ block: "nearest" });
+          // At bottom row - check if we can load more
+          const filtered = getFilteredCategories();
+          const selectedCat = filtered.find(c => c.category_id === selectedCategoryId);
+          
+          if (selectedCat && currentChunk * pageSize < selectedCat.channels.length) {
+            // Load more channels
+            currentChunk++;
+            renderChannels();
+            
+            setTimeout(() => {
+              const updatedChannels = qsa(".channel-card");
+              if (focusedChannelIndex + cols < updatedChannels.length) {
+                focusedChannelIndex += cols;
+                setFocus(updatedChannels, focusedChannelIndex, "channel-card-focused");
+              }
+            }, 100);
+          } else {
+            // No more channels, go to EPG
+            inChannelGrid = false;
+            inEPG = true;
+            focusedEPGIndex = 0;
+            channels.forEach(c => c.classList.remove("channel-card-focused"));
+            const epgItems = qsa(".epg-item");
+            if (epgItems.length) {
+              epgItems[0].classList.add("epg-focused");
+              epgItems[0].scrollIntoView({ block: "nearest" });
+            }
           }
         }
         e.preventDefault();
@@ -514,16 +1001,38 @@ function LiveTvPage() {
     document.addEventListener("keydown", handleKeydown);
 
     // Load sidebar data
-    const categoriesData = [
-      { name: "Favorite Channels", count: 46 },
-      { name: "Channels History", count: 245 },
-      { name: "English Channels", count: 4 },
-      { name: "Sports Channels", count: 10 },
-      { name: "French Channels", count: 34 }
-    ];
+    // const categoriesData = [
+    //   { name: "Favorite Channels", count: 46 },
+    //   { name: "Channels History", count: 245 },
+    //   { name: "English Channels", count: 4 },
+    //   { name: "Sports Channels", count: 10 },
+    //   { name: "French Channels", count: 34 }
+    // ];
 
-    document.querySelector("#sidebar-area").innerHTML =
-      SidebarCategories(categoriesData);
+    // ===== INITIALIZE PAGE =====
+    // Render sidebar categories
+    renderSidebarCategories();
+    
+    // Render channels
+    renderChannels();
+
+    // Set initial focus on first channel
+    setTimeout(() => {
+      const channels = qsa(".channel-card");
+      if (channels.length > 0) {
+        setFocus(channels, 0, "channel-card-focused");
+        focusedChannelIndex = 0;
+        inChannelGrid = true;
+        inSidebar = false;
+        inSidebarSearch = false;
+        inHeaderSearch = false;
+        inEPG = false;
+        inVideoPlayer = false;
+      }
+    }, 50);
+
+    // document.querySelector("#sidebar-area").innerHTML =
+    //   SidebarCategories(categoriesData);
 
     // Set initial focus
     const channels = qsa(".channel-card");
@@ -538,19 +1047,80 @@ function LiveTvPage() {
       inVideoPlayer = false;
     }
 
-    LiveTvPage.cleanup = function () {
+ LiveTvPage.cleanup = function () {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeydown);
       
+      // Dispose video player
+      disposeLivePlayer();
+      
+      // Call LiveVideoJsComponent cleanup if it exists
+      if (typeof LiveVideoJsComponent !== "undefined" && typeof LiveVideoJsComponent.cleanup === "function") {
+        try {
+          LiveVideoJsComponent.cleanup();
+        } catch (err) {
+          console.warn("LiveVideoJsComponent cleanup error:", err);
+        }
+      }
+      
+      // Fallback cleanup for window.livePlayer
       if (window.livePlayer) {
         try {
           window.livePlayer.dispose();
-        } catch (e) {
-          console.warn("Error cleaning up player:", e);
-        }
+        } catch {}
         window.livePlayer = null;
       }
     };
+// ===== SEARCH INPUT HANDLER =====
+    const headerSearchInput = qs(".search-input");
+    if (headerSearchInput) {
+      headerSearchInput.addEventListener("input", (e) => {
+        searchQuery = e.target.value;
+        currentChunk = 1;
+        
+        renderChannels();
+        
+        setTimeout(() => {
+          const channels = qsa(".channel-card");
+          if (channels.length > 0) {
+            focusedChannelIndex = 0;
+            if (inChannelGrid) {
+              setFocus(channels, 0, "channel-card-focused");
+            }
+          }
+        }, 100);
+      });
+    }
+
+    const sidebarSearchInput = qs(".sidebar-search-input");
+    if (sidebarSearchInput) {
+      sidebarSearchInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = getFilteredCategories();
+        
+        const matchingCategories = filtered.filter(c => 
+          c.category_name.toLowerCase().includes(query)
+        );
+        
+        const sidebarItems = qs(".sidebar-items");
+        if (sidebarItems) {
+          sidebarItems.innerHTML = matchingCategories.map(c => {
+            const isActive = c.category_id === selectedCategoryId;
+            return `
+              <div class="sidebar-item ${isActive ? 'sidebar-active' : ''}" 
+                   data-category-id="${c.category_id}">
+                <span class="sidebar-item-name">${c.category_name}</span>
+                <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+              </div>
+            `;
+          }).join("");
+        }
+      });
+    }
+
+
+
+
   }, 0);
 
   // Header time
@@ -567,17 +1137,7 @@ function LiveTvPage() {
   });
 
   // Channel data
-  const channelsData = [
-    { id: "1", name: "Demo Channel 1", logo: "/assets/logo.png" },
-    { id: "2", name: "Demo Channel 2", logo: "/assets/users.svg" },
-    { id: "3", name: "Demo Channel 3", logo: "/assets/logo.png" },
-    { id: "4", name: "Demo Channel 4", logo: "/assets/users.svg" },
-    { id: "5", name: "Demo Channel 5", logo: "/assets/users.svg" },
-    { id: "6", name: "Demo Channel 6", logo: "/assets/users.svg" },
-    { id: "7", name: "Demo Channel 7", logo: "/assets/users.svg" },
-    { id: "8", name: "Demo Channel 8", logo: "/assets/users.svg" },
-    { id: "9", name: "Demo Channel 9", logo: "/assets/users.svg" }
-  ];
+ 
 
   return `
 <div class="livetv-main-container">
@@ -611,23 +1171,7 @@ function LiveTvPage() {
 
     <div class="main-content-area">
       <div class="channel-grid">
-        ${channelsData
-          .map(
-            ch => `
-            <div class="channel-card" data-id="${ch.id}" data-name="${ch.name}" data-logo="${ch.logo}">
-                <div class="channel-card-header">
-                  <img src="${ch.logo}" class="channel-logo" alt="${ch.name}" />
-                  <button class="favorite-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div class="channel-name">${ch.name}</div>
-            </div>
-          `
-          )
-          .join("")}
+        <!-- Channels will be rendered dynamically by renderChannels() -->
       </div>
 
       <div class="bottom-section">
@@ -652,37 +1196,9 @@ function LiveTvPage() {
           
           <div class="epg-list">
             <div class="epg-item">
-              <span class="epg-time">08:15 PM - 09:15 PM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
+             Select a channel to view the program schedule
             </div>
-            <div class="epg-item">
-              <span class="epg-time">09:15 PM - 10:15 PM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">10:15 PM - 11:00 PM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">11:00 PM - 12:15 AM</span>   
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">12:15 PM - 01:15 AM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">01:15 PM - 02:15 AM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">02:15 PM - 03:15 AM</span>
-              <span class="epg-title">Team1 VS Team2 Match</span>
-            </div>
-            <div class="epg-item">
-              <span class="epg-time">03:15 AM - 04:15 AM</span>
-              <span class="epg-title">Late Match</span>
-            </div>
+          
           </div>
         </div>
       </div>

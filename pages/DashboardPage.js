@@ -111,6 +111,10 @@ function DashboardPage() {
     function handleKeydown(e) {
       if (localStorage.getItem("currentPage") !== "dashboard") return;
 
+
+        console.log("🎮 Dashboard keydown:", e.key); 
+
+        
       const current = focusableItems[focusIndex];
 
       // MOVE DOWN

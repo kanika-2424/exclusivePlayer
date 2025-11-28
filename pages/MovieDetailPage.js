@@ -190,6 +190,27 @@ var getMovieCastData = null;
     return;
   }
 
+  function formatDuration(raw) {
+  if (!raw) return "";
+  const parts = raw.split(":"); // "01:49:00"
+  let h = parseInt(parts[0], 10);
+  let m = parseInt(parts[1], 10);
+
+  return `${h}h ${m}min`;
+}
+
+function formatReleaseDate(raw) {
+  if (!raw) return "";
+
+  const date = new Date(raw);
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+
   container.innerHTML = `
   <div class="livetv-main-container">
     <header class="livetv-header">
@@ -206,12 +227,7 @@ var getMovieCastData = null;
       </div>
 
       <div class="header-right">
-        <div class="search-container">
-          <div class="search-icon">
-            <img src="/assets/search.png" />
-          </div>
-          <input type="text" class="search-input" placeholder="Search Movie" />
-        </div>
+     
         <div class="menu-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
@@ -234,14 +250,13 @@ var getMovieCastData = null;
       <div class="details-section">
         <div class="movie-header">
           <h1 class="movie-title">${movieData.title}</h1>
-          <div class="favorite-heart">${heartIconHtml}</div>
         </div>
 
-        <div class="movie-meta">
-          <span class="duration">${movieData.duration}</span>
-          <span class="separator">•</span>
-          <span class="release-date">${movieData.releaseDate}</span>
-        </div>
+      <div class="movie-meta">
+  <span class="duration">${formatDuration(movieData.duration)}</span>
+  <span class="release-date">${formatReleaseDate(movieData.releaseDate)}</span>
+</div>
+
 
         <div class="movie-info">
           <p class="info-row">
@@ -625,6 +640,10 @@ var getMovieCastData = null;
 
 
 function handleRemoteNavigation(e) {
+
+  if (localStorage.getItem("currentPage") !== "moviesDetailPage") return;
+
+  
   const buttons = Array.from(container.querySelectorAll(".action-button"));
   const casts = Array.from(container.querySelectorAll(".cast-card"));
 

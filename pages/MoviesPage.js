@@ -31,7 +31,6 @@ let isHeaderSearchActive = false; // For header search
     const allMovies = Array.isArray(window.allMoviesStreams) ? window.allMoviesStreams : [];
 
 
-    console.log("allMovies" , allMovies);
     
     // Normalize categories into our structure
     categories = allCats.map(c => ({
@@ -96,7 +95,6 @@ let isHeaderSearchActive = false; // For header search
 visibleCount = adjustToFullRow(visibleCount + PAGE_SIZE);
 
 function buildMovieCardHTML(m) {
-  console.log("m" , m);
   
   const img = m.stream_icon || "/assets/noImageFound.png";
   const title = m.name || m.title || "Untitled";
@@ -141,7 +139,6 @@ function buildMovieCardHTML(m) {
     const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
     const movies = (cat && Array.isArray(cat.movies)) ? cat.movies.slice(0, visibleCount) : [];
    
-   console.log("mobies" , movies);
    
     if (!movies || movies.length === 0) {
       container.innerHTML = `<div class="movie-no-data"><p>No movies found for this category.</p></div>`;
@@ -294,9 +291,33 @@ function removeAllFocus() {
   
   // Remote navigation handler
   function handleRemoteNavigation(e) {
-    // ensure only handle when on movies page
-    if (localStorage.getItem("currentPage") !== "moviesPage" && localStorage.getItem("currentPage") !== null) return;
 
+  const currentPage = localStorage.getItem("currentPage");
+  console.log("🔍 Key pressed:", e.key, "| Current page:", currentPage);
+  
+  // ONLY handle when actually on movies page (not detail page!)
+  if (currentPage !== "moviesPage") {
+    console.log("⛔ Not on movies page, ignoring");
+    return;
+  }
+
+  const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
+
+  // Back -> go to dashboard (ALWAYS HANDLE THIS FIRST)
+  if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+    console.log("✅ Escape detected! Going to dashboard...");
+    e.preventDefault();
+    e.stopPropagation();
+    localStorage.setItem("currentPage", "dashboard");
+    if (typeof Router !== "undefined" && Router.showPage) {
+      console.log("📍 Using Router.showPage");
+      Router.showPage("dashboard");
+    } else if (typeof navigateTo === "function") {
+      console.log("📍 Using navigateTo");
+      navigateTo("dashboard-page");
+    }
+    return;
+  }
     const cardsContainer = qs(".movies-grid");
     const cards = cardsContainer ? Array.from(cardsContainer.querySelectorAll(".movie-card")) : [];
     const categoriesEls = Array.from(qs(".movies-categories-list").querySelectorAll(".movies-category-item"));
@@ -307,18 +328,18 @@ function removeAllFocus() {
     const isLeft = e.key === "ArrowLeft" || e.keyCode === 37;
     const isRight = e.key === "ArrowRight" || e.keyCode === 39;
     const isEnter = e.key === "Enter" || e.keyCode === 13;
-    const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
+    // const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
     // Back -> go to dashboard (or previous)
-    if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
-      localStorage.setItem("currentPage", "dashboard");
-      if (typeof Router !== "undefined" && Router.showPage) {
-        Router.showPage("dashboard");
-      } else if (typeof navigateTo === "function") {
-        navigateTo("dashboard-page");
-      }
-      return;
-    }
+    // if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+    //   localStorage.setItem("currentPage", "dashboard");
+    //   if (typeof Router !== "undefined" && Router.showPage) {
+    //     Router.showPage("dashboard");
+    //   } else if (typeof navigateTo === "function") {
+    //     navigateTo("dashboard-page");
+    //   }
+    //   return;
+    // }
 
     /* ---------- UP ---------- */
     if (isUp) {
@@ -803,11 +824,14 @@ function computeCardsPerRow() {
       setTimeout(() => setFocusOnCard(0), 80);
     }
 
-    // Event delegation
-    document.addEventListener("click", onCategoryClick);
-    document.addEventListener("click", onCardClick);
-    document.addEventListener("keydown", handleRemoteNavigation);
+// Event delegation
+const categoryClickHandler = (e) => onCategoryClick(e);
+const cardClickHandler = (e) => onCardClick(e);
+const keydownHandler = (e) => handleRemoteNavigation(e);
 
+document.addEventListener("click", categoryClickHandler);
+document.addEventListener("click", cardClickHandler);
+document.addEventListener("keydown", keydownHandler);
     // Expand toggle
     const expandBtn = qs("#expandBtn");
     const sidebar = qs(".movies-sidebar");
@@ -890,11 +914,13 @@ searchEl.addEventListener("input", (ev) => {
     }
 
     // cleanup
-    MoviesPage.cleanup = () => {
-      document.removeEventListener("click", onCategoryClick);
-      document.removeEventListener("click", onCardClick);
-      document.removeEventListener("keydown", handleRemoteNavigation);
-    };
+  // cleanup
+MoviesPage.cleanup = () => {
+  console.log("🧹 MoviesPage cleanup called - removing event listeners");
+  document.removeEventListener("click", categoryClickHandler);
+  document.removeEventListener("click", cardClickHandler);
+  document.removeEventListener("keydown", keydownHandler);
+};
   }, 0);
 
   // Template

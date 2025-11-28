@@ -78,7 +78,7 @@
 
 .dropdown-arrow {
   transition: transform .25s ease;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 /* -------------------------------------------------------
@@ -212,7 +212,7 @@
   gap: 6px;
   color: white;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 18px;
   z-index: 3;
 }
 
@@ -276,7 +276,7 @@
 }
 
 .episode-duration {
-  font-size: 16px;
+  font-size: 18px;
   color: white;
   background: rgba(217,217,217,0.2);
   padding: 8px 20px;
