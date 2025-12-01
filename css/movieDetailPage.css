@@ -1,7 +1,7 @@
 /* Content Section */
 .movie-detail-content {
   display: flex;
-  padding: 10px 55px;
+  padding: 30px 55px;
   align-items: stretch; /* equal height */
 }
 
@@ -194,6 +194,8 @@
   border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
+
+
 /* Cast Section */
 .cast-section {
   padding: 40px 55px;
@@ -206,18 +208,26 @@
   margin-bottom: 30px;
 }
 
-/* Cast Grid — Tizen friendly */
+/* Cast Grid — Horizontal Scrolling */
 .cast-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Changed from wrap to nowrap */
+  overflow-x: hidden; /* Hide scrollbar */
+  overflow-y: hidden;
+  scroll-behavior: smooth;
 }
 
 .cast-card {
   width: 170px;
+  flex-shrink: 0; /* Prevent cards from shrinking */
   margin-right: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 0; /* Remove bottom margin */
   display: flex;
   flex-direction: column;
+}
+
+.cast-card:last-child {
+  margin-right: 0;
 }
 
 .cast-image {
@@ -225,21 +235,90 @@
   height: 170px;
   object-fit: cover;
   border-radius: 15px;
+  transition: transform 0.3s ease, border 0.3s ease;
 }
 
 .cast-card.focused .cast-image {
-  transform: scale(1.1);
   border: 3px solid rgba(55,155,254,1);
 }
 
-/* TV readability update */
 .cast-name {
-  font-size: 18px; /* was 14px */
+  font-size: 18px;
   margin-top: 8px;
 }
 
-/* Optional: sidebar category text */
-.cat-count,
-.cat-name {
-  font-size: 18px;
+
+/* Action Buttons Focus States */
+.action-button {
+  padding: 18px 32px;
+  border-radius: 50px;
+  font-size: 26px;
+  border: none;
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.action-button.focused {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(55, 155, 254, 0.8);
+}
+
+.action-button > * {
+  margin-right: 10px;
+}
+.action-button > *:last-child {
+  margin-right: 0;
+}
+
+/* Play button */
+.play-button {
+  background: rgba(55, 155, 254, 1);
+  color: #fff;
+  border: none;
+}
+
+.play-button.focused {
+  background: rgba(55, 155, 254, 1);
+  box-shadow: 0 0 30px rgba(55, 155, 254, 1);
+}
+
+/* Trailer button */
+.trailer-button {
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.trailer-button.focused {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(55, 155, 254, 1);
+  box-shadow: 0 0 30px rgba(55, 155, 254, 0.8);
+}
+
+.menu-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.menu-dots .dot {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.menu-dots.menu-focused .dot {
+  background: rgba(55, 155, 254, 1);
+}
+
+.menu-dots.menu-focused {
+  background: rgba(55, 155, 254, 0.2);
 }

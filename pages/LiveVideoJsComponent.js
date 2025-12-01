@@ -14,34 +14,37 @@ window.VideoAspectRatio = {
     return ratio;
   },
 
-  apply(videoElement, ratio) {
-    videoElement.style.objectFit = "";
-    videoElement.style.width = "";
-    videoElement.style.height = "";
-    
-    switch(ratio) {
-      case "16:9":
-        videoElement.style.objectFit = "fill";
-        videoElement.style.aspectRatio = "16/9";
-        break;
-      case "4:3":
-        videoElement.style.objectFit = "fill";
-        videoElement.style.aspectRatio = "4/3";
-        break;
-      case "21:9":
-        videoElement.style.objectFit = "fill";
-        videoElement.style.aspectRatio = "21/9";
-        break;
-      case "fill":
-        videoElement.style.objectFit = "fill";
-        videoElement.style.aspectRatio = "auto";
-        break;
-      case "fit":
-        videoElement.style.objectFit = "contain";
-        videoElement.style.aspectRatio = "auto";
-        break;
-    }
-  },
+apply(videoElement, ratio) {
+  const container = videoElement.closest('.live-video-player-div');
+  if (!container) return;
+
+  container.style.aspectRatio = "";
+  videoElement.style.objectFit = "";
+
+  switch(ratio) {
+    case "16:9":
+      container.style.aspectRatio = "16 / 9";
+      videoElement.style.objectFit = "contain";
+      break;
+    case "4:3":
+      container.style.aspectRatio = "4 / 3";
+      videoElement.style.objectFit = "contain";
+      break;
+    case "21:9":
+      container.style.aspectRatio = "21 / 9";
+      videoElement.style.objectFit = "contain";
+      break;
+    case "fill":
+      container.style.aspectRatio = "auto";
+      videoElement.style.objectFit = "cover";
+      break;
+    case "fit":
+      container.style.aspectRatio = "auto";
+      videoElement.style.objectFit = "contain";
+      break;
+  }
+}
+,
 
   showOverlay(label) {
     const overlay = document.getElementById("aspectRatioOverlay");
@@ -651,6 +654,7 @@ window._liveTvVolumeHandler = (e) => {
   }
 };
 
+
 // Add the event listener
 document.addEventListener("keydown", window._liveTvVolumeHandler);
       }
@@ -687,10 +691,7 @@ if (aspectRatioButton) {
     document.removeEventListener("keydown", window._liveTvVolumeHandler);
     window._liveTvVolumeHandler = null;
   }
-  const aspectRatioButton = document.getElementById("videojs-aspect-ratio");
-if (aspectRatioButton) {
-  aspectRatioButton.removeEventListener("click", handleAspectRatioChange);
-}
+
     // Store player reference to avoid race conditions
     const currentPlayer = window.livePlayer;
     if (currentPlayer) {

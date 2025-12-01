@@ -7,10 +7,6 @@ async function MovieDetailPage() {
   const castImageUrl = "https://image.tmdb.org/t/p/w500";
   const loadingOverlay = document.getElementById("loading-overlay");
 
-
-    
-
-
   // --- Back navigation/interruption guard during loading ---
   let navigationInterrupted = false;
   function handleBackNavigationDuringLoading(e) {
@@ -85,22 +81,21 @@ var tmdbId =
 
 var getMovieCastData = null;
 
-// try {
-//   if (tmdbId) {
-//     // Correct TMDB call with your API key
-//     const TMDB_API_KEY = "a21eeaca44af5d2a4349214ecba1b338";
-//     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`;
+try {
+  if (tmdbId) {
+    // Correct TMDB call with your API key
+    const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${localStorage.getItem("tmbdId")}`;
 
-//     const res = await fetch(url);
-//     if (!res.ok) throw new Error("TMDB Cast API failed");
-//     getMovieCastData = await res.json();
-//   } else {
-//     console.warn("No tmdb_id available in Xtream API");
-//   }
-// } catch (err) {
-//   console.warn("getMovieCast error", err);
-//   getMovieCastData = null;
-// }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("TMDB Cast API failed");
+    getMovieCastData = await res.json();
+  } else {
+    console.warn("No tmdb_id available in Xtream API");
+  }
+} catch (err) {
+  console.warn("getMovieCast error", err);
+  getMovieCastData = null;
+}
 
 
   if (navigationInterrupted) {
@@ -138,7 +133,7 @@ var getMovieCastData = null;
     posterImage:
       movieDetailData.info && movieDetailData.info.movie_image
         ? movieDetailData.info.movie_image
-        : (movieDetailData.info && movieDetailData.info.backdrop_path && movieDetailData.info.backdrop_path[0]) ? castImageUrl + movieDetailData.info.backdrop_path[0] : "/assets/placeholder-img.png",
+        : (movieDetailData.info && movieDetailData.info.backdrop_path && movieDetailData.info.backdrop_path[0]) ? castImageUrl + movieDetailData.info.backdrop_path[0] : "/assets/profile.png",
     isFavorite: false, // will set below if helper exists
     cast: []
   };
@@ -152,21 +147,21 @@ var getMovieCastData = null;
     movieData.isFavorite = false;
   }
 
-  // // build cast list (from TMDB fetch if available)
-  // if (getMovieCastData && Array.isArray(getMovieCastData.cast)) {
-  //   movieData.cast = getMovieCastData.cast.map((c) => ({
-  //     id: c.id || c.cast_id || Math.random(),
-  //     name: c.name || c.original_name || "",
-  //     image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
-  //   }));
-  // } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
-  //   // fallback if API stores cast in info
-  //   movieData.cast = movieDetailData.info.cast.map((c, i) => ({
-  //     id: i,
-  //     name: c.name || c,
-  //     image: c.image || "/assets/placeholder-img.png",
-  //   }));
-  // }
+  // build cast list (from TMDB fetch if available)
+  if (getMovieCastData && Array.isArray(getMovieCastData.cast)) {
+    movieData.cast = getMovieCastData.cast.map((c) => ({
+      id: c.id || c.cast_id || Math.random(),
+      name: c.name || c.original_name || "",
+      image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
+    }));
+  } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
+    // fallback if API stores cast in info
+    movieData.cast = movieDetailData.info.cast.map((c, i) => ({
+      id: i,
+      name: c.name || c,
+      image: c.image || "/assets/placeholder-img.png",
+    }));
+  }
 
   // --- Render the UI using your original layout and classes (keeps your UI) ---
   const genresText = movieData.genres.join(" / ");
@@ -327,27 +322,40 @@ function formatReleaseDate(raw) {
     }
   }
 
-  function setFocusOnHeaderSearch() {
-    removeAllFocus();
-    currentSection = "header";
-    const headerSearchContainer = container.querySelector(".search-container");
-    if (headerSearchContainer) {
-      headerSearchContainer.classList.add("search-focused");
-      try { headerSearchContainer.scrollIntoView({ behavior: "smooth", block: "center" }); } catch(e){}
-    }
-  }
 
-  function removeAllFocus() {
-    const focusedBtns = container.querySelectorAll(".action-button.focused");
-    focusedBtns.forEach(b => b.classList.remove("focused"));
-    const focusedCast = container.querySelectorAll(".cast-card.focused");
-    focusedCast.forEach(c => c.classList.remove("focused"));
-    const headerSearchContainer = container.querySelector(".search-container");
-    if (headerSearchContainer) headerSearchContainer.classList.remove("search-focused");
+function setFocusOnHeaderMenu() {
+  removeAllFocus();
+  currentSection = "header";
+  const menuDots = container.querySelector(".menu-dots");
+  if (menuDots) {
+    menuDots.classList.add("menu-focused");
+    try { menuDots.scrollIntoView({ behavior: "smooth", block: "center" }); } catch(e){}
   }
+}
+function removeAllFocus() {
+  const focusedBtns = container.querySelectorAll(".action-button.focused");
+  focusedBtns.forEach(b => b.classList.remove("focused"));
+  const focusedCast = container.querySelectorAll(".cast-card.focused");
+  focusedCast.forEach(c => c.classList.remove("focused"));
+  const menuDots = container.querySelector(".menu-dots");
+  if (menuDots) menuDots.classList.remove("menu-focused");
+}
 
+
+  
   // initial focus: play button
   setTimeout(() => setFocusOnButton(0), 0);
+
+  // initial focus: play button
+setTimeout(() => {
+  setFocusOnButton(0);
+  // Scroll to top of the page
+  window.scrollTo(0, 0);
+  // Or scroll the container to top
+  if (container) {
+    container.scrollTop = 0;
+  }
+}, 0);
 
   // click handlers for buttons
   const playBtn = container.querySelector(".play-button");
@@ -443,214 +451,11 @@ function formatReleaseDate(raw) {
     });
   });
 
- 
-
-
-// function handleRemoteNavigation(e) {
-//   const buttons = Array.from(container.querySelectorAll(".action-button"));
-//   const casts = Array.from(container.querySelectorAll(".cast-card"));
-
-//   // measure row using the pixel Y position
-//   function getRowIndex(el) {
-//     return Math.round(el.offsetTop);
-//   }
-
-//   function getColumnIndex(el) {
-//     const rowStart = getRowIndex(el);
-//     let col = 0;
-
-//     for (let i = 0; i < casts.length; i++) {
-//       if (getRowIndex(casts[i]) === rowStart) {
-//         if (casts[i] === el) return col;
-//         col++;
-//       }
-//     }
-//     return 0;
-//   }
-
-//   switch (e.key) {
-
-//     // RIGHT → →
-//     case "ArrowRight":
-//       e.preventDefault();
-
-//       if (currentSection === "buttons") {
-//         if (currentFocusIndex < buttons.length - 1) {
-//           currentFocusIndex++;
-//           setFocusOnButton(currentFocusIndex);
-//         }
-//         return;
-//       }
-
-//       if (currentSection === "cast") {
-//         if (currentFocusIndex < casts.length - 1) {
-//           currentFocusIndex++;
-//           setFocusOnCast(currentFocusIndex);
-//         }
-//         return;
-//       }
-//       break;
-
-//     // LEFT ← ←
-//     case "ArrowLeft":
-//       e.preventDefault();
-
-//       if (currentSection === "buttons") {
-//         if (currentFocusIndex > 0) {
-//           currentFocusIndex--;
-//           setFocusOnButton(currentFocusIndex);
-//         }
-//         return;
-//       }
-
-//       if (currentSection === "cast") {
-//         if (currentFocusIndex > 0) {
-//           currentFocusIndex--;
-//           setFocusOnCast(currentFocusIndex);
-//         }
-//         return;
-//       }
-//       break;
-
-//     // DOWN ↓ ↓
-//     case "ArrowDown":
-//       e.preventDefault();
-
-//       // SEARCH → BUTTONS
-//       if (currentSection === "header") {
-//         currentSection = "buttons";
-//         currentFocusIndex = 0;
-//         setFocusOnButton(0);
-//         return;
-//       }
-
-//       // BUTTONS → CAST TOP ITEM
-//       if (currentSection === "buttons") {
-//         currentSection = "cast";
-//         currentFocusIndex = 0;
-//         setFocusOnCast(0);
-//         return;
-//       }
-
-//       // CAST → next row
-//       if (currentSection === "cast") {
-//         const curr = casts[currentFocusIndex];
-//         const currRow = getRowIndex(curr);
-//         const currCol = getColumnIndex(curr);
-
-//         // find next row start index
-//         let nextRowItems = casts.filter(c => getRowIndex(c) > currRow);
-//         if (nextRowItems.length === 0) {
-//           // no row below → stay in same item (last row)
-//           return;
-//         }
-
-//         // get that row's items
-//         const targetRowStart = getRowIndex(nextRowItems[0]);
-//         const targetRow = casts.filter(c => getRowIndex(c) === targetRowStart);
-
-//         // snap to nearest column inside lower row
-//         const newIndex = casts.indexOf(
-//           targetRow[Math.min(currCol, targetRow.length - 1)]
-//         );
-
-//         currentFocusIndex = newIndex;
-//         setFocusOnCast(newIndex);
-//         return;
-//       }
-//       break;
-
-//     // UP ↑ ↑
-//     case "ArrowUp":
-//       e.preventDefault();
-
-//       // CAST → up row
-//       if (currentSection === "cast") {
-//         const curr = casts[currentFocusIndex];
-//         const currRow = getRowIndex(curr);
-//         const currCol = getColumnIndex(curr);
-
-//         // find if any row above exists
-//         let prevRowItems = casts.filter(c => getRowIndex(c) < currRow);
-
-//         if (prevRowItems.length === 0) {
-//           // top row → go to Play button
-//           currentSection = "buttons";
-//           currentFocusIndex = 0;
-//           setFocusOnButton(0);
-//           return;
-//         }
-
-//         // get upper row
-//         const upperRowStart = getRowIndex(prevRowItems[prevRowItems.length - 1]);
-//         const upperRow = casts.filter(c => getRowIndex(c) === upperRowStart);
-
-//         // snap to nearest column in upper row
-//         const newIndex = casts.indexOf(
-//           upperRow[Math.min(currCol, upperRow.length - 1)]
-//         );
-
-//         currentFocusIndex = newIndex;
-//         setFocusOnCast(newIndex);
-//         return;
-//       }
-
-//       // BUTTONS → SEARCH
-//       if (currentSection === "buttons") {
-//         currentSection = "header";
-//         setFocusOnHeaderSearch();
-//         return;
-//       }
-
-//       break;
-
-//     // ENTER
-//     case "Enter":
-//       e.preventDefault();
-//       if (currentSection === "buttons") {
-//         buttons[currentFocusIndex].click();
-//       }
-//       if (currentSection === "cast") {
-//         casts[currentFocusIndex].click();
-//       }
-//       return;
-
-//     // BACK
-//     default:
-//       if (
-//         e.keyCode === 10009 ||
-//         e.key === "Escape" ||
-//         e.key === "Back" ||
-//         e.key === "BrowserBack" ||
-//         e.key === "XF86Back"
-//       ) {
-//         localStorage.removeItem("selectedMovieId");
-//         localStorage.setItem("currentPage", "moviesPage");
-
-//         if (typeof Router !== "undefined" && Router.showPage) {
-//           Router.showPage("movies");
-//         }
-
-//         document.body.style.backgroundImage = "none";
-//         document.body.style.backgroundColor = "black";
-//         return;
-//       }
-//   }
-// }
-
-
 function handleRemoteNavigation(e) {
-
   if (localStorage.getItem("currentPage") !== "moviesDetailPage") return;
 
-  
   const buttons = Array.from(container.querySelectorAll(".action-button"));
   const casts = Array.from(container.querySelectorAll(".cast-card"));
-
-  function getRowIndex(el) {
-    if (!el) return 0;
-    return Math.floor(el.getBoundingClientRect().top);
-  }
 
   switch (e.key) {
     // -------------------------------------------------
@@ -705,34 +510,28 @@ function handleRemoteNavigation(e) {
     case "ArrowDown":
       e.preventDefault();
 
-      // SEARCH → BUTTONS
-      if (currentSection === "header") {
-        currentSection = "buttons";
-        currentFocusIndex = 0;
-        setFocusOnButton(0);
-        return;
-      }
 
-      // BUTTONS → CAST
+        if (currentSection === "header") {
+    currentSection = "buttons";
+    currentFocusIndex = 0;
+    setFocusOnButton(0);
+    return;
+  }
+
+
+      // BUTTONS → CAST (always go to first cast card)
       if (currentSection === "buttons") {
-        currentSection = "cast";
-        currentFocusIndex = 0;
-        setFocusOnCast(0);
+        if (casts.length > 0) {
+          currentSection = "cast";
+          currentFocusIndex = 0;
+          setFocusOnCast(0);
+        }
         return;
       }
 
-      // CAST → next row
+      // CAST → Stay in cast (no downward movement in horizontal list)
       if (currentSection === "cast") {
-        const curr = casts[currentFocusIndex];
-        const currRow = getRowIndex(curr);
-
-        for (let i = currentFocusIndex + 1; i < casts.length; i++) {
-          if (getRowIndex(casts[i]) > currRow) {
-            currentFocusIndex = i;
-            setFocusOnCast(i);
-            return;
-          }
-        }
+        // Do nothing, already at bottom section
         return;
       }
       break;
@@ -743,34 +542,25 @@ function handleRemoteNavigation(e) {
     case "ArrowUp":
       e.preventDefault();
 
-      // CAST → BUTTONS
+      // CAST → BUTTONS (go back to play button)
       if (currentSection === "cast") {
-        const curr = casts[currentFocusIndex];
-        const currRow = getRowIndex(curr);
-
-        const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
-
-        if (isTopRow) {
-          currentSection = "buttons";
-          currentFocusIndex = 0;
-          setFocusOnButton(0);
-          return;
-        }
-
-        for (let i = currentFocusIndex - 1; i >= 0; i--) {
-          if (getRowIndex(casts[i]) < currRow) {
-            currentFocusIndex = i;
-            setFocusOnCast(i);
-            return;
-          }
-        }
+        currentSection = "buttons";
+        currentFocusIndex = 0;
+        setFocusOnButton(0);
         return;
       }
 
-      // BUTTONS → SEARCH HEADER
+        // BUTTONS → HEADER MENU (three dots)
+  if (currentSection === "buttons") {
+    currentSection = "header";
+    setFocusOnHeaderMenu();
+    return;
+  }
+
+
+      // BUTTONS → Stay in buttons (no upward movement from buttons)
       if (currentSection === "buttons") {
-        currentSection = "header";
-        setFocusOnHeaderSearch();
+        // Do nothing, already at top section
         return;
       }
       break;
@@ -800,13 +590,11 @@ function handleRemoteNavigation(e) {
       ) {
         localStorage.removeItem("selectedMovieId");
         localStorage.setItem("currentPage", "moviesPage");
-        if (typeof Router !== "undefined" && Router.showPage){
-
+        if (typeof Router !== "undefined" && Router.showPage) {
           Router.showPage("movies");
+        } else if (typeof navigateTo === "function") {
+          navigateTo("movies-page");
         }
-else if (typeof navigateTo === "function") {
-        navigateTo("movies-page");
-      }
         document.body.style.backgroundImage = "none";
         document.body.style.backgroundColor = "black";
         return;

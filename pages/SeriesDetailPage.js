@@ -1,5 +1,4 @@
 
-
 async function SeriesDetailPage() {
 
 
@@ -121,6 +120,17 @@ async function SeriesDetailPage() {
     seasons: seriesDetailData.seasons || []
   };
 
+  seriesData.cast = [
+  { id: 1, name: "John Smith", image: "/assets/profile.png" },
+  { id: 2, name: "Emma Watson", image: "/assets/profile.png" },
+  { id: 3, name: "Michael Johnson", image: "/assets/profile.png" },
+  { id: 4, name: "Sarah Davis", image: "/assets/profile.png" },
+  { id: 5, name: "David Brown", image: "/assets/profile.png" },
+  { id: 6, name: "Jennifer Wilson", image: "/assets/profile.png" },
+  { id: 7, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 8, name: "Lisa Anderson", image: "/assets/profile.png" }
+];
+
   // try detect favorite state if helper exists
   try {
     if (seriesData.id && typeof isItemFavoriteForPlaylist === "function") {
@@ -138,10 +148,6 @@ async function SeriesDetailPage() {
   const firstEpisode = firstSeasonNumber && seriesData.episodes[firstSeasonNumber] 
     ? seriesData.episodes[firstSeasonNumber][0] 
     : null;
-
-
-
-
 
 
   // --- Render the UI ---
@@ -230,16 +236,38 @@ async function SeriesDetailPage() {
 
         <p class="movie-description">${seriesData.description}</p>
 
-        <div class="action-buttons">
-          <button class="action-button play-button" tabindex="0" ${!firstEpisode ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>
-            <span class="play-icon">▶</span>
-            <span>Play S1.E1</span>
-          </button>
-          <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">Watch Trailer</button>
-          <button class="action-button cast-button" tabindex="0">
-            <span>Cast</span>
-          </button>
+      <!-- Wrapper with white border around all buttons + cast dropdown -->
+        <div class="cast-wrapper" id="cast-wrapper">
+          <div class="action-buttons">
+            <button class="action-button play-button" tabindex="0" ${!firstEpisode ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>
+              <span class="play-icon">▶</span>
+              <span>Play S1.E1</span>
+            </button>
+            <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">Watch Trailer</button>
+            <button class="action-button cast-button" tabindex="0">
+              <span>Cast</span>
+              <span class="cast-arrow">^</span>
+            </button>
+          </div>
+
+          <!-- Cast dropdown inside the wrapper -->
+          <div class="cast-dropdown-container-wrapper">
+            <div class="cast-dropdown hidden" id="cast-dropdown">
+              <div class="cast-dropdown-header">
+                <h3>Cast & Crew</h3>
+              </div>
+              <div class="cast-dropdown-grid">
+                ${seriesData.cast.map((member, index) => `
+                  <div class="cast-dropdown-card" data-index="${index}" tabindex="0">
+                    <img src="${member.image}" alt="${member.name}" class="cast-dropdown-image" />
+                    <p class="cast-dropdown-name">${member.name}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
         </div>
+    </div>
       </div>
     </div>
 
@@ -266,13 +294,7 @@ async function SeriesDetailPage() {
 </div>
 
 
-    <!-- Cast & Crew Section -->
-    <div class="cast-section">
-      <h2 class="cast-title">Cast & Crew</h2>
-      <div class="cast-grid">
-        ${castHtml}
-      </div>
-    </div>
+   
   </div>
   `;
 
@@ -356,23 +378,6 @@ async function SeriesDetailPage() {
   // Initial episodes render
   renderEpisodes(currentSeasonNumber);
 
-  // Season dropdown handler
-  // const seasonDropdown = container.querySelector(".season-dropdown");
-  // if (seasonDropdown && seriesData.seasons.length > 0) {
-  //   seasonDropdown.addEventListener("click", () => {
-  //     // Simple season cycling for now
-  //     const currentIndex = seriesData.seasons.findIndex(s => s.season_number === currentSeasonNumber);
-  //     const nextIndex = (currentIndex + 1) % seriesData.seasons.length;
-  //     currentSeasonNumber = seriesData.seasons[nextIndex].season_number;
-      
-  //     const seasonText = seasonDropdown.querySelector(".season-text");
-  //     if (seasonText) {
-  //       seasonText.textContent = `Season ${String(currentSeasonNumber).padStart(2, '0')}`;
-  //     }
-      
-  //     renderEpisodes(currentSeasonNumber);
-  //   });
-  // }
 
   // --- Remote navigation & interactions ---
   let currentSection = "buttons"; // header, buttons, seasons, episodes, cast
@@ -515,19 +520,72 @@ async function SeriesDetailPage() {
     });
   }
 
-  if (castBtn) {
-    castBtn.addEventListener("click", () => {
-      // Scroll to cast section
-      const castSection = container.querySelector(".cast-section");
-      if (castSection) {
+const castWrapper = container.querySelector("#cast-wrapper");
+
+if (castBtn && castWrapper) {
+  castBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const castDropdown = container.querySelector("#cast-dropdown");
+    
+    if (castDropdown) {
+      const isHidden = castDropdown.classList.contains("hidden");
+      
+      if (isHidden) {
+        // Open dropdown
+        castDropdown.classList.remove("hidden");
+        castBtn.classList.add("open");
+        castWrapper.classList.add("active");
+        
+        // Calculate dropdown height for the white border
+        setTimeout(() => {
+          const h = castDropdown.offsetHeight;
+          castWrapper.style.setProperty("--cast-dropdown-height", `${h + 15}px`);
+        }, 10);
+      } else {
+        // Close dropdown
+        castDropdown.classList.add("hidden");
+        castBtn.classList.remove("open");
+        castWrapper.classList.remove("active");
+        castWrapper.style.removeProperty("--cast-dropdown-height");
+      }
+    }
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    const castDropdown = container.querySelector("#cast-dropdown");
+    
+    if (castWrapper && !castWrapper.contains(e.target)) {
+      if (castDropdown && !castDropdown.classList.contains("hidden")) {
+        castDropdown.classList.add("hidden");
+        castBtn.classList.remove("open");
+        castWrapper.classList.remove("active");
+        castWrapper.style.removeProperty("--cast-dropdown-height");
+      }
+    }
+  });
+}
+
+if (castBtn) {
+  castBtn.addEventListener("click", () => {
+    const castSection = container.querySelector(".cast-section");
+    if (castSection) {
+      // Toggle visibility
+      castSection.classList.toggle("visible");
+      
+      if (castSection.classList.contains("visible")) {
         castSection.scrollIntoView({ behavior: "smooth", block: "start" });
-        // Focus on first cast member
+        // Focus on first cast member after animation
         setTimeout(() => {
           setFocusOnCast(0);
         }, 500);
+      } else {
+        // Return focus to cast button when hiding
+        setFocusOnButton(2); // Index 2 is cast button (Play=0, Trailer=1, Cast=2)
       }
-    });
-  }
+    }
+  });
+}
 
   if (favHeartContainer) {
     favHeartContainer.addEventListener("click", () => {
@@ -649,6 +707,14 @@ if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
               return;
             }
           }
+
+            const castSection = container.querySelector(".cast-section");
+    if (casts.length > 0 && castSection && castSection.classList.contains("visible")) {
+      currentFocusIndex = 0;
+      setFocusOnCast(0);
+    }
+    return;
+  
           // If no more rows in episodes, go to cast
           if (casts.length > 0) {
             currentFocusIndex = 0;
@@ -668,6 +734,8 @@ if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
           }
           return;
         }
+
+        
         break;
 
       case "ArrowUp":
@@ -905,9 +973,6 @@ if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
   if (selectedSeasonNumber) {
     seasonText.textContent = `Season ${String(selectedSeasonNumber).padStart(2, "0")}`;
   }
-
-  // expose for remote navigation (optional): when your remote navigation sets seasons section focus,
-  // you may want to toggle .focused class on the button; existing functions like setFocusOnSeason already do that.
 })();
 
   document.addEventListener("keydown", handleRemoteNavigation);

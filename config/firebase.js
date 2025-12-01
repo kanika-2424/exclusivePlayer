@@ -1,10 +1,10 @@
 var firebaseConfig = {
-  apiKey: "AIzaSyB1rqGO8JIjuXrF5fxzsCY4siuHHYoZJRc",
-  authDomain: "exclusive-players.firebaseapp.com",
-  projectId: "exclusive-players",
-  storageBucket: "exclusive-players.firebasestorage.app",
-  messagingSenderId: "528869981938",
-  appId: "1:528869981938:web:ebdafb9d3e513e52519a6b"
+  apiKey: "AIzaSyDWMMJab7t_EzMns27VSlkB0noyT4irZvQ",
+  authDomain: "exclusive-player-1c8c4.firebaseapp.com",
+  projectId: "exclusive-player-1c8c4",
+  storageBucket: "exclusive-player-1c8c4.firebasestorage.app",
+  messagingSenderId: "73815415264",
+  appId: "1:73815415264:web:d72fb6d1070c0532ca7385"
 };
 
 
@@ -28,7 +28,7 @@ window.logAllDnsEntries = function () {
 };
 
 window.getTmbdId = function () {
-  db.collection("TMDBID").get()
+  db.collection("TMBDID").get()
     .then(function (snapshot) {
       snapshot.forEach(function (doc) {
         const tmbdId=doc.data().tmbd_api_key? doc.data().tmbd_api_key : ""
