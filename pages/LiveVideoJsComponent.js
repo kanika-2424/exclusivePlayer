@@ -1,3 +1,59 @@
+
+// Add this at the top of your file, before LiveVideoJsComponent
+window.VideoAspectRatio = {
+  ratios: ["16:9", "4:3", "21:9", "fill", "fit"],
+  currentIndex: 0,
+
+  cycle(videoElement) {
+    if (!videoElement) return this.ratios[0];
+    
+    this.currentIndex = (this.currentIndex + 1) % this.ratios.length;
+    const ratio = this.ratios[this.currentIndex];
+    
+    this.apply(videoElement, ratio);
+    return ratio;
+  },
+
+  apply(videoElement, ratio) {
+    videoElement.style.objectFit = "";
+    videoElement.style.width = "";
+    videoElement.style.height = "";
+    
+    switch(ratio) {
+      case "16:9":
+        videoElement.style.objectFit = "fill";
+        videoElement.style.aspectRatio = "16/9";
+        break;
+      case "4:3":
+        videoElement.style.objectFit = "fill";
+        videoElement.style.aspectRatio = "4/3";
+        break;
+      case "21:9":
+        videoElement.style.objectFit = "fill";
+        videoElement.style.aspectRatio = "21/9";
+        break;
+      case "fill":
+        videoElement.style.objectFit = "fill";
+        videoElement.style.aspectRatio = "auto";
+        break;
+      case "fit":
+        videoElement.style.objectFit = "contain";
+        videoElement.style.aspectRatio = "auto";
+        break;
+    }
+  },
+
+  showOverlay(label) {
+    const overlay = document.getElementById("aspectRatioOverlay");
+    if (overlay) {
+      overlay.textContent = `Aspect Ratio: ${label}`;
+      overlay.classList.remove("hidden");
+      setTimeout(() => overlay.classList.add("hidden"), 2000);
+    }
+  }
+};
+
+
 function LiveVideoJsComponent(
   streamId = "",
   srcUrl = "",
@@ -63,6 +119,19 @@ function LiveVideoJsComponent(
 
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
+
+
+function decodeBase64(str) {
+  try {
+    if (!str) return "";
+    return decodeURIComponent(escape(window.atob(str)));
+  } catch (e) {
+    console.warn("Base64 decode failed for:", str);
+    return str; // return original string if invalid
+  }
+}
+
+
 
 
 function renderEpg(epgList) {
@@ -420,9 +489,9 @@ fp.on("resume", () => {
       if (videoEl) {
         window.livePlayer = videojs(videoEl, {
           autoplay: true,
-          controls: true,
+          controls: false,
           preload: "auto",
-          liveui: true,
+          liveui: false,
           fill: true,
           fluid: false,
           sources: [{ src: srcUrl, type: "application/x-mpegURL" }],
@@ -656,44 +725,45 @@ if (aspectRatioButton) {
     window._liveTvVolumeHandlerAttached = false;
   };
 
-  return `
-    <div class="live-video-player live-video-player-div" style="width:100%; height:50%;">
-               <div class="videojs-aspect-ratio-div">
-<button id="videojs-aspect-ratio" class="videojs-aspect-ratio-btn" ><i class="fa-solid fa-compress" style="color:'white'"></i>Aspect Ratio </button>
-      </div>
-      <div class="play-pause-icon" style="display: none;">
-        <i class="fa-solid fa-play"></i>
-
-      </div>
-      <div class="live-top-overlays">
-        <div class="live-channel-name">${channelName || ""}</div>
-        <div class="live-badge">LIVE</div>
-      </div>
-      <div class="live-video-loader"><div class="live-spinner"></div></div>
-      <div class="live-video-error hidden">
-        <div class="error-icon">⚠️</div>
-        <p>Failed to load video</p>
-        <button class="retry-btn">Retry</button>
-      </div>
-      <div class="live-video-controls">
-        <button id="live-fullscreen-btn" class="live-control-btn" tabindex="-1">
-         <i class="fa-solid fa-expand live-fullscreen-btn-icon"></i>
-        </button>
-      </div>
-      ${isTsStream
-        ? `<div id="flowplayer-live" class="flowplayer " style="height:100%; width:100%;">
-             <video>
-               <source type="application/x-mpegURL" src="${srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`)}">
-             </video>
-           </div>`
-        : `<video id="${id}" class="video-js vjs-big-play-centered vjs-fullscreen " playsinline webkit-playsinline style="height:100%; width:100%;"></video>`}
-      <div class="livetv-player-epg">
-        <div class="livetv-player-epg-item">
-          <p class="livetv-player-epg-title">Loading EPG...</p>
-        </div>
-      </div>
-          <div id="aspectRatioOverlay" class="aspect-ratio-overlay hidden"></div>
-
+// REPLACE THE ENTIRE return statement with this:
+return `
+  <div class="live-video-player live-video-player-div" style="width:100%; height:100%;">
+    <!-- Aspect Ratio Button -->
+    <div class="videojs-aspect-ratio-div">
+      <button id="videojs-aspect-ratio" class="videojs-aspect-ratio-btn">
+        <i class="fa-solid fa-compress"></i> Aspect Ratio
+      </button>
     </div>
-  `;
+
+    <!-- Play/Pause Icon (Center) -->
+    <div class="play-pause-icon" style="display: none;">
+      <i class="fa-solid fa-play"></i>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="live-video-loader">
+      <div class="live-spinner"></div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="live-video-error hidden">
+      <div class="error-icon">⚠️</div>
+      <p>Failed to load video</p>
+      <button class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Video Player -->
+    ${isTsStream
+      ? `<div id="flowplayer-live" style="height:100%; width:100%;">
+           <video>
+             <source type="application/x-mpegURL" src="${srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`)}">
+           </video>
+         </div>`
+      : `<video id="${id}" class="video-js vjs-big-play-centered" playsinline webkit-playsinline style="height:100%; width:100%;"></video>`
+    }
+
+    <!-- Aspect Ratio Overlay -->
+    <div id="aspectRatioOverlay" class="aspect-ratio-overlay hidden"></div>
+  </div>
+`;
 }

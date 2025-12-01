@@ -29,14 +29,17 @@ function LiveTvPage() {
   let inEPG = false;
   let focusedSidebarIndex = 0;
   let focusedEPGIndex = 0;
+  let currentAspectRatio = "contain";
+  let inAspectRatioBtn = false;
 
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
 
 // ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
+// Find this function and replace it:
 const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   return `
-    <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000;">
+    <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000; box-sizing: border-box;">
       <video 
         id="live-video-player" 
         class="video-js vjs-default-skin" 
@@ -45,21 +48,99 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
         preload="auto"
         data-stream-id="${streamId}"
         poster="${logo}"
-        style="width: 100%; height: 100%;"
+        style="width: 100%; height: 100%; object-fit: contain; display: block;"
       >
         <source src="${streamUrl}" type="application/x-mpegURL">
       </video>
       
-      <div class="video-overlay-info" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">
+      <div class="video-overlay-info" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 999;">
         <h3 style="margin: 0; font-size: 16px;">${channelName}</h3>
       </div>
 
-      <div class="live-video-loader hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+      <button class="aspect-ratio-btn" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; border: 2px solid #0ea5e9; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; z-index: 1000;">
+        <span style="margin-right: 5px;">⛶</span>Fit
+      </button>
+
+      <!-- PLAY/PAUSE BUTTON -->
+   <button class="play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; border: 3px solid #0ea5e9; width: 80px; height: 80px; border-radius: 50%; cursor: pointer; z-index: 9999; display: none; transition: all 0.3s ease;">
+  <img src="/assets/play.png" style="width: 40px; height: 40px;" />
+</button>
+
+<button class="aspect-ratio-btn" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(255, 165, 0, 0.9); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 1000; min-width: 200px; text-align: center;">
+  <span style="margin-right: 8px; z-index: 1000;">⛶</span>Aspect Ratio
+</button>
+
+
+
+      <div class="live-video-loader hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 998;">
         <div class="spinner"></div>
       </div>
     </div>
   `;
 };
+
+
+const togglePlayPause = () => {
+  const videoEl = document.getElementById("live-video-player");
+  const playPauseBtn = document.querySelector(".play-pause-btn");
+  
+  if (!videoEl) return;
+  
+  if (videoEl.paused) {
+    videoEl.play();
+    if (playPauseBtn) {
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.alignItems = "center";
+      playPauseBtn.style.justifyContent = "center";
+      playPauseBtn.innerHTML = `
+        <img src="/assets/pause.png" style="width: 40px; height: 40px;" />
+      `;
+    }
+  } else {
+    videoEl.pause();
+    if (playPauseBtn) {
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.alignItems = "center";
+      playPauseBtn.style.justifyContent = "center";
+      playPauseBtn.innerHTML = `
+        <img src="/assets/play.png" style="width: 40px; height: 40px;" />
+      `;
+    }
+  }
+  
+  // Show button briefly when playing
+  if (playPauseBtn && !videoEl.paused) {
+    setTimeout(() => {
+      playPauseBtn.style.display = "none";
+    }, 1000);
+  }
+};
+
+
+// Add this function after SimpleVideoPlayer:
+const toggleAspectRatio = () => {
+  const videoEl = document.getElementById("live-video-player");
+  const aspectBtn = document.querySelector(".aspect-ratio-btn");
+  
+  if (!videoEl || !aspectBtn) return;
+  
+  const ratios = [
+    { value: "contain", label: "Fit" },
+    { value: "cover", label: "Fill" },
+    { value: "fill", label: "Stretch" },
+    { value: "none", label: "Original" }
+  ];
+  
+  let currentIndex = ratios.findIndex(r => r.value === currentAspectRatio);
+  currentIndex = (currentIndex + 1) % ratios.length;
+  currentAspectRatio = ratios[currentIndex].value;
+  
+  videoEl.style.objectFit = currentAspectRatio;
+  aspectBtn.innerHTML = `<span style="margin-right: 5px;">⛶</span>${ratios[currentIndex].label}`;
+  
+  console.log("Aspect ratio changed to:", currentAspectRatio);
+};
+
 // ===== HELPER: Get Filtered Categories =====
   const getFilteredCategories = () => {
     const currentPlaylistName = JSON.parse(
@@ -284,30 +365,69 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
         channelData.name || "Unknown Channel"
       );
       
-      // Initialize Video.js if available
-      setTimeout(() => {
-        const videoEl = document.getElementById("live-video-player");
-        if (videoEl && typeof videojs !== "undefined") {
-          window.livePlayer = videojs(videoEl, {
-            controls: true,
-            autoplay: true,
-            preload: "auto",
-            fluid: true
-          });
-          
-          window.livePlayer.on("waiting", () => {
-            qs(".live-video-loader").classList.remove("hidden");
-          });
-          
-          window.livePlayer.on("playing", () => {
-            qs(".live-video-loader").classList.add("hidden");
-          });
-          
-          window.livePlayer.on("error", (e) => {
-            console.error("❌ Player error:", e);
-          });
-        }
-      }, 100);
+    // Initialize Video.js if available
+setTimeout(() => {
+  const videoEl = document.getElementById("live-video-player");
+  const playPauseBtn = document.querySelector(".play-pause-btn");
+  
+  if (videoEl && typeof videojs !== "undefined") {
+    window.livePlayer = videojs(videoEl, {
+      controls: true,
+      autoplay: true,
+      preload: "auto",
+      fluid: true
+    });
+    
+    window.livePlayer.on("waiting", () => {
+      qs(".live-video-loader").classList.remove("hidden");
+    });
+    
+    window.livePlayer.on("playing", () => {
+      qs(".live-video-loader").classList.add("hidden");
+    });
+    
+    window.livePlayer.on("error", (e) => {
+      console.error("❌ Player error:", e);
+    });
+    
+    // ADD THESE EVENT LISTENERS:
+    if (playPauseBtn) {
+  // Show/hide play button on pause/play
+  videoEl.addEventListener("pause", () => {
+    playPauseBtn.style.display = "flex";
+    playPauseBtn.style.alignItems = "center";
+    playPauseBtn.style.justifyContent = "center";
+    playPauseBtn.innerHTML = `
+      <img src="/assets/play.png" style="width: 40px; height: 40px;" />
+    `;
+  });
+  
+  videoEl.addEventListener("play", () => {
+    playPauseBtn.style.display = "flex";
+    playPauseBtn.style.alignItems = "center";
+    playPauseBtn.style.justifyContent = "center";
+    playPauseBtn.innerHTML = `
+      <img src="/assets/pause.png" style="width: 40px; height: 40px;" />
+    `;
+    setTimeout(() => {
+      playPauseBtn.style.display = "none";
+    }, 1000);
+  });
+  
+  // Click on play/pause button
+  playPauseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePlayPause();
+  });
+  
+  // Click anywhere on video to toggle
+  videoEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePlayPause();
+  });
+}
+  }
+}, 100);
     }
 
     // Update visual states
@@ -343,65 +463,130 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   };
 
   // ===== UPDATE EPG (Program Guide) =====
-  const updateEPG = (channelData) => {
-    const epgList = qs(".epg-list");
-    const epgChannelName = qs(".epg-channel-name");
+const updateEPG = (channelData) => {
+  const epgList = qs(".epg-list");
+  const epgChannelLogo = qs(".epg-channel-logo");
+  const epgFavoriteBtn = qs(".epg-favorite-btn");
+  
+  if (!epgList) return;
+
+  // Update channel logo
+  if (epgChannelLogo) {
+    epgChannelLogo.src = channelData.stream_icon || channelData.logo || "/assets/channel.png";
+    epgChannelLogo.alt = channelData.name || "Channel";
+  }
+
+  // Update favorite button state
+  if (epgFavoriteBtn) {
+    const isFav = window.isItemFavoriteForPlaylist ? 
+      window.isItemFavoriteForPlaylist(channelData, "favoritesLiveTV") : false;
     
-    if (!epgList) return;
-
-    // Update channel logo/name in EPG header
-    if (epgChannelName) {
-      epgChannelName.src = channelData.stream_icon || channelData.logo || "/assets/channel.png";
-      epgChannelName.alt = channelData.name || "Channel";
+    const svg = epgFavoriteBtn.querySelector("svg path");
+    if (svg) {
+      svg.setAttribute("fill", isFav ? "red" : "none");
     }
-
-    // Fetch EPG data from API if available
-    const streamId = channelData.stream_id;
     
-    // Check if we have EPG data
-    if (typeof getEPGForChannel === "function") {
-      getEPGForChannel(streamId).then(epgData => {
-        if (epgData && epgData.length > 0) {
-          renderEPGList(epgData);
-        } else {
-          renderDefaultEPG(channelData.name);
-        }
-      }).catch(() => {
-        renderDefaultEPG(channelData.name);
-      });
-    } else {
-      // No EPG function available, show default
-      renderDefaultEPG(channelData.name);
-    }
-  };
-
-  // ===== RENDER EPG LIST =====
-  const renderEPGList = (epgData) => {
-    const epgList = qs(".epg-list");
-    if (!epgList) return;
-
-    const epgHTML = epgData.map(program => {
-      const startTime = new Date(program.start * 1000).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      });
-      const endTime = new Date(program.end * 1000).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      });
+    // Add click handler for favorite button
+    epgFavoriteBtn.onclick = () => {
+      const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
+      const svg = epgFavoriteBtn.querySelector("svg path");
+      if (svg) {
+        svg.setAttribute("fill", result.isFav ? "red" : "none");
+      }
       
-      return `
+      if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+        Toaster.showToast(
+          result.isFav ? "success" : "error",
+          `Channel ${result.isFav ? "added to" : "removed from"} favorites`
+        );
+      }
+    };
+  }
+
+  // Show loading state
+  epgList.innerHTML = `
+    <div class="epg-item">
+      <span class="epg-title">Loading EPG...</span>
+    </div>
+  `;
+
+  // Fetch real EPG data from API
+  const streamId = channelData.stream_id;
+  
+  if (streamId && typeof getLiveStreamEpg === "function") {
+    getLiveStreamEpg(streamId).then((data) => {
+      const epgData = data.epg_listings || [];
+      
+      if (epgData.length > 0) {
+        renderEPGList(epgData);
+      } else {
+        epgList.innerHTML = `
+          <div class="epg-item">
+            <span class="epg-title">No EPG data available</span>
+          </div>
+        `;
+      }
+    }).catch(() => {
+      epgList.innerHTML = `
         <div class="epg-item">
-          <span class="epg-time">${startTime} - ${endTime}</span>
-          <span class="epg-title">${program.title || "No Title"}</span>
+          <span class="epg-title">Failed to load EPG</span>
         </div>
       `;
-    }).join("");
+    });
+  }
+};
 
-    epgList.innerHTML = epgHTML;
-  };
+  // ===== RENDER EPG LIST =====
+const renderEPGList = (epgData) => {
+  const epgList = qs(".epg-list");
+  if (!epgList) return;
+
+  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
+  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(pl => pl.playlistName === currentPlaylistName);
+  const timeFormat = currentPlaylist.timeFormat || '12hrs';
+
+  const epgHTML = epgData.map(program => {
+    const startTime = formatTime(program.start, timeFormat);
+    const endTime = formatTime(program.end, timeFormat);
+    const title = decodeBase64(program.title) || "Untitled";
+    
+    return `
+      <div class="epg-item">
+        <span class="epg-time">${startTime} - ${endTime}</span>
+        <span class="epg-title">${title}</span>
+      </div>
+    `;
+  }).join("");
+
+  epgList.innerHTML = epgHTML;
+};
+
+// Helper functions (copy from LiveVideoJsComponent)
+function formatTime(dateStr, format) {
+  let date;
+  if (!isNaN(dateStr)) {
+    const ts = dateStr.toString().length === 10 ? dateStr * 1000 : dateStr;
+    date = new Date(parseInt(ts));
+  } else {
+    date = new Date(dateStr);
+  }
+  if (isNaN(date)) return dateStr;
+
+  const options = format === "12hrs"
+    ? { hour: "numeric", minute: "2-digit", hour12: true }
+    : { hour: "2-digit", minute: "2-digit", hour12: false };
+
+  return new Intl.DateTimeFormat(undefined, options).format(date);
+}
+
+function decodeBase64(str) {
+  try {
+    if (!str) return "";
+    return decodeURIComponent(escape(window.atob(str)));
+  } catch (e) {
+    return str;
+  }
+}
 
   // ===== RENDER DEFAULT EPG (No Data Available) =====
   const renderDefaultEPG = (channelName) => {
@@ -562,6 +747,22 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   function handleClick(e) {
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
+
+      const playPauseBtn = e.target.closest(".play-pause-btn");
+  if (playPauseBtn) {
+    e.stopPropagation();
+    togglePlayPause();
+    return;
+  }
+
+
+    const aspectBtn = e.target.closest(".aspect-ratio-btn");
+if (aspectBtn) {
+  e.stopPropagation();
+  toggleAspectRatio();
+  return;
+}
+
     // Channel card click
     const card = e.target.closest(".channel-card");
     if (card) {
@@ -691,31 +892,122 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
     }
 
     // If user is in video player area
-    if (inVideoPlayer) {
-      if (isDown) {
-        inVideoPlayer = false;
-        inChannelGrid = true;
-        qs(".live-video-player-div").classList.remove("video-focused");
-        focusedChannelIndex = 0;
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
-      
-      if (isEnter) {
-        const videoDiv = qs(".live-video-player-div");
-        if (videoDiv) {
-          if (!document.fullscreenElement) {
-            videoDiv.requestFullscreen();
-          } else {
-            document.exitFullscreen();
-          }
-        }
-        e.preventDefault();
-        return;
-      }
-      return;
+   // Find the "If user is in video player area" section and REPLACE it with:
+
+if (inVideoPlayer) {
+  const videoDiv = qs(".live-video-player-div");
+  const aspectBtn = qs(".aspect-ratio-btn");
+  
+  if (isUp) {
+    inVideoPlayer = false;
+    inChannelGrid = true;
+    if (videoDiv) {
+      videoDiv.classList.remove("video-focused");
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
     }
+    if (aspectBtn) aspectBtn.style.border = "none";
+    focusedChannelIndex = 0;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+  
+   if (isDown) {
+    // Go to aspect ratio button
+    inVideoPlayer = false;
+    inAspectRatioBtn = true;
+    const videoDiv = qs(".live-video-player-div");
+    const aspectBtn = qs("#videojs-aspect-ratio");
+    if (videoDiv) videoDiv.style.outline = "none";
+    if (aspectBtn) {
+      aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
+      aspectBtn.scrollIntoView({ block: "nearest" });
+    }
+    e.preventDefault();
+    return;
+  }
+  
+  
+  if (isRight) {
+    // Go to EPG list
+    inVideoPlayer = false;
+    inEPG = true;
+    if (videoDiv) {
+      videoDiv.classList.remove("video-focused");
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
+    }
+    if (aspectBtn) aspectBtn.style.border = "none";
+    focusedEPGIndex = 0;
+    const epgItems = qsa(".epg-item");
+    if (epgItems.length) {
+      epgItems[0].classList.add("epg-focused");
+      epgItems[0].scrollIntoView({ block: "nearest" });
+    }
+    e.preventDefault();
+    return;
+  }
+  
+  if (isEnter) {
+    if (videoDiv) {
+      if (!document.fullscreenElement) {
+        videoDiv.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    e.preventDefault();
+    return;
+  }
+  
+  // SPACE or K key for play/pause
+  if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'k' || e.key === 'K') {
+    togglePlayPause();
+    e.preventDefault();
+    return;
+  }
+  
+  return;
+}
+
+// Add new navigation section for Aspect Ratio Button
+// Aspect ratio button navigation
+if (inAspectRatioBtn) {
+  const aspectBtn = qs("#videojs-aspect-ratio");
+  
+  if (isUp) {
+    inAspectRatioBtn = false;
+    inVideoPlayer = true;
+    if (aspectBtn) aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+    const videoDiv = qs(".live-video-player-div");
+    if (videoDiv) {
+      videoDiv.style.outline = "4px solid #0ea5e9";
+      videoDiv.style.outlineOffset = "-4px";
+    }
+    e.preventDefault();
+    return;
+  }
+  
+  if (isDown) {
+    inAspectRatioBtn = false;
+    inEPG = true;
+    if (aspectBtn) aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+    focusedEPGIndex = 0;
+    const epgItems = qsa(".epg-item");
+    if (epgItems.length) {
+      epgItems[0].classList.add("epg-focused");
+    }
+    e.preventDefault();
+    return;
+  }
+  
+  if (isEnter) {
+    aspectBtn.click();
+    e.preventDefault();
+    return;
+  }
+}
 
     // HEADER SEARCH BOX NAVIGATION
     if (inHeaderSearch) {
@@ -852,25 +1144,25 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
     // EPG navigation
     if (inEPG) {
       if (isUp) {
-        if (focusedEPGIndex > 0) {
-          epgItems[focusedEPGIndex].classList.remove("epg-focused");
-          focusedEPGIndex--;
-          epgItems[focusedEPGIndex].classList.add("epg-focused");
-          epgItems[focusedEPGIndex].scrollIntoView({ block: "nearest" });
-        } else {
-          // Remove EPG focus when leaving
-          epgItems.forEach(item => item.classList.remove("epg-focused"));
-          inEPG = false;
-          inChannelGrid = true;
-          const cols = 5;
-          const row = Math.floor(focusedChannelIndex / cols);
-          const col = focusedChannelIndex % cols;
-          focusedChannelIndex = row * cols + col;
-          setFocus(qsa(".channel-card"), focusedChannelIndex, "channel-card-focused");
-        }
-        e.preventDefault();
-        return;
+    if (focusedEPGIndex > 0) {
+      epgItems[focusedEPGIndex].classList.remove("epg-focused");
+      focusedEPGIndex--;
+      epgItems[focusedEPGIndex].classList.add("epg-focused");
+      epgItems[focusedEPGIndex].scrollIntoView({ block: "nearest" });
+    } else {
+      // Go to aspect ratio button
+      epgItems.forEach(item => item.classList.remove("epg-focused"));
+      inEPG = false;
+      inAspectRatioBtn = true;
+      const aspectBtn = qs(".aspect-ratio-btn");
+      if (aspectBtn) {
+        aspectBtn.style.border = "3px solid #0ea5e9";
+        aspectBtn.scrollIntoView({ block: "nearest" });
       }
+    }
+    e.preventDefault();
+    return;
+  }
 
       if (isDown) {
         if (focusedEPGIndex < epgItems.length - 1) {
@@ -883,15 +1175,22 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
         return;
       }
 
-      if (isLeft) {
-        // Remove EPG focus when leaving
-        epgItems.forEach(item => item.classList.remove("epg-focused"));
-        inEPG = false;
-        inChannelGrid = true;
-        setFocus(qsa(".channel-card"), focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
+    if (isLeft) {
+  // Go to video player instead of channel grid
+  epgItems.forEach(item => item.classList.remove("epg-focused"));
+  inEPG = false;
+  inVideoPlayer = true;
+  const videoDiv = qs(".live-video-player-div");
+  if (videoDiv) {
+     videoDiv.classList.add("video-focused");
+  videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
+  videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
+  videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
+  videoDiv.style.outlineOffset = "-3px";
+  }
+  e.preventDefault();
+  return;
+}
 
       if (isEnter) {
         console.log("EPG selected:", epgItems[focusedEPGIndex].innerText);
@@ -921,46 +1220,48 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
         return;
       }
 
-     if (isDown) {
-        const cols = 5;
-        
-        if (focusedChannelIndex + cols < channels.length) {
-          // Normal down navigation
+   // Find this section in handleKeydown and REPLACE the isDown block in CHANNEL GRID NAVIGATION:
+
+if (isDown) {
+  const cols = 5;
+  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+  
+  if (focusedChannelIndex >= lastRowStart) {
+    // In last row - go to video player
+    inChannelGrid = false;
+    inVideoPlayer = true;
+    channels.forEach(c => c.classList.remove("channel-card-focused"));
+    const videoDiv = qs(".live-video-player-div");
+    if (videoDiv) {
+   videoDiv.classList.add("video-focused");
+  videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
+  videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
+  videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
+  videoDiv.style.outlineOffset = "-3px";
+    }
+  } else {
+    // Normal down navigation
+    const filtered = getFilteredCategories();
+    const selectedCat = filtered.find(c => c.category_id === selectedCategoryId);
+    
+    if (focusedChannelIndex + cols < channels.length) {
+      focusedChannelIndex += cols;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    } else if (selectedCat && currentChunk * pageSize < selectedCat.channels.length) {
+      currentChunk++;
+      renderChannels();
+      setTimeout(() => {
+        const updatedChannels = qsa(".channel-card");
+        if (focusedChannelIndex + cols < updatedChannels.length) {
           focusedChannelIndex += cols;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        } else {
-          // At bottom row - check if we can load more
-          const filtered = getFilteredCategories();
-          const selectedCat = filtered.find(c => c.category_id === selectedCategoryId);
-          
-          if (selectedCat && currentChunk * pageSize < selectedCat.channels.length) {
-            // Load more channels
-            currentChunk++;
-            renderChannels();
-            
-            setTimeout(() => {
-              const updatedChannels = qsa(".channel-card");
-              if (focusedChannelIndex + cols < updatedChannels.length) {
-                focusedChannelIndex += cols;
-                setFocus(updatedChannels, focusedChannelIndex, "channel-card-focused");
-              }
-            }, 100);
-          } else {
-            // No more channels, go to EPG
-            inChannelGrid = false;
-            inEPG = true;
-            focusedEPGIndex = 0;
-            channels.forEach(c => c.classList.remove("channel-card-focused"));
-            const epgItems = qsa(".epg-item");
-            if (epgItems.length) {
-              epgItems[0].classList.add("epg-focused");
-              epgItems[0].scrollIntoView({ block: "nearest" });
-            }
-          }
+          setFocus(updatedChannels, focusedChannelIndex, "channel-card-focused");
         }
-        e.preventDefault();
-        return;
-      }
+      }, 100);
+    }
+  }
+  e.preventDefault();
+  return;
+}
 
       if (isLeft) {
         if (focusedChannelIndex > 0) {
@@ -994,6 +1295,8 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
       }
     }
   }
+
+ 
 
   // Setup event listeners
   setTimeout(() => {
@@ -1139,7 +1442,7 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   // Channel data
  
 
-  return `
+return `
 <div class="livetv-main-container">
   <header class="livetv-header">
       <div class="header-left">
@@ -1175,20 +1478,20 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
       </div>
 
       <div class="bottom-section">
-        <div class="livetv-video-wrapper">
-          <div class="video-placeholder">
-            <div class="placeholder-content">
-              <img src="/assets/logo.png" alt="Logo" class="placeholder-logo" />
-              <p class="placeholder-text">Select a channel to start watching</p>
-            </div>
-          </div>
-        </div>
+     <div class="livetv-video-wrapper" style="padding: 5px; background: #000;">
+  <div class="video-placeholder">
+    <div class="placeholder-content">
+      <img src="/assets/logo.png" alt="Logo" class="placeholder-logo" />
+      <p class="placeholder-text">Select a channel to start watching</p>
+    </div>
+  </div>
+</div>
 
         <div class="epg-schedule">
           <div class="epg-header">
-              <img class="epg-channel-name" src="/assets/channel.png" alt="Logo" class="placeholder-logo" />
+            <img class="epg-channel-logo" src="/assets/channel.png" alt="Channel" />
             <button class="epg-favorite-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="red" stroke="currentColor" stroke-width="2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
@@ -1196,9 +1499,8 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
           
           <div class="epg-list">
             <div class="epg-item">
-             Select a channel to view the program schedule
+              <span class="epg-title">Select a channel to view schedule</span>
             </div>
-          
           </div>
         </div>
       </div>
