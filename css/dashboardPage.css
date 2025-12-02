@@ -254,12 +254,19 @@
     justify-content: center;
 }
  
-.movies-box .icon-border img,
-.series-box .icon-border img {
+.movies-box .icon-border img {
     width: 150px;
     height: 161px;
 }
  
+
+
+.series-box .icon-border img {
+    width: 150px;
+    height: 150px;
+}
+
+
 /* Movies and Series Text */
 .movies-box .menu-content-title > *,
 .series-box .menu-content-title > * {

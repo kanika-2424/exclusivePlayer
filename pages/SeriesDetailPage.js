@@ -88,9 +88,59 @@ async function SeriesDetailPage() {
     return;
   }
 
+
+
+
   // done loading
   if (loadingOverlay) loadingOverlay.classList.add("hidden");
   document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+
+
+
+  var seriesName =
+  seriesDetailData.info && seriesDetailData.info.name
+    ? seriesDetailData.info.name
+    : null;
+console.log("seriesDetailData" , seriesDetailData);
+
+////////////// tmdb////////
+// var getSeriesCastData = null;
+
+// try {
+//   if (seriesName) {
+//     // Step 1: Search for the series to get TMDB ID
+//     const searchUrl = `https://api.themoviedb.org/3/search/tv?api_key=${localStorage.getItem("tmbdId")}&query=${encodeURIComponent(seriesName)}`;
+//     const searchRes = await fetch(searchUrl);
+//     if (!searchRes.ok) throw new Error("TMDB Search API failed");
+//     const searchData = await searchRes.json();
+    
+//     // Step 2: Find matching series
+//     const matchingSeries = searchData.results && searchData.results.length > 0
+//       ? searchData.results.find(s => s.original_name === seriesName.trim()) || searchData.results[0]
+//       : null;
+    
+//     // Step 3: Fetch cast data using the TMDB ID
+//     if (matchingSeries && matchingSeries.id) {
+//       const castUrl = `https://api.themoviedb.org/3/tv/${matchingSeries.id}/credits?api_key=${localStorage.getItem("tmbdId")}`;
+//       const castRes = await fetch(castUrl);
+//       if (!castRes.ok) throw new Error("TMDB Cast API failed");
+//       getSeriesCastData = await castRes.json();
+      
+//       // Check for navigation interruption
+//       if (navigationInterrupted) {
+//         document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+//         return;
+//       }
+//     }
+//   } else {
+//     console.warn("No series name available for TMDB lookup");
+//   }
+// } catch (err) {
+//   console.warn("getSeriesCast error", err);
+//   getSeriesCastData = null;
+// }
+
+
 
   // --- Map API data to the UI-friendly seriesData ---
   const seriesData = {
@@ -120,16 +170,35 @@ async function SeriesDetailPage() {
     seasons: seriesDetailData.seasons || []
   };
 
-  seriesData.cast = [
-  { id: 1, name: "John Smith", image: "/assets/profile.png" },
-  { id: 2, name: "Emma Watson", image: "/assets/profile.png" },
+seriesData.cast = [
+  { id: 1, name: "John Doe", image: "/assets/profile.png" },
+  { id: 2, name: "Jane Smith", image: "/assets/profile.png" },
   { id: 3, name: "Michael Johnson", image: "/assets/profile.png" },
-  { id: 4, name: "Sarah Davis", image: "/assets/profile.png" },
-  { id: 5, name: "David Brown", image: "/assets/profile.png" },
-  { id: 6, name: "Jennifer Wilson", image: "/assets/profile.png" },
-  { id: 7, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 8, name: "Lisa Anderson", image: "/assets/profile.png" }
+  { id: 4, name: "Emily Davis", image: "/assets/profile.png" },
+  { id: 5, name: "David Wilson", image: "/assets/profile.png" },
+  { id: 6, name: "Sarah Brown", image: "/assets/profile.png" },
+  { id: 7, name: "Chris Martin", image: "/assets/profile.png" },
+  { id: 8, name: "Lisa Anderson", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+  { id: 10, name: "Amanda White", image: "/assets/profile.png" }
 ];
+
+////////////// TMDB/////////
+// if (getSeriesCastData && Array.isArray(getSeriesCastData.cast)) {
+//   seriesData.cast = getSeriesCastData.cast.map((c) => ({
+//     id: c.id || c.cast_id || Math.random(),
+//     name: c.name || c.original_name || "",
+//     image: c.profile_path ? castImageUrl + c.profile_path : "/assets/profile.png",
+//   }));
+// } else {
+//   seriesData.cast = [];
+// }
+
 
   // try detect favorite state if helper exists
   try {
@@ -152,14 +221,7 @@ async function SeriesDetailPage() {
 
   // --- Render the UI ---
   const genresText = seriesData.genres.join(" / ");
-  const castHtml = seriesData.cast
-    .map((member, index) => `
-      <div class="cast-card" data-index="${index}" tabindex="0">
-        <img src="${member.image}" alt="${member.name}" class="cast-image" />
-        <p class="cast-name">${member.name}</p>
-      </div>
-    `)
-    .join("");
+ 
 
   const heartIconHtml = seriesData.isFavorite
     ? '<img src="/assets/heart-filled.svg" alt="fav" />'
@@ -252,14 +314,18 @@ async function SeriesDetailPage() {
               <div class="cast-dropdown-header">
                 <h3>Cast & Crew</h3>
               </div>
-              <div class="cast-dropdown-grid">
-                ${seriesData.cast.map((member, index) => `
-                  <div class="cast-dropdown-card" data-index="${index}" tabindex="0">
-                    <img src="${member.image}" alt="${member.name}" class="cast-dropdown-image" />
-                    <p class="cast-dropdown-name">${member.name}</p>
-                  </div>
-                `).join('')}
-              </div>
+<div class="cast-dropdown-grid">
+  ${seriesData.cast && seriesData.cast.length > 0 
+    ? seriesData.cast.map((member, index) => `
+      <div class="cast-dropdown-card" data-index="${index}" tabindex="0">
+          <img src="${member.image}" alt="${member.name}" class="cast-image" "/>
+             
+        <p class="cast-dropdown-name">${member.name}</p>
+      </div>
+    `).join('')
+    : '<p style="color: white; padding: 20px; text-align: center;">No cast information available</p>'
+  }
+</div>
             </div>
           </div>
         </div>
@@ -545,13 +611,19 @@ if (castBtn && castWrapper) {
         // Add dimmed class to play and trailer buttons
         if (playBtn) playBtn.classList.add("dimmed");
         if (trailerBtn) trailerBtn.classList.add("dimmed");
-        
-        // Calculate dropdown height for the white border
         setTimeout(() => {
-          const h = castDropdown.offsetHeight;
-          castWrapper.style.setProperty("--cast-dropdown-height", `${h + 15}px`);
-        }, 10);
-      } else {
+    const h = castDropdown.offsetHeight;
+    const w = castDropdown.offsetWidth;
+    castWrapper.style.setProperty("--cast-dropdown-height", `${h + 15}px`);
+    
+    // ✅ ADD: Auto-focus first cast card when opening
+    const firstCastCard = castDropdown.querySelector(".cast-dropdown-card");
+    if (firstCastCard) {
+      firstCastCard.classList.add("focused");
+      firstCastCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, 10);
+} else {
         // Close dropdown
         castDropdown.classList.add("hidden");
         castBtn.classList.remove("open");
@@ -696,234 +768,78 @@ document.addEventListener("keydown", function closeCastDropdownHandler(e) {
   }
 }, true); // Use capture phase to catch event early
 
-
-//   function handleRemoteNavigation(e) {
-
-//     const seasonWrapper = container.querySelector("#season-wrapper");
-// if (seasonWrapper && seasonWrapper.classList.contains("active")) {
-//   return; // season menu has its own key handler
-// }
-
-//   const castDropdown = container.querySelector(".cast-section");
-//   if (castDropdown && castDropdown.classList.contains("visible")) {
-//     return;
-//   }
-
-
-//     // ⭐ CRITICAL FIX: Only handle if we're actually on the detail page!
-// if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
-
-//     const buttons = Array.from(container.querySelectorAll(".action-button"));
-//     const casts = Array.from(container.querySelectorAll(".cast-card"));
-//     const episodes = Array.from(container.querySelectorAll(".episode-card"));
-
-//     function getRowIndex(el) {
-//       if (!el) return 0;
-//       return Math.floor(el.getBoundingClientRect().top);
-//     }
-
-    
-
-//     switch (e.key) {
-//       case "ArrowRight":
-//         e.preventDefault();
-//         if (currentSection === "buttons") {
-//           if (currentFocusIndex < buttons.length - 1) {
-//             currentFocusIndex++;
-//             setFocusOnButton(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         if (currentSection === "episodes") {
-//           if (currentFocusIndex < episodes.length - 1) {
-//             currentFocusIndex++;
-//             setFocusOnEpisode(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         if (currentSection === "cast") {
-//           if (currentFocusIndex < casts.length - 1) {
-//             currentFocusIndex++;
-//             setFocusOnCast(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         break;
-
-//       case "ArrowLeft":
-//         e.preventDefault();
-//         if (currentSection === "buttons") {
-//           if (currentFocusIndex > 0) {
-//             currentFocusIndex--;
-//             setFocusOnButton(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         if (currentSection === "episodes") {
-//           if (currentFocusIndex > 0) {
-//             currentFocusIndex--;
-//             setFocusOnEpisode(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         if (currentSection === "cast") {
-//           if (currentFocusIndex > 0) {
-//             currentFocusIndex--;
-//             setFocusOnCast(currentFocusIndex);
-//           }
-//           return;
-//         }
-//         break;
-
-//       case "ArrowDown":
-//         e.preventDefault();
-//         if (currentSection === "header") {
-//           currentSection = "buttons";
-//           currentFocusIndex = 0;
-//           setFocusOnButton(0);
-//           return;
-//         }
-//         if (currentSection === "buttons") {
-//           setFocusOnSeason();
-//           return;
-//         }
-//         if (currentSection === "seasons") {
-//           if (episodes.length > 0) {
-//             currentFocusIndex = 0;
-//             setFocusOnEpisode(0);
-//           }
-//           return;
-//         }
-//         if (currentSection === "episodes") {
-//           const curr = episodes[currentFocusIndex];
-//           const currRow = getRowIndex(curr);
-//           for (let i = currentFocusIndex + 1; i < episodes.length; i++) {
-//             if (getRowIndex(episodes[i]) > currRow) {
-//               currentFocusIndex = i;
-//               setFocusOnEpisode(i);
-//               return;
-//             }
-//           }
-
-//             const castSection = container.querySelector(".cast-section");
-//     if (casts.length > 0 && castSection && castSection.classList.contains("visible")) {
-//       currentFocusIndex = 0;
-//       setFocusOnCast(0);
-//     }
+// Add cast dropdown navigation handler
+// Replace the handleCastDropdownNavigation function with this simpler version:
+document.addEventListener("keydown", function handleCastDropdownNavigation(e) {
+  const castDropdown = container.querySelector("#cast-dropdown");
   
-//           // If no more rows in episodes, go to cast
-//           if (casts.length > 0) {
-//             currentFocusIndex = 0;
-//             setFocusOnCast(0);
-//           }
-//           return;
-//         }
-//         if (currentSection === "cast") {
-//           const curr = casts[currentFocusIndex];
-//           const currRow = getRowIndex(curr);
-//           for (let i = currentFocusIndex + 1; i < casts.length; i++) {
-//             if (getRowIndex(casts[i]) > currRow) {
-//               currentFocusIndex = i;
-//               setFocusOnCast(i);
-//               return;
-//             }
-//           }
-//           return;
-//         }
-
-        
-//         break;
-
-//       case "ArrowUp":
-//         e.preventDefault();
-//         if (currentSection === "cast") {
-//           const curr = casts[currentFocusIndex];
-//           const currRow = getRowIndex(curr);
-//           const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
-//           if (isTopRow) {
-//             if (episodes.length > 0) {
-//               currentFocusIndex = episodes.length - 1;
-//               setFocusOnEpisode(currentFocusIndex);
-//             } else {
-//               setFocusOnSeason();
-//             }
-//             return;
-//           }
-//           for (let i = currentFocusIndex - 1; i >= 0; i--) {
-//             if (getRowIndex(casts[i]) < currRow) {
-//               currentFocusIndex = i;
-//               setFocusOnCast(i);
-//               return;
-//             }
-//           }
-//           return;
-//         }
-//         if (currentSection === "episodes") {
-//           const curr = episodes[currentFocusIndex];
-//           const currRow = getRowIndex(curr);
-//           const isTopRow = !episodes.some(ep => getRowIndex(ep) < currRow);
-//           if (isTopRow) {
-//             setFocusOnSeason();
-//             return;
-//           }
-//           for (let i = currentFocusIndex - 1; i >= 0; i--) {
-//             if (getRowIndex(episodes[i]) < currRow) {
-//               currentFocusIndex = i;
-//               setFocusOnEpisode(i);
-//               return;
-//             }
-//           }
-//           return;
-//         }
-//         if (currentSection === "seasons") {
-//           currentSection = "buttons";
-//           currentFocusIndex = 0;
-//           setFocusOnButton(0);
-//           return;
-//         }
-//         if (currentSection === "buttons") {
-//           currentSection = "header";
-//           setFocusOnHeaderSearch();
-//           return;
-//         }
-//         break;
-
-//       case "Enter":
-//         e.preventDefault();
-//         if (currentSection === "buttons") {
-//           buttons[currentFocusIndex].click();
-//         } else if (currentSection === "seasons") {
-//           const seasonDropdown = container.querySelector(".season-dropdown");
-//           seasonDropdown.click();
-//         } else if (currentSection === "episodes") {
-//           episodes[currentFocusIndex].click();
-//         } else if (currentSection === "cast") {
-//           casts[currentFocusIndex].click();
-//         }
-//         return;
-
-//       default:
-//         if (
-//           e.keyCode === 10009 ||
-//           e.key === "Escape" ||
-//           e.key === "Back" ||
-//           e.key === "BrowserBack" ||
-//           e.key === "XF86Back"
-//         ) {
-//           localStorage.removeItem("selectedSeriesId");
-//           localStorage.setItem("currentPage", "seriesPage");
-//           if (typeof Router !== "undefined" && Router.showPage) {
-//             Router.showPage("series");
-//           } else if (typeof navigateTo === "function") {
-//             navigateTo("series-page");
-//           }
-//           document.body.style.backgroundImage = "none";
-//           document.body.style.backgroundColor = "black";
-//           return;
-//         }
-//     }
-//   }
-
+  if (!castDropdown || castDropdown.classList.contains("hidden")) return;
+  
+  const castCards = Array.from(castDropdown.querySelectorAll(".cast-dropdown-card"));
+  if (castCards.length === 0) return;
+  
+  let focusedCard = castDropdown.querySelector(".cast-dropdown-card.focused");
+  let currentIndex = focusedCard ? castCards.indexOf(focusedCard) : -1;
+  
+  // Helper to set focus on cast card
+  function focusCastCard(index) {
+    castCards.forEach(card => card.classList.remove("focused"));
+    if (castCards[index]) {
+      castCards[index].classList.add("focused");
+      // Scroll to center the focused card
+      castCards[index].scrollIntoView({ 
+        behavior: "smooth", 
+        block: "nearest", 
+        inline: "center" 
+      });
+    }
+  }
+  
+  // Initialize focus on first card when opening
+  if (currentIndex === -1 && e.key === "ArrowDown") {
+    e.preventDefault();
+    e.stopPropagation();
+    focusCastCard(0);
+    return;
+  }
+  
+  switch (e.key) {
+    case "ArrowRight":
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentIndex === -1) {
+        focusCastCard(0);
+      } else if (currentIndex < castCards.length - 1) {
+        focusCastCard(currentIndex + 1);
+      }
+      break;
+      
+    case "ArrowLeft":
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentIndex > 0) {
+        focusCastCard(currentIndex - 1);
+      }
+      break;
+      
+    case "ArrowUp":
+      e.preventDefault();
+      e.stopPropagation();
+      // Go back to cast button
+      castCards.forEach(card => card.classList.remove("focused"));
+      setFocusOnButton(2); // Focus cast button (index 2)
+      break;
+      
+    case "ArrowDown":
+      e.preventDefault();
+      e.stopPropagation();
+      // Focus first card if not already focused
+      if (currentIndex === -1) {
+        focusCastCard(0);
+      }
+      break;
+  }
+}, true);
 
 
 function handleRemoteNavigation(e) {

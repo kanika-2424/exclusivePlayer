@@ -95,7 +95,6 @@ function SeriesPage() {
 
   // Build a single series card HTML (keeps classes identical to movies cards so CSS works)
   function buildMovieCardHTML(s) {
-    console.log("s" , s);
     
     const img = s.cover || s.stream_icon || "/assets/noImageFound.png";
     const title = s.name || s.title || "Untitled";

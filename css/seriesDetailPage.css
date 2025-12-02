@@ -31,7 +31,7 @@
   right: -3px;
 
   /* This will stretch to cover the dropdown */
-  height: calc(100% + var(--dropdown-height, 0px));
+  height: calc(95% + var(--dropdown-height, 0px));
 
   border-radius: 22px;
   border: 3px solid white;
@@ -186,11 +186,12 @@
 .episode-image-container {
   position: relative;
   width: 100%;
-  height: 100px;
   padding-bottom: 56.25%;
   border-radius: 12px;
   overflow: hidden;
 }
+
+
 
 .episode-image {
   position: absolute;
@@ -209,7 +210,6 @@
   border-radius: 25px;
   display: flex;
   align-items: center;
-  gap: 6px;
   color: white;
   font-weight: 700;
   font-size: 18px;
@@ -219,6 +219,7 @@
 .star-icon {
   width: 18px;
   height: 18px;
+margin-right: 8px;
 }
 
 /* Episode number badge */
@@ -230,25 +231,29 @@
   font-size: 30px;
   font-weight: 500;
   color: white;
+  z-index: 9999;
   border-radius: 6px;
 }
 
 /* Overlay content */
 .episode-overlay-content {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   padding: 20px;
+  box-sizing: border-box;
 }
-
 .playpng {
   width: 80px;
   height: 80px;
-  margin-bottom: 20px;
+  margin-bottom: 1px;
 }
 
 .episode-title {
@@ -256,18 +261,17 @@
   font-weight: 700;
   color: white;
   text-align: center;
-  margin-bottom: 12px;
-  -webkit-line-clamp: 2;
+  margin-bottom: 1px;
+  -webkit-line-clamp: 1;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  /* overflow: hidden; */
+  overflow: hidden;
 }
 
 .episode-description {
   font-size: 15px;
   color: rgba(255,255,255,0.95);
   text-align: center;
-  margin-bottom: 16px;
   -webkit-line-clamp: 2;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -282,6 +286,10 @@
   border-radius: 10px;
   font-weight: 600;
 }
+
+
+
+
 
 /* -------------------------------------------------------
    CAST DROPDOWN SECTION
@@ -385,6 +393,7 @@
   transition: opacity 0.3s ease, transform 0.3s ease;
   box-sizing: border-box;
   z-index: 999;
+
 }
 
 .cast-dropdown.hidden {
@@ -404,12 +413,32 @@
   margin: 0;
 }
 
+/* ✅ HORIZONTAL SINGLE ROW */
 .cast-dropdown-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  display: flex; /* ✅ CHANGED: Flex for horizontal */
+  flex-direction: row;
   gap: 30px;
-  max-height: 500px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-x: auto; 
+  overflow-y: visible;
+  padding: 10px 0;
+  scroll-behavior: smooth;
+  
+}
+
+/* Hide scrollbar but keep functionality */
+.cast-dropdown-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.cast-dropdown-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.cast-dropdown-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
 }
 
 .cast-dropdown-card {
@@ -418,26 +447,34 @@
   align-items: center;
   cursor: pointer;
   transition: transform 0.2s ease;
+  flex-shrink: 0; /* ✅ ADDED: Prevent shrinking - keeps cards in one line */
+  min-width: 150px; /* ✅ ADDED: Minimum width */
 }
 
-.cast-dropdown-card:hover,
+/* .cast-dropdown-card:hover,
 .cast-dropdown-card.focused {
   transform: scale(1.05);
-}
+} */
 
-.cast-dropdown-image {
+/* .cast-dropdown-card.focused {
+  outline: 3px solid #4EA1FF;
+  outline-offset: 2px;
+  border-radius: 12px;
+} */
+
+.cast-image {
   width: 100px;
   height: 100px;
-  border-radius: 50%;
+  /* border-radius: 50%; */
   object-fit: cover;
   margin-bottom: 10px;
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
 }
 
-.cast-dropdown-card:hover .cast-dropdown-image,
-.cast-dropdown-card.focused .cast-dropdown-image {
-  border-color: #4A90E2;
+.cast-dropdown-card:hover .cast-image,
+.cast-dropdown-card.focused .cast-image {
+  border-color: #4EA1FF;
 }
 
 .cast-dropdown-name {
@@ -445,6 +482,9 @@
   font-size: 14px;
   text-align: center;
   margin: 0;
+  padding-top: 4px;
+  max-width: 120px;
+  word-wrap: break-word;
 }
 
 
@@ -510,4 +550,16 @@
 .action-buttons {
   position: relative;
   z-index: 1000; /* Higher than backdrop */
+}
+
+/* Add this to your existing CSS */
+/* .cast-dropdown-card.focused {
+  outline: 3px solid #4EA1FF;
+  outline-offset: 2px;
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+} */
+
+.cast-dropdown-grid::-webkit-scrollbar {
+  height: 0px;
 }

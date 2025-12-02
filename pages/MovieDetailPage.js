@@ -169,7 +169,7 @@ try {
     .map((member, index) => `
       <div class="cast-card" data-index="${index}" tabindex="0">
         <img src="${member.image}" alt="${member.name}" class="cast-image" "/>
-        <p class="cast-name">${member.name}</p>
+        <p class="cast-dropdown-name">${member.name}</p>
       </div>
     `)
     .join("");
