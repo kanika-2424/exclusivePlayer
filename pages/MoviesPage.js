@@ -9,6 +9,7 @@ const PAGE_SIZE = CARDS_PER_ROW * ROWS_PER_LOAD;// Load more chunk
   let selectedCategoryId = null;
   let visibleCount = PAGE_SIZE;
   let lastFocusedCategory = 0;
+let isRestoringState = false; // Flag to prevent navigation during state restoration
 
 
   let isSearchInputActive = false; // For category search
@@ -21,11 +22,26 @@ let isHeaderSearchActive = false; // For header search
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
 
+
+
+
+
+
   // DOM helpers
   const qs = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
 
+     const shouldResetFocus = localStorage.getItem("resetMoviesFocus") === "yes";
+`
+// if (shouldResetFocus) {
+//   currentFocusIndex = 0;      // focus first card
+//   setFocusOnCard(0);              // your function that highlights card
+//   localStorage.removeItem("resetMoviesFocus");
+// }`
+
   // Utility: group movies by category_id (string)
+console.log("currentPage" , localStorage.getItem("currentPage"));
+  
   function buildCategoryMap() {
     const allCats = Array.isArray(window.moviesCategories) ? window.moviesCategories : [];
     const allMovies = Array.isArray(window.allMoviesStreams) ? window.allMoviesStreams : [];
@@ -41,7 +57,7 @@ let isHeaderSearchActive = false; // For header search
       _movieCount: 0
     }));
 
-    // Build map skeleton
+    // Build map skeleton`
     moviesByCategory = {};
     categories.forEach(c => moviesByCategory[c.id] = []);
 
@@ -163,7 +179,13 @@ function buildMovieCardHTML(m) {
   // Focus helpers
   let movieCards = [];
   function setFocusOnCard(index) {
-    movieCards = Array.from(qs(".movies-grid").querySelectorAll(".movie-card"));
+  const grid = qs(".movies-grid");
+if (!grid) {
+  movieCards = [];
+  return;   // ← prevents crash
+}
+
+movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     removeAllFocus();
     
     // Blur any input fields when focusing cards
@@ -182,6 +204,8 @@ function buildMovieCardHTML(m) {
     currentSection = "movies";
   }
 
+
+ 
   function setFocusOnCategory(index) {
     removeAllFocus();
     const items = Array.from(document.querySelectorAll(".movies-category-item"));
@@ -303,21 +327,63 @@ function removeAllFocus() {
 
   const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
-  // Back -> go to dashboard (ALWAYS HANDLE THIS FIRST)
-  if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
-    console.log("✅ Escape detected! Going to dashboard...");
+
+  // Inside handleRemoteNavigation function in MoviesPage
+
+// Back -> go to dashboard (or previous)
+// Back -> go to dashboard
+if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+  // Don't handle back during state restoration
+  if (isRestoringState) {
     e.preventDefault();
-    e.stopPropagation();
-    localStorage.setItem("currentPage", "dashboard");
-    if (typeof Router !== "undefined" && Router.showPage) {
-      console.log("📍 Using Router.showPage");
-      Router.showPage("dashboard");
-    } else if (typeof navigateTo === "function") {
-      console.log("📍 Using navigateTo");
-      navigateTo("dashboard-page");
-    }
     return;
   }
+  
+  e.preventDefault();
+  e.stopPropagation();
+  localStorage.setItem("currentPage", "dashboard");
+  
+  if (typeof Router !== "undefined" && Router.showPage) {
+    Router.showPage("dashboard");
+  } else if (typeof navigateTo === "function") {
+    navigateTo("dashboard-page");
+  }
+  return;
+}
+
+
+
+  // Back -> go to dashboard (ALWAYS HANDLE THIS FIRST)
+  // if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+  //   console.log("✅ Escape detected! Going to dashboard...");
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   localStorage.setItem("currentPage", "dashboard");
+  //   if (typeof Router !== "undefined" && Router.showPage) {
+  //     console.log("📍 Using Router.showPage");
+  //     Router.showPage("dashboard");
+  //   } else if (typeof navigateTo === "function") {
+  //     console.log("📍 Using navigateTo");
+  //     navigateTo("dashboard-page");
+  //   }
+  //   return;
+  // }
+
+  // Back -> go to dashboard (ALWAYS HANDLE THIS FIRST)
+  // if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+  //   console.log("✅ Escape detected! Going to dashboard...");
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   localStorage.setItem("currentPage", "dashboard");
+  //   if (typeof Router !== "undefined" && Router.showPage) {
+  //     console.log("📍 Using Router.showPage");
+  //     Router.showPage("dashboard");
+  //   } else if (typeof navigateTo === "function") {
+  //     console.log("📍 Using navigateTo");
+  //     navigateTo("dashboard-page");
+  //   }
+  //   return;
+  // }
     const cardsContainer = qs(".movies-grid");
     const cards = cardsContainer ? Array.from(cardsContainer.querySelectorAll(".movie-card")) : [];
     const categoriesEls = Array.from(qs(".movies-categories-list").querySelectorAll(".movies-category-item"));
@@ -808,6 +874,7 @@ function computeCardsPerRow() {
     const savedCatIndex = localStorage.getItem("moviesCategoryIndex");
     const savedCardIndex = localStorage.getItem("moviesCardIndex");
     if (savedCatId) {
+      
       selectedCategoryId = String(savedCatId);
       currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
       visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
@@ -913,6 +980,8 @@ searchEl.addEventListener("input", (ev) => {
       });
     }
 
+
+    
     // cleanup
   // cleanup
 MoviesPage.cleanup = () => {

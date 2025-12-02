@@ -69,6 +69,8 @@ function DashboardPage() {
         localStorage.setItem("movieSortValue", "default");
         localStorage.setItem("currentPage", "moviesPage");
         DashboardPage.cleanup();
+        localStorage.setItem("resetMoviesFocus", "yes");
+
         navigateTo("movies-page");
         return;
       }

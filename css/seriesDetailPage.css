@@ -67,8 +67,12 @@
 
 /* slight lift on hover/focus */
 .season-dropdown:hover,
-.season-dropdown:focus {
-  transform: translateY(-1px);
+.season-dropdown.focused {
+  /* transform: translateY(-1px); */
+   border: 2px solid white;
+  transform: scale(1.05);
+
+
 }
 
 /* Arrow rotation when open */
@@ -463,8 +467,8 @@ margin-right: 8px;
 } */
 
 .cast-image {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 200px;
   /* border-radius: 50%; */
   object-fit: cover;
   margin-bottom: 10px;

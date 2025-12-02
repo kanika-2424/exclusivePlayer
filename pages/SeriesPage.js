@@ -164,7 +164,14 @@ function SeriesPage() {
   // Focus helpers
   let movieCards = [];
   function setFocusOnCard(index) {
-    movieCards = Array.from(qs(".movies-grid").querySelectorAll(".movie-card"));
+const grid = qs(".movies-grid");
+if (!grid) {
+  movieCards = [];
+  return;   // ← prevents crash
+}
+
+movieCards = Array.from(grid.querySelectorAll(".movie-card"));
+
     removeAllFocus();
 
     // Blur any input fields when focusing cards

@@ -7,6 +7,11 @@ async function MovieDetailPage() {
   const castImageUrl = "https://image.tmdb.org/t/p/w500";
   const loadingOverlay = document.getElementById("loading-overlay");
 
+
+console.log("currentPage" , localStorage.getItem("currentPage"));
+
+
+
   // --- Back navigation/interruption guard during loading ---
   let navigationInterrupted = false;
   function handleBackNavigationDuringLoading(e) {
@@ -81,21 +86,21 @@ var tmdbId =
 
 var getMovieCastData = null;
 
-try {
-  if (tmdbId) {
-    // Correct TMDB call with your API key
-    const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${localStorage.getItem("tmbdId")}`;
+// try {
+//   if (tmdbId) {
+//     // Correct TMDB call with your API key
+//     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${localStorage.getItem("tmbdId")}`;
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("TMDB Cast API failed");
-    getMovieCastData = await res.json();
-  } else {
-    console.warn("No tmdb_id available in Xtream API");
-  }
-} catch (err) {
-  console.warn("getMovieCast error", err);
-  getMovieCastData = null;
-}
+//     const res = await fetch(url);
+//     if (!res.ok) throw new Error("TMDB Cast API failed");
+//     getMovieCastData = await res.json();
+//   } else {
+//     console.warn("No tmdb_id available in Xtream API");
+//   }
+// } catch (err) {
+//   console.warn("getMovieCast error", err);
+//   getMovieCastData = null;
+// }
 
 
   if (navigationInterrupted) {
@@ -152,14 +157,14 @@ try {
     movieData.cast = getMovieCastData.cast.map((c) => ({
       id: c.id || c.cast_id || Math.random(),
       name: c.name || c.original_name || "",
-      image: c.profile_path ? castImageUrl + c.profile_path : "/assets/placeholder-img.png",
+      image: c.profile_path ? castImageUrl + c.profile_path : "/assets/profile.png",
     }));
   } else if (movieDetailData.info && movieDetailData.info.cast && Array.isArray(movieDetailData.info.cast)) {
     // fallback if API stores cast in info
     movieData.cast = movieDetailData.info.cast.map((c, i) => ({
       id: i,
       name: c.name || c,
-      image: c.image || "/assets/placeholder-img.png",
+      image: c.image || "/assets/profile.png",
     }));
   }
 
@@ -356,6 +361,58 @@ setTimeout(() => {
     container.scrollTop = 0;
   }
 }, 0);
+
+// Remove any existing listener first, then add new one
+function handleDetailPageBack(e) {
+  const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
+  
+  if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+    const currentPage = localStorage.getItem("currentPage");
+    
+    // Only handle if we're on movie detail page
+    if (currentPage === "moviesDetailPage") {
+      e.preventDefault();
+      e.stopImmediatePropagation(); // Use stopImmediatePropagation instead
+      
+      // Navigate back to movies page
+      localStorage.setItem("currentPage", "moviesPage");
+      
+      if (typeof Router !== "undefined" && Router.showPage) {
+        Router.showPage("movies-page");
+      } else if (typeof navigateTo === "function") {
+        navigateTo("movies-page");
+      }
+      
+      return false;
+    }
+  }
+}
+
+// Store reference for cleanup
+let detailBackHandler = null;
+
+// Initialize - remove old listener if exists, add new one
+function initMovieDetailPage() {
+  // Remove old listener
+  if (detailBackHandler) {
+    document.removeEventListener("keydown", detailBackHandler);
+  }
+  
+  // Add new listener
+  detailBackHandler = handleDetailPageBack;
+  document.addEventListener("keydown", detailBackHandler);
+}
+
+// Call this when movie detail page loads
+initMovieDetailPage();
+
+// Cleanup function
+MovieDetailPage.cleanup = () => {
+  if (detailBackHandler) {
+    document.removeEventListener("keydown", detailBackHandler);
+    detailBackHandler = null;
+  }
+};
 
   // click handlers for buttons
   const playBtn = container.querySelector(".play-button");
@@ -568,37 +625,26 @@ function handleRemoteNavigation(e) {
     // -------------------------------------------------
     // ENTER
     // -------------------------------------------------
-    case "Enter":
-      e.preventDefault();
-      if (currentSection === "buttons") {
-        buttons[currentFocusIndex].click();
-      } else if (currentSection === "cast") {
-        casts[currentFocusIndex].click();
-      }
-      return;
+  case "Enter":
+  e.preventDefault();
 
-    // -------------------------------------------------
-    // BACK HANDLER
-    // -------------------------------------------------
-    default:
-      if (
-        e.keyCode === 10009 ||
-        e.key === "Escape" ||
-        e.key === "Back" ||
-        e.key === "BrowserBack" ||
-        e.key === "XF86Back"
-      ) {
-        localStorage.removeItem("selectedMovieId");
-        localStorage.setItem("currentPage", "moviesPage");
-        if (typeof Router !== "undefined" && Router.showPage) {
-          Router.showPage("movies");
-        } else if (typeof navigateTo === "function") {
-          navigateTo("movies-page");
-        }
-        document.body.style.backgroundImage = "none";
-        document.body.style.backgroundColor = "black";
-        return;
-      }
+  if (currentSection === "buttons") {
+    if (buttons && buttons.length > 0 && buttons[currentFocusIndex]) {
+      buttons[currentFocusIndex].click();
+    }
+    return;
+  }
+
+  if (currentSection === "cast") {
+    if (casts && casts.length > 0 && casts[currentFocusIndex]) {
+      casts[currentFocusIndex].click();
+    }
+    return;
+  }
+
+  return;
+
+
   }
 }
 
