@@ -188,12 +188,7 @@ async function SeriesDetailPage() {
       </div>
 
       <div class="header-right">
-        <div class="search-container">
-          <div class="search-icon">
-            <img src="/assets/search.png" />
-          </div>
-          <input type="text" class="search-input" placeholder="Search Series" />
-        </div>
+       
         <div class="menu-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
@@ -243,10 +238,11 @@ async function SeriesDetailPage() {
               <span class="play-icon">▶</span>
               <span>Play S1.E1</span>
             </button>
-            <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">Watch Trailer</button>
+            <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : ''} tabindex="0">Watch Trailer</button>
             <button class="action-button cast-button" tabindex="0">
               <span>Cast</span>
-              <span class="cast-arrow">^</span>
+              <span class="cast-arrow">  <i class="fa-solid fa-chevron-down"></i>
+</span>
             </button>
           </div>
 
@@ -277,8 +273,10 @@ async function SeriesDetailPage() {
     <div class="season-wrapper" id="season-wrapper">
       <!-- Blue pill button -->
       <button class="season-dropdown" id="season-dropdown" aria-haspopup="listbox" aria-expanded="false" tabindex="0">
-        <span class="season-text">Season 01</span>
-        <span class="dropdown-arrow">v</span>
+        <span class="season-text">Season 1</span>
+              <span class="cast-arrow">  <i class="fa-solid fa-chevron-down"></i>
+
+        
       </button>
 
       <!-- White bordered menu container (hidden by default) -->
@@ -520,9 +518,16 @@ async function SeriesDetailPage() {
     });
   }
 
+
 const castWrapper = container.querySelector("#cast-wrapper");
 
 if (castBtn && castWrapper) {
+  // Create backdrop element
+  const backdrop = document.createElement('div');
+  backdrop.className = 'cast-backdrop';
+  backdrop.id = 'cast-backdrop';
+  document.body.appendChild(backdrop);
+
   castBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     const castDropdown = container.querySelector("#cast-dropdown");
@@ -535,6 +540,11 @@ if (castBtn && castWrapper) {
         castDropdown.classList.remove("hidden");
         castBtn.classList.add("open");
         castWrapper.classList.add("active");
+        backdrop.classList.add("active");
+        
+        // Add dimmed class to play and trailer buttons
+        if (playBtn) playBtn.classList.add("dimmed");
+        if (trailerBtn) trailerBtn.classList.add("dimmed");
         
         // Calculate dropdown height for the white border
         setTimeout(() => {
@@ -546,8 +556,31 @@ if (castBtn && castWrapper) {
         castDropdown.classList.add("hidden");
         castBtn.classList.remove("open");
         castWrapper.classList.remove("active");
+        backdrop.classList.remove("active");
+        
+        // Remove dimmed class from play and trailer buttons
+        if (playBtn) playBtn.classList.remove("dimmed");
+        if (trailerBtn) trailerBtn.classList.remove("dimmed");
+        
         castWrapper.style.removeProperty("--cast-dropdown-height");
       }
+    }
+  });
+  
+  // Close dropdown when clicking backdrop
+  backdrop.addEventListener("click", () => {
+    const castDropdown = container.querySelector("#cast-dropdown");
+    if (castDropdown && !castDropdown.classList.contains("hidden")) {
+      castDropdown.classList.add("hidden");
+      castBtn.classList.remove("open");
+      castWrapper.classList.remove("active");
+      backdrop.classList.remove("active");
+      
+      // Remove dimmed class
+      if (playBtn) playBtn.classList.remove("dimmed");
+      if (trailerBtn) trailerBtn.classList.remove("dimmed");
+      
+      castWrapper.style.removeProperty("--cast-dropdown-height");
     }
   });
   
@@ -560,6 +593,12 @@ if (castBtn && castWrapper) {
         castDropdown.classList.add("hidden");
         castBtn.classList.remove("open");
         castWrapper.classList.remove("active");
+        backdrop.classList.remove("active");
+        
+        // Remove dimmed class
+        if (playBtn) playBtn.classList.remove("dimmed");
+        if (trailerBtn) trailerBtn.classList.remove("dimmed");
+        
         castWrapper.style.removeProperty("--cast-dropdown-height");
       }
     }
@@ -613,220 +652,535 @@ if (castBtn) {
     });
   });
 
-  function handleRemoteNavigation(e) {
 
-    // ⭐ CRITICAL FIX: Only handle if we're actually on the detail page!
-if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
-
-    const buttons = Array.from(container.querySelectorAll(".action-button"));
-    const casts = Array.from(container.querySelectorAll(".cast-card"));
-    const episodes = Array.from(container.querySelectorAll(".episode-card"));
-
-    function getRowIndex(el) {
-      if (!el) return 0;
-      return Math.floor(el.getBoundingClientRect().top);
+  // Add this right after castBtn event listener setup, BEFORE handleRemoteNavigation
+document.addEventListener("keydown", function closeCastDropdownHandler(e) {
+  const castDropdown = container.querySelector("#cast-dropdown");
+  const backdrop = document.getElementById('cast-backdrop');
+  const castWrapper = container.querySelector("#cast-wrapper");
+  const castBtn = container.querySelector(".cast-button");
+  const playBtn = container.querySelector(".play-button");
+  const trailerBtn = container.querySelector(".trailer-button");
+  
+  if (!castDropdown || castDropdown.classList.contains("hidden")) return;
+  
+  // Check for ESC or Back keys
+  if (
+    e.keyCode === 27 ||  // ESC
+    e.keyCode === 10009 ||  // Samsung/LG Back
+    e.key === "Escape" || 
+    e.key === "Back" || 
+    e.key === "BrowserBack" || 
+    e.key === "XF86Back"
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    // Close dropdown
+    castDropdown.classList.add("hidden");
+    if (castBtn) castBtn.classList.remove("open");
+    if (castWrapper) {
+      castWrapper.classList.remove("active");
+      castWrapper.style.removeProperty("--cast-dropdown-height");
     }
+    
+    // Remove backdrop
+    if (backdrop) backdrop.classList.remove("active");
+    
+    // Remove dimmed class from buttons
+    if (playBtn) playBtn.classList.remove("dimmed");
+    if (trailerBtn) trailerBtn.classList.remove("dimmed");
+    
+    setFocusOnButton(2);
+  }
+}, true); // Use capture phase to catch event early
 
-    switch (e.key) {
-      case "ArrowRight":
-        e.preventDefault();
-        if (currentSection === "buttons") {
-          if (currentFocusIndex < buttons.length - 1) {
-            currentFocusIndex++;
-            setFocusOnButton(currentFocusIndex);
-          }
-          return;
-        }
-        if (currentSection === "episodes") {
-          if (currentFocusIndex < episodes.length - 1) {
-            currentFocusIndex++;
-            setFocusOnEpisode(currentFocusIndex);
-          }
-          return;
-        }
-        if (currentSection === "cast") {
-          if (currentFocusIndex < casts.length - 1) {
-            currentFocusIndex++;
-            setFocusOnCast(currentFocusIndex);
-          }
-          return;
-        }
-        break;
 
-      case "ArrowLeft":
-        e.preventDefault();
-        if (currentSection === "buttons") {
-          if (currentFocusIndex > 0) {
-            currentFocusIndex--;
-            setFocusOnButton(currentFocusIndex);
-          }
-          return;
-        }
-        if (currentSection === "episodes") {
-          if (currentFocusIndex > 0) {
-            currentFocusIndex--;
-            setFocusOnEpisode(currentFocusIndex);
-          }
-          return;
-        }
-        if (currentSection === "cast") {
-          if (currentFocusIndex > 0) {
-            currentFocusIndex--;
-            setFocusOnCast(currentFocusIndex);
-          }
-          return;
-        }
-        break;
+//   function handleRemoteNavigation(e) {
 
-      case "ArrowDown":
-        e.preventDefault();
-        if (currentSection === "header") {
-          currentSection = "buttons";
+//     const seasonWrapper = container.querySelector("#season-wrapper");
+// if (seasonWrapper && seasonWrapper.classList.contains("active")) {
+//   return; // season menu has its own key handler
+// }
+
+//   const castDropdown = container.querySelector(".cast-section");
+//   if (castDropdown && castDropdown.classList.contains("visible")) {
+//     return;
+//   }
+
+
+//     // ⭐ CRITICAL FIX: Only handle if we're actually on the detail page!
+// if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
+
+//     const buttons = Array.from(container.querySelectorAll(".action-button"));
+//     const casts = Array.from(container.querySelectorAll(".cast-card"));
+//     const episodes = Array.from(container.querySelectorAll(".episode-card"));
+
+//     function getRowIndex(el) {
+//       if (!el) return 0;
+//       return Math.floor(el.getBoundingClientRect().top);
+//     }
+
+    
+
+//     switch (e.key) {
+//       case "ArrowRight":
+//         e.preventDefault();
+//         if (currentSection === "buttons") {
+//           if (currentFocusIndex < buttons.length - 1) {
+//             currentFocusIndex++;
+//             setFocusOnButton(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         if (currentSection === "episodes") {
+//           if (currentFocusIndex < episodes.length - 1) {
+//             currentFocusIndex++;
+//             setFocusOnEpisode(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         if (currentSection === "cast") {
+//           if (currentFocusIndex < casts.length - 1) {
+//             currentFocusIndex++;
+//             setFocusOnCast(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         break;
+
+//       case "ArrowLeft":
+//         e.preventDefault();
+//         if (currentSection === "buttons") {
+//           if (currentFocusIndex > 0) {
+//             currentFocusIndex--;
+//             setFocusOnButton(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         if (currentSection === "episodes") {
+//           if (currentFocusIndex > 0) {
+//             currentFocusIndex--;
+//             setFocusOnEpisode(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         if (currentSection === "cast") {
+//           if (currentFocusIndex > 0) {
+//             currentFocusIndex--;
+//             setFocusOnCast(currentFocusIndex);
+//           }
+//           return;
+//         }
+//         break;
+
+//       case "ArrowDown":
+//         e.preventDefault();
+//         if (currentSection === "header") {
+//           currentSection = "buttons";
+//           currentFocusIndex = 0;
+//           setFocusOnButton(0);
+//           return;
+//         }
+//         if (currentSection === "buttons") {
+//           setFocusOnSeason();
+//           return;
+//         }
+//         if (currentSection === "seasons") {
+//           if (episodes.length > 0) {
+//             currentFocusIndex = 0;
+//             setFocusOnEpisode(0);
+//           }
+//           return;
+//         }
+//         if (currentSection === "episodes") {
+//           const curr = episodes[currentFocusIndex];
+//           const currRow = getRowIndex(curr);
+//           for (let i = currentFocusIndex + 1; i < episodes.length; i++) {
+//             if (getRowIndex(episodes[i]) > currRow) {
+//               currentFocusIndex = i;
+//               setFocusOnEpisode(i);
+//               return;
+//             }
+//           }
+
+//             const castSection = container.querySelector(".cast-section");
+//     if (casts.length > 0 && castSection && castSection.classList.contains("visible")) {
+//       currentFocusIndex = 0;
+//       setFocusOnCast(0);
+//     }
+  
+//           // If no more rows in episodes, go to cast
+//           if (casts.length > 0) {
+//             currentFocusIndex = 0;
+//             setFocusOnCast(0);
+//           }
+//           return;
+//         }
+//         if (currentSection === "cast") {
+//           const curr = casts[currentFocusIndex];
+//           const currRow = getRowIndex(curr);
+//           for (let i = currentFocusIndex + 1; i < casts.length; i++) {
+//             if (getRowIndex(casts[i]) > currRow) {
+//               currentFocusIndex = i;
+//               setFocusOnCast(i);
+//               return;
+//             }
+//           }
+//           return;
+//         }
+
+        
+//         break;
+
+//       case "ArrowUp":
+//         e.preventDefault();
+//         if (currentSection === "cast") {
+//           const curr = casts[currentFocusIndex];
+//           const currRow = getRowIndex(curr);
+//           const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
+//           if (isTopRow) {
+//             if (episodes.length > 0) {
+//               currentFocusIndex = episodes.length - 1;
+//               setFocusOnEpisode(currentFocusIndex);
+//             } else {
+//               setFocusOnSeason();
+//             }
+//             return;
+//           }
+//           for (let i = currentFocusIndex - 1; i >= 0; i--) {
+//             if (getRowIndex(casts[i]) < currRow) {
+//               currentFocusIndex = i;
+//               setFocusOnCast(i);
+//               return;
+//             }
+//           }
+//           return;
+//         }
+//         if (currentSection === "episodes") {
+//           const curr = episodes[currentFocusIndex];
+//           const currRow = getRowIndex(curr);
+//           const isTopRow = !episodes.some(ep => getRowIndex(ep) < currRow);
+//           if (isTopRow) {
+//             setFocusOnSeason();
+//             return;
+//           }
+//           for (let i = currentFocusIndex - 1; i >= 0; i--) {
+//             if (getRowIndex(episodes[i]) < currRow) {
+//               currentFocusIndex = i;
+//               setFocusOnEpisode(i);
+//               return;
+//             }
+//           }
+//           return;
+//         }
+//         if (currentSection === "seasons") {
+//           currentSection = "buttons";
+//           currentFocusIndex = 0;
+//           setFocusOnButton(0);
+//           return;
+//         }
+//         if (currentSection === "buttons") {
+//           currentSection = "header";
+//           setFocusOnHeaderSearch();
+//           return;
+//         }
+//         break;
+
+//       case "Enter":
+//         e.preventDefault();
+//         if (currentSection === "buttons") {
+//           buttons[currentFocusIndex].click();
+//         } else if (currentSection === "seasons") {
+//           const seasonDropdown = container.querySelector(".season-dropdown");
+//           seasonDropdown.click();
+//         } else if (currentSection === "episodes") {
+//           episodes[currentFocusIndex].click();
+//         } else if (currentSection === "cast") {
+//           casts[currentFocusIndex].click();
+//         }
+//         return;
+
+//       default:
+//         if (
+//           e.keyCode === 10009 ||
+//           e.key === "Escape" ||
+//           e.key === "Back" ||
+//           e.key === "BrowserBack" ||
+//           e.key === "XF86Back"
+//         ) {
+//           localStorage.removeItem("selectedSeriesId");
+//           localStorage.setItem("currentPage", "seriesPage");
+//           if (typeof Router !== "undefined" && Router.showPage) {
+//             Router.showPage("series");
+//           } else if (typeof navigateTo === "function") {
+//             navigateTo("series-page");
+//           }
+//           document.body.style.backgroundImage = "none";
+//           document.body.style.backgroundColor = "black";
+//           return;
+//         }
+//     }
+//   }
+
+
+
+function handleRemoteNavigation(e) {
+
+  // ⭐ CRITICAL FIX: Only handle if we're actually on the detail page!
+  if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
+
+  // Check if cast dropdown is open - handle FIRST before other navigation
+  const castDropdown = container.querySelector("#cast-dropdown");
+  const backdrop = document.getElementById('cast-backdrop');
+  const castWrapper = container.querySelector("#cast-wrapper");
+  const isDropdownOpen = castDropdown && !castDropdown.classList.contains("hidden");
+
+  if (isDropdownOpen) {
+    if (
+      e.keyCode === 27 ||  // ESC key code
+      e.keyCode === 10009 ||
+      e.key === "Escape" || 
+      e.key === "Back" || 
+      e.key === "BrowserBack" || 
+      e.key === "XF86Back"
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      
+      // Close the cast dropdown
+      castDropdown.classList.add("hidden");
+      if (castBtn) castBtn.classList.remove("open");
+      if (castWrapper) {
+        castWrapper.classList.remove("active");
+        castWrapper.style.removeProperty("--cast-dropdown-height");
+      }
+      
+      // Remove backdrop
+      if (backdrop) backdrop.classList.remove("active");
+      
+      // Remove dimmed class from play and trailer buttons
+      if (playBtn) playBtn.classList.remove("dimmed");
+      if (trailerBtn) trailerBtn.classList.remove("dimmed");
+      
+      // Return focus to cast button
+      setFocusOnButton(2);
+      return;
+    }
+  }
+
+  const seasonWrapper = container.querySelector("#season-wrapper");
+  if (seasonWrapper && seasonWrapper.classList.contains("active")) {
+    return; // season menu has its own key handler
+  }
+
+  const castSection = container.querySelector(".cast-section");
+  if (castSection && castSection.classList.contains("visible")) {
+    return;
+  }
+
+  const buttons = Array.from(container.querySelectorAll(".action-button"));
+  const casts = Array.from(container.querySelectorAll(".cast-card"));
+  const episodes = Array.from(container.querySelectorAll(".episode-card"));
+
+  function getRowIndex(el) {
+    if (!el) return 0;
+    return Math.floor(el.getBoundingClientRect().top);
+  }
+
+  switch (e.key) {
+    case "ArrowRight":
+      e.preventDefault();
+      if (currentSection === "buttons") {
+        if (currentFocusIndex < buttons.length - 1) {
+          currentFocusIndex++;
+          setFocusOnButton(currentFocusIndex);
+        }
+        return;
+      }
+      if (currentSection === "episodes") {
+        if (currentFocusIndex < episodes.length - 1) {
+          currentFocusIndex++;
+          setFocusOnEpisode(currentFocusIndex);
+        }
+        return;
+      }
+      if (currentSection === "cast") {
+        if (currentFocusIndex < casts.length - 1) {
+          currentFocusIndex++;
+          setFocusOnCast(currentFocusIndex);
+        }
+        return;
+      }
+      break;
+
+    case "ArrowLeft":
+      e.preventDefault();
+      if (currentSection === "buttons") {
+        if (currentFocusIndex > 0) {
+          currentFocusIndex--;
+          setFocusOnButton(currentFocusIndex);
+        }
+        return;
+      }
+      if (currentSection === "episodes") {
+        if (currentFocusIndex > 0) {
+          currentFocusIndex--;
+          setFocusOnEpisode(currentFocusIndex);
+        }
+        return;
+      }
+      if (currentSection === "cast") {
+        if (currentFocusIndex > 0) {
+          currentFocusIndex--;
+          setFocusOnCast(currentFocusIndex);
+        }
+        return;
+      }
+      break;
+
+    case "ArrowDown":
+      e.preventDefault();
+      if (currentSection === "header") {
+        currentSection = "buttons";
+        currentFocusIndex = 0;
+        setFocusOnButton(0);
+        return;
+      }
+      if (currentSection === "buttons") {
+        setFocusOnSeason();
+        return;
+      }
+      if (currentSection === "seasons") {
+        if (episodes.length > 0) {
           currentFocusIndex = 0;
-          setFocusOnButton(0);
+          setFocusOnEpisode(0);
+        }
+        return;
+      }
+      if (currentSection === "episodes") {
+        const curr = episodes[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        for (let i = currentFocusIndex + 1; i < episodes.length; i++) {
+          if (getRowIndex(episodes[i]) > currRow) {
+            currentFocusIndex = i;
+            setFocusOnEpisode(i);
+            return;
+          }
+        }
+
+        const castSection = container.querySelector(".cast-section");
+        if (casts.length > 0 && castSection && castSection.classList.contains("visible")) {
+          currentFocusIndex = 0;
+          setFocusOnCast(0);
+        }
+        return;
+      }
+      if (currentSection === "cast") {
+        const curr = casts[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        for (let i = currentFocusIndex + 1; i < casts.length; i++) {
+          if (getRowIndex(casts[i]) > currRow) {
+            currentFocusIndex = i;
+            setFocusOnCast(i);
+            return;
+          }
+        }
+        return;
+      }
+      break;
+
+    case "ArrowUp":
+      e.preventDefault();
+      if (currentSection === "cast") {
+        const curr = casts[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
+        if (isTopRow) {
+          if (episodes.length > 0) {
+            currentFocusIndex = episodes.length - 1;
+            setFocusOnEpisode(currentFocusIndex);
+          } else {
+            setFocusOnSeason();
+          }
           return;
         }
-        if (currentSection === "buttons") {
+        for (let i = currentFocusIndex - 1; i >= 0; i--) {
+          if (getRowIndex(casts[i]) < currRow) {
+            currentFocusIndex = i;
+            setFocusOnCast(i);
+            return;
+          }
+        }
+        return;
+      }
+      if (currentSection === "episodes") {
+        const curr = episodes[currentFocusIndex];
+        const currRow = getRowIndex(curr);
+        const isTopRow = !episodes.some(ep => getRowIndex(ep) < currRow);
+        if (isTopRow) {
           setFocusOnSeason();
           return;
         }
-        if (currentSection === "seasons") {
-          if (episodes.length > 0) {
-            currentFocusIndex = 0;
-            setFocusOnEpisode(0);
-          }
-          return;
-        }
-        if (currentSection === "episodes") {
-          const curr = episodes[currentFocusIndex];
-          const currRow = getRowIndex(curr);
-          for (let i = currentFocusIndex + 1; i < episodes.length; i++) {
-            if (getRowIndex(episodes[i]) > currRow) {
-              currentFocusIndex = i;
-              setFocusOnEpisode(i);
-              return;
-            }
-          }
-
-            const castSection = container.querySelector(".cast-section");
-    if (casts.length > 0 && castSection && castSection.classList.contains("visible")) {
-      currentFocusIndex = 0;
-      setFocusOnCast(0);
-    }
-    return;
-  
-          // If no more rows in episodes, go to cast
-          if (casts.length > 0) {
-            currentFocusIndex = 0;
-            setFocusOnCast(0);
-          }
-          return;
-        }
-        if (currentSection === "cast") {
-          const curr = casts[currentFocusIndex];
-          const currRow = getRowIndex(curr);
-          for (let i = currentFocusIndex + 1; i < casts.length; i++) {
-            if (getRowIndex(casts[i]) > currRow) {
-              currentFocusIndex = i;
-              setFocusOnCast(i);
-              return;
-            }
-          }
-          return;
-        }
-
-        
-        break;
-
-      case "ArrowUp":
-        e.preventDefault();
-        if (currentSection === "cast") {
-          const curr = casts[currentFocusIndex];
-          const currRow = getRowIndex(curr);
-          const isTopRow = !casts.some(c => getRowIndex(c) < currRow);
-          if (isTopRow) {
-            if (episodes.length > 0) {
-              currentFocusIndex = episodes.length - 1;
-              setFocusOnEpisode(currentFocusIndex);
-            } else {
-              setFocusOnSeason();
-            }
+        for (let i = currentFocusIndex - 1; i >= 0; i--) {
+          if (getRowIndex(episodes[i]) < currRow) {
+            currentFocusIndex = i;
+            setFocusOnEpisode(i);
             return;
           }
-          for (let i = currentFocusIndex - 1; i >= 0; i--) {
-            if (getRowIndex(casts[i]) < currRow) {
-              currentFocusIndex = i;
-              setFocusOnCast(i);
-              return;
-            }
-          }
-          return;
-        }
-        if (currentSection === "episodes") {
-          const curr = episodes[currentFocusIndex];
-          const currRow = getRowIndex(curr);
-          const isTopRow = !episodes.some(ep => getRowIndex(ep) < currRow);
-          if (isTopRow) {
-            setFocusOnSeason();
-            return;
-          }
-          for (let i = currentFocusIndex - 1; i >= 0; i--) {
-            if (getRowIndex(episodes[i]) < currRow) {
-              currentFocusIndex = i;
-              setFocusOnEpisode(i);
-              return;
-            }
-          }
-          return;
-        }
-        if (currentSection === "seasons") {
-          currentSection = "buttons";
-          currentFocusIndex = 0;
-          setFocusOnButton(0);
-          return;
-        }
-        if (currentSection === "buttons") {
-          currentSection = "header";
-          setFocusOnHeaderSearch();
-          return;
-        }
-        break;
-
-      case "Enter":
-        e.preventDefault();
-        if (currentSection === "buttons") {
-          buttons[currentFocusIndex].click();
-        } else if (currentSection === "seasons") {
-          const seasonDropdown = container.querySelector(".season-dropdown");
-          seasonDropdown.click();
-        } else if (currentSection === "episodes") {
-          episodes[currentFocusIndex].click();
-        } else if (currentSection === "cast") {
-          casts[currentFocusIndex].click();
         }
         return;
+      }
+      if (currentSection === "seasons") {
+        currentSection = "buttons";
+        currentFocusIndex = 0;
+        setFocusOnButton(0);
+        return;
+      }
+      if (currentSection === "buttons") {
+        currentSection = "header";
+        setFocusOnHeaderSearch();
+        return;
+      }
+      break;
 
-      default:
-        if (
-          e.keyCode === 10009 ||
-          e.key === "Escape" ||
-          e.key === "Back" ||
-          e.key === "BrowserBack" ||
-          e.key === "XF86Back"
-        ) {
-          localStorage.removeItem("selectedSeriesId");
-          localStorage.setItem("currentPage", "seriesPage");
-          if (typeof Router !== "undefined" && Router.showPage) {
-            Router.showPage("series");
-          } else if (typeof navigateTo === "function") {
-            navigateTo("series-page");
-          }
-          document.body.style.backgroundImage = "none";
-          document.body.style.backgroundColor = "black";
-          return;
+    case "Enter":
+      e.preventDefault();
+      if (currentSection === "buttons") {
+        buttons[currentFocusIndex].click();
+      } else if (currentSection === "seasons") {
+        const seasonDropdown = container.querySelector(".season-dropdown");
+        seasonDropdown.click();
+      } else if (currentSection === "episodes") {
+        episodes[currentFocusIndex].click();
+      } else if (currentSection === "cast") {
+        casts[currentFocusIndex].click();
+      }
+      return;
+
+    default:
+      if (
+        e.keyCode === 10009 ||
+        e.key === "Escape" ||
+        e.key === "Back" ||
+        e.key === "BrowserBack" ||
+        e.key === "XF86Back"
+      ) {
+        localStorage.removeItem("selectedSeriesId");
+        localStorage.setItem("currentPage", "seriesPage");
+        if (typeof Router !== "undefined" && Router.showPage) {
+          Router.showPage("series");
+        } else if (typeof navigateTo === "function") {
+          navigateTo("series-page");
         }
-    }
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "black";
+        return;
+      }
   }
+}
 
       // ---------- Season dropdown behavior (insert after renderEpisodes call) ----------
 (function setupSeasonDropdown() {
@@ -840,7 +1194,7 @@ if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
   // Populate menu from seriesData.seasons (safe fallback)
   const seasons = Array.isArray(seriesData.seasons) && seriesData.seasons.length
     ? seriesData.seasons
-    : [{ season_number: 1, name: "Season 01", episode_count: (seriesData.episodes && seriesData.episodes[1] ? seriesData.episodes[1].length : 0) }];
+    : [{ season_number: 1, name: "Season 1", episode_count: (seriesData.episodes && seriesData.episodes[1] ? seriesData.episodes[1].length : 0) }];
 
   let focusedIndex = 0;
   let selectedSeasonNumber = currentSeasonNumber || (seasons[0] && seasons[0].season_number);
@@ -877,11 +1231,19 @@ if (localStorage.getItem("currentPage") !== "seriesDetailPage") return;
   }
 
   function closeMenu() {
+
+
     wrapper.classList.remove("active");
     btn.classList.remove("open");
     btn.setAttribute("aria-expanded", "false");
     menu.classList.add("hidden");
       wrapper.style.removeProperty("--dropdown-height");
+
+
+
+       document.querySelectorAll(".play-button, .trailer-button")
+    .forEach(btn => btn.classList.remove("dimmed"));
+
     // return focus to the button
     btn.focus();
   }
@@ -982,6 +1344,10 @@ SeriesDetailPage.cleanup = function () {
   // remove listeners
   document.removeEventListener("keydown", handleRemoteNavigation);
   document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+
+   const backdrop = document.getElementById('cast-backdrop');
+  if (backdrop) backdrop.remove();
+
 
   SeriesDetailPage.initialized = false;  // ← CRUCIAL
 };
