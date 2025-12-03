@@ -525,3 +525,26 @@
 .current-date{
     margin-left: 20px;
 }
+
+
+/* Heart Icon Styles */
+.movie-card-heart-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 35px !important;
+  height: 30px !important;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+
+/* Favorites category highlight */
+.movies-category-item[data-id="-1"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.movies-category-item[data-id="-1"].active {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}

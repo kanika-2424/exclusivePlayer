@@ -171,8 +171,8 @@ Toaster(); // Initialize Toaster
     if (!isLogin && selectedPlaylist) {
       // Playlist exists but not logged in → go to playlist page
       console.log("📋 Playlist exists, showing playlist page");
-      localStorage.setItem("currentPage", "playlistPage");
-      Router.showPage("playlistPage");
+      localStorage.setItem("currentPage", "playlist");
+      Router.showPage("playlist");
       return;
     }
 

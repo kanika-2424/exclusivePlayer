@@ -12,6 +12,11 @@ function Toaster() {
     }
   }
 
+
+
+  
+
+
   // make sure handler added once
   if (!Toaster.initialized) {
     document.addEventListener("click", handleToastClick);

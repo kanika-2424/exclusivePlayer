@@ -38,7 +38,7 @@ function DashboardPage() {
       // Logout
       if (e.target.closest(".logout-icon")) {
         localStorage.setItem("isLogin", false);
-        localStorage.setItem("currentPage", "playlistPage");
+        localStorage.setItem("currentPage", "playlist");
         DashboardPage.cleanup();
         localStorage.removeItem("selectedStreamOption");
         localStorage.removeItem("selectedStreamFormat");
@@ -91,7 +91,7 @@ function DashboardPage() {
       if (e.target.closest(".list-users-box")) {
         localStorage.setItem("isLogin", false);
         localStorage.setItem("movieSortValue", "default");
-        localStorage.setItem("currentPage", "playlistPage");
+        localStorage.setItem("currentPage", "playlist");
         DashboardPage.cleanup();
         navigateTo("playlist-page");
         return;

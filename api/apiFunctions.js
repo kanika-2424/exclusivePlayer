@@ -1,3 +1,7 @@
+window.enableKeyBlock = window.enableKeyBlock || function () {};
+window.disableKeyBlock = window.disableKeyBlock || function () {};
+
+
 const TMBD_API_KEY = localStorage.getItem("tmbdId") 
 // const TMBD_API_KEY = localStorage.getItem("tmbdId") ? localStorage.getItem("tmbdId") : "a21eeaca44af5d2a4349214ecba1b338";
 
@@ -104,7 +108,10 @@ async function loginApi(
   resetLoadingPercentage();
   
   const loadingOverlay = document.getElementById("loading-overlay");
+  
+ if (loadingOverlay) {
   loadingOverlay.classList.remove("hidden");
+}
 
   let lastStatusCode = null;
   let loginCancelled = false;

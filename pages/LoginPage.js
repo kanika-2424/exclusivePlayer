@@ -17,6 +17,7 @@ function LoginPage() {
   } catch(e){}
 }
 
+
   window.enableKeyBlock = function(callback) {
     keyBlockCallback = callback;
     try { console.log("🔒 Key blocking enabled"); } catch (e) {}
@@ -45,17 +46,49 @@ function LoginPage() {
   } catch(e){}
 }
 
+
+function handleAddUserClick() {
+    // Grab inputs **fresh** from DOM
+    var nameInput     = document.querySelector('.login-card .input-group:nth-of-type(1) input[type="text"]');
+    var usernameInput = document.querySelector('.login-card .input-group:nth-of-type(2) input[type="text"]');
+    var passwordInput = document.querySelector('.login-card .input-group:nth-of-type(3) input[type="password"]');
+
+    var name = nameInput?.value.trim() || "";
+    var username = usernameInput?.value.trim() || "";
+    var password = passwordInput?.value.trim() || "";
+
+    console.log("READ VALUES:", {name, username, password}); // DEBUG
+
+    if (!name || !username || !password) {
+        if (typeof Toaster !== "undefined") {
+            Toaster.showToast("error", "Please complete all fields!");
+        } else {
+            alert("Please complete all fields!");
+        }
+        return;
+    }
+
+    // Only call loginApi if all fields are filled
+    loginApi(username, password, name, false, "")
+        .then(res => console.log("Login success", res))
+        .catch(err => console.error("Login failed", err));
+}
+
+
+
   // Delay actual wiring so the template is in DOM
   setTimeout(function () {
     try {
       console.log("Login Page Loaded");
 
-      // Collect DOM elements
-      var inputs = qsa(".input-group input");
-      // Ensure we have at least 3 inputs (Name, Username, Password)
-      inputs[0] = inputs[0] || null;
-      inputs[1] = inputs[1] || null;
-      inputs[2] = inputs[2] || null;
+      
+
+   var nameInput     = qs('.login-card .input-group:nth-of-type(1) input[type="text"]');
+var usernameInput = qs('.login-card .input-group:nth-of-type(2) input[type="text"]');
+var passwordInput = qs('.login-card .input-group:nth-of-type(3) input[type="password"]');
+
+var inputs = [nameInput, usernameInput, passwordInput];
+
 
       var passwordToggle = qs(".toggle-password");
       var addUserBtn = qs(".add-user-btn");
@@ -70,7 +103,11 @@ function LoginPage() {
         addUserBtn,     // Add user
         listUsersBtn    // List users
       ];
-
+console.log("READ VALUES:", {
+    name: inputs[0]?.value,
+    username: inputs[1]?.value,
+    password: inputs[2]?.value
+});
       // normalize focusable array (remove nulls but keep indices stable)
       // We'll keep nulls so indexes match your earlier logic; checks will ignore nulls.
 
@@ -162,53 +199,59 @@ function LoginPage() {
             return;
           }
 
-          // If Add User clicked
+
           if (t.closest && t.closest(".add-user-btn")) {
-            // Use visible inputs values (they may not be focused)
-            var name = inputs[0] ? (inputs[0].value || "").trim() : "";
-            var username = inputs[1] ? (inputs[1].value || "").trim() : "";
-            var password = inputs[2] ? (inputs[2].value || "").trim() : "";
+    handleAddUserClick();
+    return;
+}
+          // If Add User clicked
+          // if (t.closest && t.closest(".add-user-btn")) {
+          //   // Use visible inputs values (they may not be focused)
+          //   var name = inputs[0] ? (inputs[0].value || "").trim() : "";
+          //   var username = inputs[1] ? (inputs[1].value || "").trim() : "";
+          //   var password = inputs[2] ? (inputs[2].value || "").trim() : "";
 
-            if (!name || !username || !password) {
-              if (typeof Toaster !== "undefined") {
-                Toaster.showToast("error", "Please complete all fields!");
-              } else {
-                alert("Please complete all fields!");
-              }
-              return;
-            }
+          //   if (!name || !username || !password) {
+          //     if (typeof Toaster !== "undefined") {
+          //       Toaster.showToast("error", "Please complete all fields!");
+          //       return;
+          //     } else {
+          //       alert("Please complete all fields!");
+          //     }
+          //     return;
+          //   }
 
-            if (typeof loginApi !== "function") {
-              console.error("❌ loginApi function not found in global scope");
-              alert("Login system not initialized! Please check if API file is loaded.");
-              return;
-            }
+          //   if (typeof loginApi !== "function") {
+          //     console.error("❌ loginApi function not found in global scope");
+          //     alert("Login system not initialized! Please check if API file is loaded.");
+          //     return;
+          //   }
 
-            try {
-              console.log("🚀 Calling loginApi...");
-              loginApi(username, password, name, false, "").then(function (response) {
-                try {
-                  console.log("✅ Login API response:", response);
-                  if (response) {
-                    console.log("Login successful");
-                    if (typeof LoginPage.cleanup === "function") LoginPage.cleanup();
-                  } else {
-                    console.log("❌ Login failed - no response");
-                  }
-                } catch (e) {}
-              }).catch(function (err) {
-                console.error("❌ Login API error:", err);
-                if (typeof Toaster !== "undefined") {
-                  Toaster.showToast("error", "Login failed: " + (err && err.message ? err.message : "error"));
-                } else {
-                  alert("Login failed: " + (err && err.message ? err.message : "error"));
-                }
-              });
-            } catch (ex) {
-              console.error("loginApi call failed:", ex);
-            }
-            return;
-          }
+          //   try {
+          //     console.log("🚀 Calling loginApi...");
+          //     loginApi(username, password, name, false, "").then(function (response) {
+          //       try {
+          //         console.log("✅ Login API response:", response);
+          //         if (response) {
+          //           console.log("Login successful");
+          //           if (typeof LoginPage.cleanup === "function") LoginPage.cleanup();
+          //         } else {
+          //           console.log("❌ Login failed - no response");
+          //         }
+          //       } catch (e) {}
+          //     }).catch(function (err) {
+          //       console.error("❌ Login API error:", err);
+          //       if (typeof Toaster !== "undefined") {
+          //         Toaster.showToast("error", "Login failed: " + (err && err.message ? err.message : "error"));
+          //       } else {
+          //         alert("Login failed: " + (err && err.message ? err.message : "error"));
+          //       }
+          //     });
+          //   } catch (ex) {
+          //     console.error("loginApi call failed:", ex);
+          //   }
+          //   return;
+          // }
 
           // List users button
           if (t.closest && t.closest(".list-users-btn")) {
@@ -223,10 +266,10 @@ function LoginPage() {
                 }
                 return;
               }
-              try { localStorage.setItem("currentPage", "playlistPage"); } catch (e) {}
+              try { localStorage.setItem("currentPage", "playlist"); } catch (e) {}
               if (typeof LoginPage.cleanup === "function") LoginPage.cleanup();
               if (typeof Router !== "undefined" && Router.showPage) {
-                Router.showPage("playlistPage");
+                Router.showPage("playlist");
               } else if (typeof navigateTo === "function") {
                 navigateTo("playlist-page");
               } else {
@@ -446,52 +489,57 @@ function LoginPage() {
   }, 0);
 
   // --- RETURN HTML -----------------------------------------------------------
-  return '\
-    <div class="login-wrapper">\
-\
-      <div class="left-section">\
-        <img src="assets/logo.png" class="brand-logo" />\
-        <button class="list-users-btn">\
-          <img src="/assets/list.png" alt="List Users" />\
-          List Users\
-        </button>\
-      </div>\
-\
-      <div class="right-section">\
-        <div class="login-card">\
-          <h1>Login Details</h1>\
-\
-          <div class="input-group">\
-            <img class="nameicon" src="/assets/name.png" alt="name" />\
-            <input type="text" placeholder="Any Name" autocomplete="off">\
-          </div>\
-\
-          <div class="input-group">\
-            <img src="/assets/profile.png" alt="username" />\
-            <input type="text" placeholder="Username" autocomplete="off">\
-          </div>\
-\
-          <div class="input-group">\
-            <img src="/assets/lock.png" alt="password" />\
-            <input type="password" placeholder="Password" autocomplete="new-password">\
-\
-            <div class="toggle-password">\
-              <img class="eye"  src="/assets/eye.png" alt="toggle" />\
-            </div>\
-          </div>\
-\
-          <button class="add-user-btn">ADD USER</button>\
-        </div>\
-      </div>\
-\
-      <div id="loading-overlay" class="hidden" style="position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;">\
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">\
-          <div class="spinner"></div>\
-          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">Loading...</div>\
-          <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>\
-        </div>\
-      </div>\
-\
-    </div>\
-  ';
+ return `
+<div class="login-wrapper">
+
+  <div class="left-section">
+    <img src="assets/logo.png" class="brand-logo" />
+    <button class="list-users-btn">
+      <img src="/assets/list.png" alt="List Users" />
+      List Users
+    </button>
+  </div>
+
+  <div class="right-section">
+    <div class="login-card">
+      <h1>Login Details</h1>
+
+      <div class="input-group">
+        <img class="nameicon" src="/assets/name.png" alt="name" />
+        <input type="text" placeholder="Any Name" autocomplete="off">
+      </div>
+
+      <div class="input-group">
+        <img src="/assets/profile.png" alt="username" />
+        <input type="text" placeholder="Username" autocomplete="off">
+      </div>
+
+      <div class="input-group">
+        <img src="/assets/lock.png" alt="password" />
+        <input type="password" placeholder="Password" autocomplete="new-password">
+
+        <div class="toggle-password">
+          <i class="fa-solid fa-eye"></i>
+        </div>
+      </div>
+
+      <button class="add-user-btn">ADD USER</button>
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="hidden"
+       style="position: fixed; width: 100%; height: 100%; 
+       background: rgba(0,0,0,0.8); display: flex;
+       align-items: center; justify-content: center; z-index: 9999;">
+    <div style="display: flex; flex-direction: column;
+         align-items: center; justify-content: center; color: white;">
+      <div class="spinner"></div>
+      <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">Loading...</div>
+      <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>
+    </div>
+  </div>
+
+</div>
+`;
+
 }
