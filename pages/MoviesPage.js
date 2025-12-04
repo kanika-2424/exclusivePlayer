@@ -5,6 +5,23 @@ if (typeof window.moviesPageEnterState === 'undefined') {
     isProcessingEnter: false
   };
 }
+
+
+if (typeof window.moviesPageState === 'undefined') {
+  window.moviesPageState = {
+    currentFocusIndex: 0,
+    currentCategoryIndex: 0,
+    currentSection: "movies",
+    lastFocusedCategory: 0
+  };
+}
+
+let categoryClickHandler;
+let cardClickHandler;
+let keydownHandler;
+let keyupHandler;
+let expandBtnClickHandler;
+let searchInputHandler;
 function MoviesPage() {
   // CONFIG
  const CARDS_PER_ROW = 7;
@@ -18,12 +35,7 @@ const PAGE_SIZE = CARDS_PER_ROW * ROWS_PER_LOAD;// Load more chunk
 let isRestoringState = false; // Flag to prevent navigation during state restoration
 
 
-let categoryClickHandler;
-let cardClickHandler;
-let keydownHandler;
-let keyupHandler;
-let expandBtnClickHandler;
-let searchInputHandler;
+
 
 
   let isSearchInputActive = false; // For category search
@@ -36,12 +48,37 @@ let isHeaderSearchActive = false; // For header search
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
 
+
+
+    window.moviesPageEnterState = window.moviesPageEnterState || {
+    enterPressTimer: null,
+    isLongPressExecuted: false,
+    isProcessingEnter: false
+  };
+  
+  window.moviesPageState = window.moviesPageState || {
+    currentFocusIndex: 0,
+    currentCategoryIndex: 0,
+    currentSection: "movies",
+    lastFocusedCategory: 0
+  };
+
+
    const enterState = window.moviesPageEnterState;
+  const pageState = window.moviesPageState;
+
 
 
   const LONG_PRESS_DURATION = 500;
 
   
+  if (!pageState) {
+    console.error("❌ pageState is undefined!");
+    return;
+  }
+  
+
+    console.log("✅ pageState initialized:", pageState);
 
 // After CONFIG section, add:
 const currentPlaylistName = JSON.parse(
@@ -233,31 +270,45 @@ function buildMovieCardHTML(m) {
 
   // Focus helpers
   let movieCards = [];
-  function setFocusOnCard(index) {
+function setFocusOnCard(index) {
+  console.log("🎯 setFocusOnCard called with index:", index);
+  
   const grid = qs(".movies-grid");
-if (!grid) {
-  movieCards = [];
-  return;   // ← prevents crash
-}
-
-movieCards = Array.from(grid.querySelectorAll(".movie-card"));
-    removeAllFocus();
-    
-    // Blur any input fields when focusing cards
-    const searchInput = qs(".search-category-input");
-    if (searchInput) searchInput.blur();
-    
-    if (!movieCards || movieCards.length === 0) {
-      currentSection = "movies";
-      currentFocusIndex = 0;
-      return;
-    }
-    index = Math.max(0, Math.min(index, movieCards.length - 1));
-    currentFocusIndex = index;
-    movieCards[index].classList.add("focused");
-    movieCards[index].scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
-    currentSection = "movies";
+  if (!grid) {
+    movieCards = [];
+    console.log("⚠️ No grid found");
+    return;
   }
+
+  movieCards = Array.from(grid.querySelectorAll(".movie-card"));
+  console.log("📦 Found", movieCards.length, "cards in grid");
+  
+  removeAllFocus();
+  
+  // Blur any input fields when focusing cards
+  const searchInput = qs(".search-category-input");
+  if (searchInput) searchInput.blur();
+  
+  if (!movieCards || movieCards.length === 0) {
+    currentSection = "movies";
+    currentFocusIndex = 0;
+    console.log("⚠️ No cards found after query");
+    return;
+  }
+  
+  const oldIndex = currentFocusIndex;
+  index = Math.max(0, Math.min(index, movieCards.length - 1));
+  currentFocusIndex = index;
+  
+  console.log("📍 setFocusOnCard - oldIndex:", oldIndex, "→ newIndex:", index, "currentFocusIndex now:", currentFocusIndex);
+  
+  movieCards[index].classList.add("focused");
+  movieCards[index].scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
+  currentSection = "movies";
+  
+  const movieId = movieCards[index].dataset.movieId;
+  console.log("✅ Focused card with movie ID:", movieId, "at DOM index:", index);
+}
 
 
  
@@ -509,7 +560,6 @@ function updateFavoritesUI(movieId, isAdding) {
   // Inside handleRemoteNavigation function in MoviesPage
 
 // Back -> go to dashboard (or previous)
-// Back -> go to dashboard
 if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
   // Don't handle back during state restoration
   if (isRestoringState) {
@@ -519,6 +569,12 @@ if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
   
   e.preventDefault();
   e.stopPropagation();
+  
+  // ⭐ CLEAR all saved state when going back to dashboard
+  localStorage.removeItem("moviesSelectedCategoryId");
+  localStorage.removeItem("moviesCategoryIndex");
+  localStorage.removeItem("moviesCardIndex");
+  
   localStorage.setItem("currentPage", "dashboard");
   
   if (typeof Router !== "undefined" && Router.showPage) {
@@ -707,16 +763,20 @@ setFocusOnCategory(lastCategoryIndex);
    /* -----------------------------
          FIXED: DOWN inside CARD GRID
          ----------------------------- */
-      if (currentSection === "movies") {
+     if (currentSection === "movies") {
         const nextIndex = currentFocusIndex + cardsPerRow;
+        
+        console.log("⬇️ DOWN in movies - currentFocusIndex:", currentFocusIndex, "cardsPerRow:", cardsPerRow, "nextIndex:", nextIndex, "cards.length:", cards.length);
         
         if (nextIndex < cards.length) {
           // Normal move down
+          console.log("✅ Moving to nextIndex:", nextIndex);
           setFocusOnCard(nextIndex);
         } else {
           // We're at or near the bottom - try to load more
           const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
           if (cat && visibleCount < cat.movies.length) {
+            console.log("📥 Loading more cards...");
             loadMore();
             // After loading, focus on the next card down
             setTimeout(() => {
@@ -725,12 +785,14 @@ setFocusOnCategory(lastCategoryIndex);
                 setFocusOnCard(nextIndex);
               }
             }, 50);
+          } else {
+            console.log("⚠️ Already at bottom, cannot move down");
           }
         }
 
         e.preventDefault();
         return;
-      }
+    }
     }
 
     /* ---------- LEFT ---------- */
@@ -1117,18 +1179,6 @@ function handleKeyUp(e) {
   e.preventDefault();
 }
 
-// Register the keyup handler
-
-
-  // compute cards per row based on container width and card width
-  // function computeCardsPerRow() {
-  //   const grid = qs(".movies-grid");
-  //   const first = grid ? grid.querySelector(".movie-card") : null;
-  //   if (!grid || !first) return 7;
-  //   const cardW = first.getBoundingClientRect().width || 200;
-  //   const perRow = Math.max(1, Math.floor(grid.clientWidth / (cardW + 8)));
-  //   return perRow;
-  // }
 
 function computeCardsPerRow() {
     const grid = qs(".movies-grid");
@@ -1157,26 +1207,109 @@ setTimeout(() => {
     visibleCount = PAGE_SIZE;
     renderCards();
 
+ if (categoryClickHandler) {
+      document.removeEventListener("click", categoryClickHandler);
+    }
+    if (cardClickHandler) {
+      document.removeEventListener("click", cardClickHandler);
+    }
+    if (keydownHandler) {
+      document.removeEventListener("keydown", keydownHandler);
+    }
+    if (keyupHandler) {
+      document.removeEventListener("keyup", keyupHandler);
+    }
+
+   categoryClickHandler = (e) => onCategoryClick(e);
+    cardClickHandler = (e) => onCardClick(e);
+    keydownHandler = (e) => handleRemoteNavigation(e);
+    keyupHandler = (e) => handleKeyUp(e);
+
+    // ⭐ Add NEW listeners
+    document.addEventListener("click", categoryClickHandler);
+    document.addEventListener("click", cardClickHandler);
+    document.addEventListener("keydown", keydownHandler);
+    document.addEventListener("keyup", keyupHandler);
+
+
+
     // Restore saved focus if returning from detail
     const savedCatId = localStorage.getItem("moviesSelectedCategoryId");
     const savedCatIndex = localStorage.getItem("moviesCategoryIndex");
     const savedCardIndex = localStorage.getItem("moviesCardIndex");
-    if (savedCatId) {
+
+    console.log("🔄 Initializing Movies Page - savedCatId:", savedCatId, "savedCardIndex:", savedCardIndex);
+
+        const comingFromDashboard = !savedCatId && !savedCardIndex;
+  if (comingFromDashboard) {
+      // Coming from dashboard or fresh - start from beginning
+      console.log("🆕 Fresh start from dashboard");
+
+       if (!pageState) {
+    console.error("❌ pageState is undefined in initialization!");
+    return;
+  }
+
+      
+   pageState.currentFocusIndex = 0;
+  pageState.currentCategoryIndex = 0;
+  pageState.currentSection = "movies";
+  pageState.lastFocusedCategory = 0;
+
+      visibleCount = PAGE_SIZE;
+      
+      // ⭐ Remove any stale focus classes
+      qsa(".movie-card").forEach(c => c.classList.remove("focused"));
+      qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
+      
+      setTimeout(() => {
+        console.log("🎯 Setting focus to first card (index 0)");
+    pageState.currentFocusIndex = 0; // Set again to be sure
+        setFocusOnCard(0);
+        console.log("✅ Focus set. currentFocusIndex is now:", currentFocusIndex);
+      }, 100);
+    } else {
+      // Coming from movie detail page - restore position
+      console.log("↩️ Restoring from detail page");
       selectedCategoryId = String(savedCatId);
       currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
+      currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
       visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
       renderCategoriesUI();
       renderCards();
       setTimeout(() => {
-        if (savedCardIndex) setFocusOnCard(Number(savedCardIndex));
-        else setFocusOnCategory(currentCategoryIndex);
+        if (savedCardIndex) {
+          console.log("🎯 Restoring focus to card:", savedCardIndex);
+          setFocusOnCard(Number(savedCardIndex));
+        } else {
+          setFocusOnCategory(currentCategoryIndex);
+        }
       }, 80);
       localStorage.removeItem("moviesSelectedCategoryId");
       localStorage.removeItem("moviesCategoryIndex");
       localStorage.removeItem("moviesCardIndex");
-    } else {
-      setTimeout(() => setFocusOnCard(0), 80);
     }
+
+
+    // if (savedCatId) {
+    //   selectedCategoryId = String(savedCatId);
+    //   currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
+    //   visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
+    //   renderCategoriesUI();
+    //   renderCards();
+    //   setTimeout(() => {
+    //     if (savedCardIndex) setFocusOnCard(Number(savedCardIndex));
+    //     else setFocusOnCategory(currentCategoryIndex);
+    //   }, 80);
+    //   localStorage.removeItem("moviesSelectedCategoryId");
+    //   localStorage.removeItem("moviesCategoryIndex");
+    //   localStorage.removeItem("moviesCardIndex");
+    // } else {
+    //       currentFocusIndex = 0;
+    //   currentCategoryIndex = 0;
+    //   currentSection = "movies";
+    //   setTimeout(() => setFocusOnCard(0), 80);
+    // }
 
     // ⭐ IMPORTANT: Remove any existing listeners first
     document.removeEventListener("click", categoryClickHandler);
@@ -1277,11 +1410,22 @@ setTimeout(() => {
   enterState.isProcessingEnter = false;
   enterState.isLongPressExecuted = false;
 
-      // Remove event listeners
-      document.removeEventListener("click", categoryClickHandler);
-      document.removeEventListener("click", cardClickHandler);
-      document.removeEventListener("keydown", keydownHandler);
-      document.removeEventListener("keyup", keyupHandler);
+   if (categoryClickHandler) {
+        document.removeEventListener("click", categoryClickHandler);
+      }
+      if (cardClickHandler) {
+        document.removeEventListener("click", cardClickHandler);
+      }
+      if (keydownHandler) {
+        document.removeEventListener("keydown", keydownHandler);
+      }
+      if (keyupHandler) {
+        document.removeEventListener("keyup", keyupHandler);
+      }
+
+
+
+   
       
       const expandBtn = qs("#expandBtn");
       if (expandBtn && expandBtnClickHandler) {
