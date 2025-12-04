@@ -541,10 +541,19 @@
 
 /* Favorites category highlight */
 .movies-category-item[data-id="-1"] {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  margin-left: 10px;
 }
 
 .movies-category-item[data-id="-1"].active {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  /* background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); */
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.movie-no-data{
+    width: 100vb !important;
+    display: flex;
+    font-size: 18px;
+    /* justify-content: center; */
+    /* background-color: red; */
 }

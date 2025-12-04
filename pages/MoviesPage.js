@@ -170,7 +170,6 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
     wrapper.innerHTML = categories.map((c, idx) => `
       <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
         <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-        <span class="cat-count">${c._movieCount}</span>
       </div>
     `).join("");
     
@@ -1383,7 +1382,6 @@ setTimeout(() => {
             list.innerHTML = filtered.map((c, idx) => `
               <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
                 <span style="text-align: center; " class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-                <span class="cat-count">${c._movieCount}</span>
               </div>
             `).join("");
 

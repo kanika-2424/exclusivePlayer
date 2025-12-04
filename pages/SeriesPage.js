@@ -1,7 +1,24 @@
 
+// Add before SeriesPage function
+if (typeof window.seriesPageEnterState === 'undefined') {
+  window.seriesPageEnterState = {
+    enterPressTimer: null,
+    isLongPressExecuted: false,
+    isProcessingEnter: false
+  };
+}
+
+if (typeof window.seriesPageState === 'undefined') {
+  window.seriesPageState = {
+    currentFocusIndex: 0,
+    currentCategoryIndex: 0,
+    currentSection: "series",
+    lastFocusedCategory: 0
+  };
+}
 
 function SeriesPage() {
-  // CONFIG (match MoviesPage)
+  // CONFIG (match seriesPage)
   const CARDS_PER_ROW = 7;
   const ROWS_PER_LOAD = 3;
   const PAGE_SIZE = CARDS_PER_ROW * ROWS_PER_LOAD; // Load more chunk
@@ -21,6 +38,25 @@ function SeriesPage() {
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
 
+  let isRestoringState = false;
+const LONG_PRESS_DURATION = 500;
+
+const enterState = window.seriesPageEnterState;
+const pageState = window.seriesPageState;
+
+// Get favorites data (same structure as movies)
+const currentPlaylistName = JSON.parse(
+  localStorage.getItem("selectedPlaylist")
+).playlistName;
+
+const currentPlaylist = JSON.parse(
+  localStorage.getItem("playlistsData")
+).filter((pl) => pl.playlistName === currentPlaylistName)[0];
+
+const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
+  ? currentPlaylist.favouriteSeries
+  : [];
+
   // DOM helpers
   const qs = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
@@ -32,14 +68,31 @@ function SeriesPage() {
       : (Array.isArray(window.allseriesCategories) ? window.allseriesCategories : []);
     const allSeries = Array.isArray(window.allSeriesStreams) ? window.allSeriesStreams : [];
 
+
+      const allFavoritesSeries = allSeries.filter((s) =>
+    favouriteSeriesIds.includes(s.series_id || s.stream_id)
+  );
+
+
+    const favoritesCategory = {
+    id: "-1",
+    name: "Favorites",
+    parent_id: 0,
+    movies: allFavoritesSeries,
+    _movieCount: allFavoritesSeries.length
+  };
+
     // Normalize categories into our structure
-    categories = allCats.map(c => ({
-      id: String(c.category_id || c.id),
-      name: c.category_name || c.category_name || c.name || `Cat ${c.category_id || c.id}`,
-      parent_id: c.parent_id || 0,
-      movies: [], // using same property name as MoviesPage so shared CSS/template work
-      _movieCount: 0
-    }));
+   const normalizedCategories = allCats.map(c => ({
+    id: String(c.category_id || c.id),
+    name: c.category_name || c.name || `Cat ${c.category_id || c.id}`,
+    parent_id: c.parent_id || 0,
+    movies: [],
+    _movieCount: 0
+  }));
+
+    categories = [favoritesCategory, ...normalizedCategories];
+
 
     // Build map skeleton
     seriesByCategory = {};
@@ -101,6 +154,13 @@ function SeriesPage() {
     const rating = isNaN(Number(s.rating_5based)) ? 0 : Math.min(5, Number(s.rating_5based));
     const desc = s.plot || s.overview || s.description || "";
     const seriesId = s.series_id || s.stream_id || s.id || "";
+
+
+      const isFav = favouriteSeriesIds.includes(Number(seriesId));
+  const showFavHeartIcon = String(selectedCategoryId) === "-1";
+  const showHeart = showFavHeartIcon || isFav;
+
+
     return `
       <div class="movie-card" data-movie-id="${seriesId}">
         <div class="movie-card-image-wrapper">
@@ -111,6 +171,9 @@ function SeriesPage() {
           <img src="/assets/star.png" alt="star" class="star-icon" />
           <span>${rating.toFixed(1)}</span>
         </div>
+
+              ${showHeart ? '<img src="/assets/heart.png" alt="heart-icon" class="movie-card-heart-icon"/>' : ''}
+
 
         <div class="movie-hover">
           <img class="hover-play-btn" src="/assets/play.png" alt="play"/>
@@ -277,7 +340,7 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
   function onCardClick(e) {
     const card = e.target.closest(".movie-card");
     if (!card) return;
-    const seriesId = Number(card.dataset.movieId);
+    const seriesId = Number(card.dataset.seriesId);
     // Try common property names in data
     const seriesObj = (window.allSeriesStreams || []).find(s => Number(s.series_id || s.stream_id || s.id) === Number(seriesId));
     if (seriesObj) {
@@ -297,7 +360,137 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     }
   }
 
-  // Remote navigation handler (copied/adapted from MoviesPage)
+function toggleFavoriteItem(seriesId) {
+  console.log("🎯 toggleFavoriteItem called with seriesId:", seriesId, "type:", typeof seriesId);
+  
+  // Only work on series page
+  if (localStorage.getItem("currentPage") !== "seriesPage") return;
+
+  const playlist = JSON.parse(localStorage.getItem("playlistsData")).find(
+    (pl) => pl.playlistName === currentPlaylistName
+  );
+  
+  if (!playlist) return;
+
+  playlist.favouriteSeries = playlist.favouriteSeries || [];
+  
+  // FIXED: Ensure we're comparing numbers with numbers
+  const seriesIdNum = Number(seriesId);
+  const index = playlist.favouriteSeries.findIndex(id => Number(id) === seriesIdNum);
+  const isAdding = index === -1;
+
+  console.log("📋 Current favorites:", playlist.favouriteSeries);
+  console.log("🔍 Found at index:", index, "| isAdding:", isAdding);
+
+  if (index > -1) {
+    // Remove from favorites
+    playlist.favouriteSeries.splice(index, 1);
+    console.log("❌ Removed from favorites");
+  } else {
+    // Add to favorites
+    playlist.favouriteSeries.push(seriesIdNum);
+    console.log("✅ Added to favorites");
+  }
+
+  // Save back to localStorage
+  localStorage.setItem(
+    "playlistsData",
+    JSON.stringify(
+      JSON.parse(localStorage.getItem("playlistsData")).map((pl) =>
+        pl.playlistName === currentPlaylistName ? playlist : pl
+      )
+    )
+  );
+
+  // Update local array
+  favouriteSeriesIds.length = 0;
+  favouriteSeriesIds.push(...playlist.favouriteSeries);
+
+  console.log("💾 Updated favorites:", favouriteSeriesIds);
+
+  // Update UI
+  updateFavoritesUI(seriesId, isAdding);
+
+  // Show toast notification
+  if (typeof Toaster !== 'undefined') {
+    Toaster.showToast(
+      isAdding ? "success" : "error",
+      isAdding ? "Added to Favorites" : "Removed from Favorites"
+    );
+  }
+}
+
+function updateFavoritesUI(seriesId, isAdding) {
+  // Only work on series page
+  if (localStorage.getItem("currentPage") !== "seriesPage") return;
+
+  // Update favorites category
+  const favCategory = categories.find((c) => c.id === "-1");
+  if (favCategory) {
+    if (isAdding) {
+      const seriesToAdd = window.allSeriesStreams.find(
+        (s) => Number(s.series_id || s.stream_id) === Number(seriesId)
+      );
+      if (seriesToAdd && !favCategory.movies.some((s) => Number(s.series_id || s.stream_id) === Number(seriesId))) {
+        favCategory.movies.push(seriesToAdd);
+      }
+    } else {
+      favCategory.movies = favCategory.movies.filter(
+        (s) => Number(s.series_id || s.stream_id) !== Number(seriesId)
+      );
+    }
+    
+    favCategory._movieCount = favCategory.movies.length;
+
+    // Update UI count
+    const favCatEl = qs('.movies-category-item[data-id="-1"]');
+    if (favCatEl) {
+      const countEl = favCatEl.querySelector(".cat-count");
+      if (countEl) {
+        countEl.textContent = favCategory.movies.length;
+      }
+    }
+  }
+
+  // Update heart icon on all cards with this seriesId
+  const allCurrentCards = qsa(".movie-card");
+  allCurrentCards.forEach((card) => {
+    const cardSeriesId = Number(card.dataset.movieId);
+    if (cardSeriesId === Number(seriesId)) {
+      const heartIcon = card.querySelector(".movie-card-heart-icon");
+      const cardElement = card;
+
+      if (isAdding) {
+        if (!heartIcon) {
+          const heartImg = document.createElement("img");
+          heartImg.src = "/assets/heart.png";
+          heartImg.alt = "heart-icon";
+          heartImg.className = "movie-card-heart-icon";
+          cardElement.insertBefore(heartImg, cardElement.querySelector(".movie-hover"));
+        }
+      } else {
+        if (heartIcon && selectedCategoryId !== "-1") {
+          heartIcon.remove();
+        }
+      }
+    }
+  });
+
+  // If in Favorites category and removing, refresh the view
+  if (selectedCategoryId === "-1" && !isAdding) {
+    renderCards();
+    if (movieCards.length === 0) {
+      currentSection = "categories";
+      setFocusOnCategory(0);
+    } else {
+      currentFocusIndex = Math.min(currentFocusIndex, movieCards.length - 1);
+      setFocusOnCard(currentFocusIndex);
+    }
+  }
+}
+ 
+
+  // Remote navigation handler (copied/adapted from seriesPage)
   function handleRemoteNavigation(e) {
     // ensure only handle when on series page
     if (localStorage.getItem("currentPage") !== "seriesPage" && localStorage.getItem("currentPage") !== null) return;
@@ -315,15 +508,28 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
     // Back -> go to dashboard (or previous)
-    if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
-      localStorage.setItem("currentPage", "dashboard");
-      if (typeof Router !== "undefined" && Router.showPage) {
-        Router.showPage("dashboard");
-      } else if (typeof navigateTo === "function") {
-        navigateTo("dashboard-page");
-      }
-      return;
-    }
+  if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+  if (isRestoringState) {
+    e.preventDefault();
+    return;
+  }
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  localStorage.removeItem("seriesSelectedCategoryId");
+  localStorage.removeItem("seriesCategoryIndex");
+  localStorage.removeItem("seriesCardIndex");
+  
+  localStorage.setItem("currentPage", "dashboard");
+  
+  if (typeof Router !== "undefined" && Router.showPage) {
+    Router.showPage("dashboard");
+  } else if (typeof navigateTo === "function") {
+    navigateTo("dashboard-page");
+  }
+  return;
+}
 
     /* ---------- UP ---------- */
     if (isUp) {
@@ -663,59 +869,128 @@ else if (currentSection === "categories") {
     }
 
     /* ---------- ENTER / SELECT ---------- */
-    if (isEnter) {
-      if (currentSection === "series") {
-        const card = qs(".movies-grid .movie-card.focused") || qs(".movies-grid .movie-card");
-        if (card) card.click();
-      } else if (currentSection === "categories") {
-        const catEl = qs(".movies-categories-list .movies-category-item.focused") || qs(".movies-categories-list .movies-category-item");
-        if (catEl) catEl.click();
-      } else if (currentSection === "expand") {
-        const btn = qs("#expandBtn");
-        if (btn) btn.click();
-      } else if (currentSection === "search") {
-        // Category search input
-        const input = qs(".search-category-input");
-        const container = qs(".search-category-name");
+  if (isEnter && currentSection === "series") {
+    e.preventDefault();
 
-        if (input && container) {
-          if (!isSearchInputActive) {
-            // First ENTER - activate typing mode
-            isSearchInputActive = true;
-            input.focus();
-            input.select();
-          } else {
-            // Second ENTER - deactivate and keep parent focused
-            isSearchInputActive = false;
-            input.blur();
-            container.classList.add("focused"); // Keep parent focused!
-          }
-        }
-      } else if (currentSection === "header") {
-        // Header search input
-        const input = qs(".search-input");
-        const container = qs(".search-container");
+    if (enterState.isProcessingEnter) {
+        console.log("⚠️ Already processing Enter, ignoring");
+        return;
+    }
 
-        if (input && container) {
-          if (!isHeaderSearchActive) {
-            // First ENTER - activate typing mode
-            isHeaderSearchActive = true;
-            input.focus();
-            input.select();
-          } else {
-            // Second ENTER - deactivate and keep parent focused
-            isHeaderSearchActive = false;
-            input.blur();
-            container.classList.add("focused"); // Keep parent focused!
-          }
-        }
-      }
+    const currentCard = movieCards[currentFocusIndex];
+    if (!currentCard) {
+        console.log("⚠️ No card found at index", currentFocusIndex);
+        return;
+    }
+    
+    const targetSeriesId = Number(currentCard.dataset.movieId);
+    console.log("▶️ Starting long press timer for series:", targetSeriesId);
+    
+    enterState.isProcessingEnter = true;
+    enterState.isLongPressExecuted = false;
+
+    enterState.enterPressTimer = setTimeout(() => {
+        console.log("🔥 LONG PRESS EXECUTED - Toggle Favorite");
+        enterState.isLongPressExecuted = true;
+        toggleFavoriteItem(targetSeriesId);
+        enterState.enterPressTimer = null;
+    }, LONG_PRESS_DURATION);
+
+    return;
+}
+  }
+
+
+ function handleKeyUp(e) {
+  const currentPage = localStorage.getItem("currentPage");
+  
+  if (currentPage !== "seriesPage") return;
+  
+  const isEnter = e.key === "Enter" || e.keyCode === 13;
+  if (!isEnter) return;
+
+  if (currentSection !== "series") {
+    return;
+  }
+
+  if (!enterState.isProcessingEnter && !enterState.enterPressTimer) {
+    console.log("⚠️ Keyup without keydown, ignoring");
+    e.preventDefault();
+    return;
+  }
+
+  // ⭐ CRITICAL: Handle long press completion
+  if (enterState.isLongPressExecuted) {
+    console.log("⏭️ Long press completed, skipping navigation");
+    
+    // Clear timer if it exists
+    if (enterState.enterPressTimer) {
+      clearTimeout(enterState.enterPressTimer);
+      enterState.enterPressTimer = null;
+    }
+    
+    // ⭐ RESET FLAGS with a small delay
+    enterState.isLongPressExecuted = false;
+    
+    setTimeout(() => {
+      enterState.isProcessingEnter = false;
+      console.log("✅ Ready for next press");
+    }, 200);
+    
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  // ⭐ SHORT PRESS - Open detail page
+  if (enterState.enterPressTimer) {
+    clearTimeout(enterState.enterPressTimer);
+    enterState.enterPressTimer = null;
+    enterState.isProcessingEnter = false;
+    
+    console.log("➡️ SHORT PRESS → OPEN SERIES DETAIL");
+    
+    const card = movieCards[currentFocusIndex];
+    if (!card) {
+      console.log("⚠️ No card at index", currentFocusIndex);
       e.preventDefault();
       return;
     }
-  }
 
-  // compute cards per row using grid CSS like MoviesPage
+    const seriesId = Number(card.dataset.movieId);
+    console.log("📍 Opening detail for series:", seriesId, "at index:", currentFocusIndex);
+    
+    const seriesObj = (window.allSeriesStreams || []).find(
+      (s) => Number(s.series_id || s.stream_id || s.id) === seriesId
+    );
+
+    if (seriesObj) {
+      localStorage.setItem("selectedSeriesData", JSON.stringify(seriesObj));
+      localStorage.setItem("selectedSeriesId", seriesId);
+      localStorage.setItem("seriesSelectedCategoryId", selectedCategoryId);
+      localStorage.setItem("seriesCategoryIndex", currentCategoryIndex);
+      localStorage.setItem("seriesCardIndex", currentFocusIndex);
+      localStorage.setItem("currentPage", "seriesDetailPage");
+
+      if (typeof Router !== "undefined" && Router.showPage) {
+        Router.showPage("series-detail-page");
+      } else if (typeof navigateTo === "function") {
+        navigateTo("series-detail-page");
+      }
+    }
+    
+    e.preventDefault();
+    return;
+  }
+  
+  // ⭐ Fallback reset
+  enterState.isProcessingEnter = false;
+  console.log("⚠️ Orphaned keyup detected, ignoring");
+  e.preventDefault();
+}
+
+
+  // compute cards per row using grid CSS like seriesPage
   function computeCardsPerRow() {
     const grid = qs(".movies-grid");
     if (!grid) return CARDS_PER_ROW;
@@ -731,125 +1006,197 @@ else if (currentSection === "categories") {
   }
 
   // Initialize & event registration
-  setTimeout(() => {
+ setTimeout(() => {
     buildCategoryMap();
     renderCategoriesUI();
     visibleCount = PAGE_SIZE;
     renderCards();
 
+    // ⭐ Remove old listeners before adding new ones
+    if (categoryClickHandler) {
+      document.removeEventListener("click", categoryClickHandler);
+    }
+    if (cardClickHandler) {
+      document.removeEventListener("click", cardClickHandler);
+    }
+    if (keydownHandler) {
+      document.removeEventListener("keydown", keydownHandler);
+    }
+    if (keyupHandler) {
+      document.removeEventListener("keyup", keyupHandler);
+    }
+
+    categoryClickHandler = (e) => onCategoryClick(e);
+    cardClickHandler = (e) => onCardClick(e);
+    keydownHandler = (e) => handleRemoteNavigation(e);
+    keyupHandler = (e) => handleKeyUp(e);
+
+    // ⭐ Add NEW listeners
+    document.addEventListener("click", categoryClickHandler);
+    document.addEventListener("click", cardClickHandler);
+    document.addEventListener("keydown", keydownHandler);
+    document.addEventListener("keyup", keyupHandler);
+
     // Restore saved focus if returning from detail
     const savedCatId = localStorage.getItem("seriesSelectedCategoryId");
     const savedCatIndex = localStorage.getItem("seriesCategoryIndex");
     const savedCardIndex = localStorage.getItem("seriesCardIndex");
-    if (savedCatId) {
+
+    console.log("🔄 Initializing Series Page - savedCatId:", savedCatId, "savedCardIndex:", savedCardIndex);
+
+    const comingFromDashboard = !savedCatId && !savedCardIndex;
+    if (comingFromDashboard) {
+      // Coming from dashboard or fresh - start from beginning
+      console.log("🆕 Fresh start from dashboard");
+
+      if (!pageState) {
+        console.error("❌ pageState is undefined in initialization!");
+        return;
+      }
+
+      pageState.currentFocusIndex = 0;
+      pageState.currentCategoryIndex = 0;
+      pageState.currentSection = "series";
+      pageState.lastFocusedCategory = 0;
+
+      visibleCount = PAGE_SIZE;
+      
+      // ⭐ Remove any stale focus classes
+      qsa(".movie-card").forEach(c => c.classList.remove("focused"));
+      qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
+      
+      setTimeout(() => {
+        console.log("🎯 Setting focus to first card (index 0)");
+        pageState.currentFocusIndex = 0; // Set again to be sure
+        setFocusOnCard(0);
+        console.log("✅ Focus set. currentFocusIndex is now:", currentFocusIndex);
+      }, 100);
+    } else {
+      // Coming from series detail page - restore position
+      console.log("↩️ Restoring from detail page");
       selectedCategoryId = String(savedCatId);
       currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
+      currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
       visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
       renderCategoriesUI();
       renderCards();
       setTimeout(() => {
-        if (savedCardIndex) setFocusOnCard(Number(savedCardIndex));
-        else setFocusOnCategory(currentCategoryIndex);
+        if (savedCardIndex) {
+          console.log("🎯 Restoring focus to card:", savedCardIndex);
+          setFocusOnCard(Number(savedCardIndex));
+        } else {
+          setFocusOnCategory(currentCategoryIndex);
+        }
       }, 80);
       localStorage.removeItem("seriesSelectedCategoryId");
       localStorage.removeItem("seriesCategoryIndex");
       localStorage.removeItem("seriesCardIndex");
-    } else {
-      setTimeout(() => setFocusOnCard(0), 80);
     }
 
-    // Event delegation
-    document.addEventListener("click", onCategoryClick);
-    document.addEventListener("click", onCardClick);
-    document.addEventListener("keydown", handleRemoteNavigation);
-
-    // Expand toggle
+    // Expand toggle button
     const expandBtn = qs("#expandBtn");
     const sidebar = qs(".movies-sidebar");
     if (expandBtn) {
-      expandBtn.addEventListener("click", () => {
+      expandBtnClickHandler = () => {
         isExpanded = !isExpanded;
         const wrapper = qs(".movies-categories-wrapper");
         if (wrapper) wrapper.classList.toggle("expanded", isExpanded);
         if (sidebar) sidebar.classList.toggle("expanded", isExpanded);
         expandBtn.classList.toggle("rotated", isExpanded);
         expandBtn.textContent = isExpanded ? "⌃" : "⌄";
-
-        // Keep filtering class if search has content
+        
         const searchInput = qs(".search-category-input");
         const hasSearchText = searchInput && searchInput.value.trim().length > 0;
-
+        
         if (!hasSearchText && sidebar) {
-          sidebar.classList.remove("filtering");
+            sidebar.classList.remove("filtering");
         }
-
-        // restore focus to category or expand
+        
         if (currentSection === "categories") {
           setFocusOnCategory(currentCategoryIndex);
         } else if (currentSection === "expand") {
           setFocusOnExpandBtn();
         }
-      });
+      };
+      
+      expandBtn.removeEventListener("click", expandBtnClickHandler);
+      expandBtn.addEventListener("click", expandBtnClickHandler);
     }
 
-    // Search input debounce for sidebar category search
+    // Search input
     const searchEl = qs(".search-category-input");
     if (searchEl) {
       let timer = null;
-      searchEl.addEventListener("input", (ev) => {
+      searchInputHandler = (ev) => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
           const q = ev.target.value.trim().toLowerCase();
           const list = qs(".movies-categories-list");
           const sidebar = qs(".movies-sidebar");
-
+          
           if (!q) {
-            // Clear search - restore normal layout
             if (sidebar) sidebar.classList.remove("filtering");
             renderCategoriesUI();
             return;
           }
-
-          // Add filtering class to change layout
+          
           if (sidebar) sidebar.classList.add("filtering");
-
+          
           const filtered = categories.filter(c => c.name.toLowerCase().includes(q));
           if (list) {
             list.innerHTML = filtered.map((c, idx) => `
               <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
-                <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-                <span class="cat-count">${c._movieCount}</span>
+                <span style="text-align: center;" class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
               </div>
             `).join("");
 
-            // Show/hide expand button based on filtered results
             const expandBtn = qs("#expandBtn");
             if (expandBtn) {
               expandBtn.style.display = filtered.length > 0 ? "flex" : "none";
             }
           }
         }, 350);
-      });
-    }
-
-    // Header search focus/placeholder logic (optional)
-    const headerSearchEl = qs(".search-input");
-    if (headerSearchEl) {
-      headerSearchEl.addEventListener("focus", () => {
-        headerSearchEl.classList.add("focused");
-      });
-      headerSearchEl.addEventListener("blur", () => {
-        headerSearchEl.classList.remove("focused");
-      });
+      };
+      
+      searchEl.removeEventListener("input", searchInputHandler);
+      searchEl.addEventListener("input", searchInputHandler);
     }
 
     // cleanup
     SeriesPage.cleanup = () => {
-      document.removeEventListener("click", onCategoryClick);
-      document.removeEventListener("click", onCardClick);
-      document.removeEventListener("keydown", handleRemoteNavigation);
+      console.log("🧹 SeriesPage cleanup called - removing event listeners");
+      
+      if (enterState.enterPressTimer) {
+        clearTimeout(enterState.enterPressTimer);
+        enterState.enterPressTimer = null;
+      }
+      enterState.isProcessingEnter = false;
+      enterState.isLongPressExecuted = false;
+
+      if (categoryClickHandler) {
+        document.removeEventListener("click", categoryClickHandler);
+      }
+      if (cardClickHandler) {
+        document.removeEventListener("click", cardClickHandler);
+      }
+      if (keydownHandler) {
+        document.removeEventListener("keydown", keydownHandler);
+      }
+      if (keyupHandler) {
+        document.removeEventListener("keyup", keyupHandler);
+      }
+      
+      const expandBtn = qs("#expandBtn");
+      if (expandBtn && expandBtnClickHandler) {
+        expandBtn.removeEventListener("click", expandBtnClickHandler);
+      }
+      
+      const searchEl = qs(".search-category-input");
+      if (searchEl && searchInputHandler) {
+        searchEl.removeEventListener("input", searchInputHandler);
+      }
     };
-  }, 0);
+}, 0);
 
   // Template (keeps identical markup so Movies CSS works)
   return `
