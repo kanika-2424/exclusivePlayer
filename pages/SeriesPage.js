@@ -17,6 +17,8 @@ if (typeof window.seriesPageState === 'undefined') {
   };
 }
 
+
+
 function SeriesPage() {
   // CONFIG (match seriesPage)
   const CARDS_PER_ROW = 7;
@@ -98,6 +100,9 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
     seriesByCategory = {};
     categories.forEach(c => seriesByCategory[c.id] = []);
 
+      seriesByCategory["-1"] = allFavoritesSeries;
+
+
     // Group series
     for (const s of allSeries) {
       const cid = String(s.category_id || (Array.isArray(s.category_ids) && s.category_ids[0]) || "-3");
@@ -107,6 +112,8 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
 
     // Attach to categories and compute counts
     categories.forEach(c => {
+          if (c.id === "-1") return;
+
       c.movies = seriesByCategory[c.id] || [];
       c._movieCount = (c.movies && c.movies.length) || 0;
     });
@@ -285,18 +292,18 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     currentSection = "search";
   }
 
-  function setFocusOnHeaderSearch() { // header search (top)
-    removeAllFocus();
-    const container = qs(".search-container"); // Parent container
-    const input = qs(".search-input"); // Input element
+ function setFocusOnHeaderSearch() { // header search (top)
+  removeAllFocus();
+  const container = qs(".search-container"); // Parent container
+  const input = qs(".search-input"); // Input element
 
-    if (container && input) {
-      container.classList.add("focused"); // Add focused to parent!
-      input.blur(); // Keep input blurred
-      isHeaderSearchActive = false; // Reset edit mode
-    }
-    currentSection = "header";
+  if (container && input) {
+    container.classList.add("focused"); // Add focused to parent!
+    input.blur(); // Keep input blurred initially
+    isHeaderSearchActive = false; // Reset edit mode
   }
+  currentSection = "header";
+}
 
   function setFocusOnExpandBtn() {
     removeAllFocus();
@@ -421,9 +428,6 @@ function toggleFavoriteItem(seriesId) {
 }
 
 function updateFavoritesUI(seriesId, isAdding) {
-  // Only work on series page
-  if (localStorage.getItem("currentPage") !== "seriesPage") return;
-
   // Update favorites category
   const favCategory = categories.find((c) => c.id === "-1");
   if (favCategory) {
@@ -476,13 +480,16 @@ function updateFavoritesUI(seriesId, isAdding) {
     }
   });
 
-  // If in Favorites category and removing, refresh the view
-  if (selectedCategoryId === "-1" && !isAdding) {
-    renderCards();
+  // ⭐ If in Favorites category, re-render to show/hide cards
+  if (selectedCategoryId === "-1") {
+    renderCards(); // This will show updated favorites list
+    
     if (movieCards.length === 0) {
+      // No favorites left - go to categories
       currentSection = "categories";
       setFocusOnCategory(0);
     } else {
+      // Maintain focus on valid card
       currentFocusIndex = Math.min(currentFocusIndex, movieCards.length - 1);
       setFocusOnCard(currentFocusIndex);
     }
@@ -604,6 +611,7 @@ else if (currentSection === "categories") {
       } else if (currentSection === "search") {
         // category-search: UP goes to header search
         setFocusOnHeaderSearch();
+         
       }
 
       e.preventDefault();
@@ -628,24 +636,53 @@ else if (currentSection === "categories") {
         if (headerContainer) headerContainer.classList.remove("focused");
       }
 
-      // If header search (top search input) -> go to sidebar category search
-      if (currentSection === "header") {
+  if (currentSection === "header") {
+        const headerInput = qs(".search-input");
+        if (headerInput) {
+          headerInput.blur();
+          // Remove cursor from header search
+          headerInput.selectionStart = headerInput.selectionEnd = 0;
+        }
+        
         setFocusOnSearch();
         e.preventDefault();
         return;
       }
 
       if (currentSection === "search") {
-        // category search -> if expanded go to first category, else go to cards
         if (isExpanded) {
           setFocusOnCategory(0);
         } else {
-          // collapsed: directly go to cards
           setFocusOnCard(0);
         }
         e.preventDefault();
         return;
       }
+
+      // If header search (top search input) -> go to sidebar category search
+  if (currentSection === "header") {
+    const headerInput = qs(".search-input");
+    if (headerInput) {
+      headerInput.blur();
+      headerInput.selectionStart = headerInput.selectionEnd = 0;
+    }
+    
+    setFocusOnSearch();
+    e.preventDefault();
+    return;
+  }
+
+  if (currentSection === "search") {
+    // category search -> if expanded go to first category, else go to cards
+    if (isExpanded) {
+      setFocusOnCategory(0);
+    } else {
+      // collapsed: directly go to cards
+      setFocusOnCard(0);
+    }
+    e.preventDefault();
+    return;
+  }
 
       if (currentSection === "categories") {
         const perRow = computeCategoriesPerRow();
@@ -869,14 +906,17 @@ else if (currentSection === "categories") {
     }
 
     /* ---------- ENTER / SELECT ---------- */
-  if (isEnter && currentSection === "series") {
+ /* ---------- ENTER / SELECT ---------- */
+if (isEnter && currentSection === "series") {
     e.preventDefault();
 
+    // ⭐ Use global state
     if (enterState.isProcessingEnter) {
         console.log("⚠️ Already processing Enter, ignoring");
         return;
     }
 
+    // ⭐ CAPTURE the current card IMMEDIATELY before timer starts
     const currentCard = movieCards[currentFocusIndex];
     if (!currentCard) {
         console.log("⚠️ No card found at index", currentFocusIndex);
@@ -884,19 +924,73 @@ else if (currentSection === "categories") {
     }
     
     const targetSeriesId = Number(currentCard.dataset.movieId);
-    console.log("▶️ Starting long press timer for series:", targetSeriesId);
+    console.log("▶️ Starting long press timer for series:", targetSeriesId, "at index:", currentFocusIndex);
     
     enterState.isProcessingEnter = true;
     enterState.isLongPressExecuted = false;
 
     enterState.enterPressTimer = setTimeout(() => {
-        console.log("🔥 LONG PRESS EXECUTED - Toggle Favorite");
+        console.log("🔥 LONG PRESS EXECUTED - Toggle Favorite for:", targetSeriesId);
         enterState.isLongPressExecuted = true;
+
+        // ⭐ Use the captured seriesId, not recalculating from currentFocusIndex
         toggleFavoriteItem(targetSeriesId);
+
         enterState.enterPressTimer = null;
     }, LONG_PRESS_DURATION);
 
     return;
+}
+
+// ⭐ ENTER handling for other sections (search, categories, expand)
+if (isEnter && currentSection !== "series") {
+    if (currentSection === "search") {
+        // Toggle edit mode for category search
+        isSearchInputActive = !isSearchInputActive;
+        const input = qs(".search-category-input");
+        if (input) {
+            if (isSearchInputActive) {
+                input.focus();
+            } else {
+                input.blur();
+            }
+        }
+        e.preventDefault();
+        return;
+    }
+    
+    if (currentSection === "header") {
+        // Toggle edit mode for header search
+        isHeaderSearchActive = !isHeaderSearchActive;
+        const input = qs(".search-input");
+        if (input) {
+            if (isHeaderSearchActive) {
+                input.focus();
+            } else {
+                input.blur();
+            }
+        }
+        e.preventDefault();
+        return;
+    }
+    
+    if (currentSection === "categories") {
+        // Select category
+        const items = qsa(".movies-category-item");
+        if (items[currentCategoryIndex]) {
+            items[currentCategoryIndex].click();
+        }
+        e.preventDefault();
+        return;
+    }
+    
+    if (currentSection === "expand") {
+        // Toggle expand
+        const expandBtn = qs("#expandBtn");
+        if (expandBtn) expandBtn.click();
+        e.preventDefault();
+        return;
+    }
 }
   }
 
@@ -1004,6 +1098,57 @@ else if (currentSection === "categories") {
   function computeCategoriesPerRow() {
     return isExpanded ? 8 : 7;
   }
+
+
+  // Header search functionality for series
+// Header search functionality for series - searches only in selected category
+function handleHeaderSearch(searchQuery) {
+  const query = searchQuery.trim().toLowerCase();
+  
+  if (!query) {
+    // Empty search - restore original category series
+    buildCategoryMap();
+    renderCards();
+    // DON'T auto-focus on cards after search clears
+    return;
+  }
+
+  console.log("🔍 Searching series in category", selectedCategoryId, "for:", query);
+
+  // Get series from CURRENT CATEGORY ONLY
+  const currentCat = categories.find(c => String(c.id) === String(selectedCategoryId));
+  if (!currentCat) {
+    console.log("⚠️ No category selected");
+    return;
+  }
+
+  // Get original series from the category (from seriesByCategory map)
+  const categorySeries = seriesByCategory[selectedCategoryId] || [];
+  
+  const searchResults = categorySeries.filter(s => {
+    const title = (s.name || s.title || "").toLowerCase();
+    const desc = (s.plot || s.overview || s.description || "").toLowerCase();
+    return title.includes(query) || desc.includes(query);
+  });
+
+  console.log("📊 Found", searchResults.length, "results in current category");
+
+  // Update current category with search results
+  currentCat.movies = searchResults;
+  currentCat._movieCount = searchResults.length;
+
+  visibleCount = Math.min(PAGE_SIZE, searchResults.length);
+  renderCards();
+
+  // DON'T auto-focus on first card - keep focus on header search
+  if (searchResults.length === 0) {
+    const container = qs(".movies-grid");
+    if (container) {
+      container.innerHTML = `<div class="movie-no-data"><p>No series found for "${escapeHtml(query)}" in this category</p></div>`;
+    }
+  }
+}
+
 
   // Initialize & event registration
  setTimeout(() => {
@@ -1157,6 +1302,50 @@ else if (currentSection === "categories") {
           }
         }, 350);
       };
+
+
+      // Inside the setTimeout initialization block, after the category search input handler:
+
+// Header search input (add after searchEl handler)
+const headerSearchEl = qs(".search-input");
+if (headerSearchEl) {
+  let headerSearchTimer = null;
+  let lastSearchQuery = "";
+  
+  headerSearchInputHandler = (ev) => {
+    if (headerSearchTimer) clearTimeout(headerSearchTimer);
+    
+    headerSearchTimer = setTimeout(() => {
+      const query = ev.target.value.trim().toLowerCase();
+      
+      // If search is cleared, restore original category
+      if (!query && lastSearchQuery) {
+        console.log("🔄 Search cleared, restoring category");
+        buildCategoryMap(); // Rebuild to restore original data
+        renderCards();
+        if (movieCards.length > 0) {
+          setFocusOnCard(0);
+        }
+        lastSearchQuery = "";
+        return;
+      }
+      
+      lastSearchQuery = query;
+      handleHeaderSearch(query);
+    }, 300);
+  };
+  
+  headerSearchEl.removeEventListener("input", headerSearchInputHandler);
+  headerSearchEl.addEventListener("input", headerSearchInputHandler);
+  
+  // Clear search on blur if needed
+  headerSearchEl.addEventListener("blur", () => {
+    if (!headerSearchEl.value.trim()) {
+      buildCategoryMap();
+      renderCards();
+    }
+  });
+}
       
       searchEl.removeEventListener("input", searchInputHandler);
       searchEl.addEventListener("input", searchInputHandler);
@@ -1195,6 +1384,13 @@ else if (currentSection === "categories") {
       if (searchEl && searchInputHandler) {
         searchEl.removeEventListener("input", searchInputHandler);
       }
+
+
+        const headerSearchEl = qs(".search-input");
+  if (headerSearchEl && headerSearchInputHandler) {
+    headerSearchEl.removeEventListener("input", headerSearchInputHandler);
+  }
+
     };
 }, 0);
 

@@ -31,6 +31,8 @@ function LiveTvPage() {
   let focusedEPGIndex = 0;
   let currentAspectRatio = "contain";
   let inAspectRatioBtn = false;
+  let isHeaderSearchActive = false;
+let isSidebarSearchActive = false;
 
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
@@ -255,17 +257,17 @@ const toggleAspectRatio = () => {
   };
 
   // Helper to set focus on header search box
-  const setHeaderSearchFocus = (active) => {
-    const searchBox = qs(".search-container");
-    const searchInput = qs(".search-input");
-    if (active) {
-      searchBox.classList.add("search-focused");
-      searchInput.focus();
-    } else {
-      searchBox.classList.remove("search-focused");
-      searchInput.blur();
-    }
-  };
+const setHeaderSearchFocus = (active) => {
+  const searchBox = qs(".search-container");
+  const searchInput = qs(".search-input");
+  if (active) {
+    searchBox.classList.add("search-focused");
+    searchInput.blur(); // Keep blurred initially
+  } else {
+    searchBox.classList.remove("search-focused");
+    searchInput.blur();
+  }
+};
 
   // Helper to set focus on epg
   const setEPGFocus = (idx) => {
@@ -1011,16 +1013,39 @@ if (inAspectRatioBtn) {
 
     // HEADER SEARCH BOX NAVIGATION
     if (inHeaderSearch) {
-      // DOWN: Move to channel grid
-      if (isDown) {
-        inHeaderSearch = false;
-        inChannelGrid = true;
-        setHeaderSearchFocus(false);
-        focusedChannelIndex = 0;
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
+
+       if (isEnter) {
+    isHeaderSearchActive = !isHeaderSearchActive;
+    const searchInput = qs(".search-input");
+    if (searchInput) {
+      if (isHeaderSearchActive) {
+        searchInput.focus();
+        const textLength = searchInput.value.length;
+        searchInput.setSelectionRange(textLength, textLength);
+      } else {
+        searchInput.blur();
       }
+    }
+    e.preventDefault();
+    return;
+  }
+      // DOWN: Move to channel grid
+     if (isDown) {
+    inHeaderSearch = false;
+    inSidebarSearch = true;
+    isHeaderSearchActive = false;
+    setHeaderSearchFocus(false);
+    setSidebarSearchFocus(true);
+    
+    const headerInput = qs(".search-input");
+    if (headerInput) {
+      headerInput.blur();
+      headerInput.selectionStart = headerInput.selectionEnd = 0;
+    }
+    
+    e.preventDefault();
+    return;
+  }
 
       // LEFT: Stay in header search
       if (isLeft) {
@@ -1040,6 +1065,7 @@ if (inAspectRatioBtn) {
         return;
       }
 
+   
       // Allow typing in search box
       return;
     }
@@ -1047,41 +1073,86 @@ if (inAspectRatioBtn) {
     // SIDEBAR SEARCH BOX NAVIGATION
     if (inSidebarSearch) {
       // UP: Move to header search
-      if (isUp) {
-        inSidebarSearch = false;
-        inHeaderSearch = true;
-        setSidebarSearchFocus(false);
-        setHeaderSearchFocus(true);
-        e.preventDefault();
-        return;
+      // UP: Move to header search with cursor at end
+  if (isUp) {
+    inSidebarSearch = false;
+    inHeaderSearch = true;
+    isSidebarSearchActive = false;
+    setSidebarSearchFocus(false);
+    setHeaderSearchFocus(true);
+    
+    // Auto-enter edit mode with cursor at end
+    setTimeout(() => {
+      isHeaderSearchActive = true;
+      const input = qs(".search-input");
+      if (input) {
+        input.focus();
+        const textLength = input.value.length;
+        input.setSelectionRange(textLength, textLength);
       }
+    }, 0);
+    
+    e.preventDefault();
+    return;
+  }
 
-      // DOWN: Move to first sidebar item
-      if (isDown) {
-        inSidebarSearch = false;
-        inSidebar = true;
-        setSidebarSearchFocus(false);
-        focusedSidebarIndex = 0;
-        setSidebarFocus(focusedSidebarIndex);
-        e.preventDefault();
-        return;
-      }
+  // DOWN: Move to first sidebar item
+  if (isDown) {
+    inSidebarSearch = false;
+    inSidebar = true;
+    isSidebarSearchActive = false;
+    setSidebarSearchFocus(false);
+    focusedSidebarIndex = 0;
+    setSidebarFocus(focusedSidebarIndex);
+    e.preventDefault();
+    return;
+  }
 
-      // RIGHT: Go back to channels
-      if (isRight) {
-        inSidebarSearch = false;
-        inChannelGrid = true;
-        setSidebarSearchFocus(false);
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
+  // RIGHT: Go to channel grid (remove cursor)
+  if (isRight) {
+    inSidebarSearch = false;
+    inChannelGrid = true;
+    isSidebarSearchActive = false;
+    setSidebarSearchFocus(false);
+    
+    const sidebarInput = qs(".sidebar-search-input");
+    if (sidebarInput) {
+      sidebarInput.blur();
+      sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
+    }
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
 
-      // LEFT: Stay in search box
-      if (isLeft) {
-        e.preventDefault();
-        return;
+  // If in edit mode, allow typing
+  if (isSidebarSearchActive) {
+    return; // Allow typing
+  }
+
+  // LEFT: Stay in search box when not editing
+  if (isLeft) {
+    e.preventDefault();
+    return;
+  }
+
+        if (isEnter) {
+    isSidebarSearchActive = !isSidebarSearchActive;
+    const searchInput = qs(".sidebar-search-input");
+    if (searchInput) {
+      if (isSidebarSearchActive) {
+        searchInput.focus();
+        const textLength = searchInput.value.length;
+        searchInput.setSelectionRange(textLength, textLength);
+      } else {
+        searchInput.blur();
       }
+    }
+    e.preventDefault();
+    return;
+  }
+
 
       // Allow typing in search box - don't prevent default for regular keys
       return;
@@ -1383,15 +1454,7 @@ if (isDown) {
         
         renderChannels();
         
-        setTimeout(() => {
-          const channels = qsa(".channel-card");
-          if (channels.length > 0) {
-            focusedChannelIndex = 0;
-            if (inChannelGrid) {
-              setFocus(channels, 0, "channel-card-focused");
-            }
-          }
-        }, 100);
+    
       });
     }
 
