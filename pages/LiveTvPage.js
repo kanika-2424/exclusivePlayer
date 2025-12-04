@@ -33,6 +33,7 @@ function LiveTvPage() {
   let inAspectRatioBtn = false;
   let isHeaderSearchActive = false;
 let isSidebarSearchActive = false;
+let inFavoriteBtn = false; // ADD THIS LINE
 
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
@@ -176,12 +177,22 @@ const toggleAspectRatio = () => {
         )
       : window.allLiveStreams;
 
-    const favoritesChannels = searchQuery.trim() && selectedCategoryId === "favorites"
-      ? updatedFavorites.filter(ch => 
-          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : updatedFavorites;
-
+  // Replace with this:
+const favoritesChannels = updatedFavorites.map(favItem => {
+  // If favItem is just an ID, find the full object
+  if (typeof favItem === 'number') {
+    return allStreams.find(s => s.stream_id === favItem) || favItem;
+  }
+  // If favItem is an object but missing stream_icon, merge with full data
+  if (!favItem.stream_icon) {
+    const fullData = allStreams.find(s => s.stream_id === favItem.stream_id);
+    return fullData || favItem;
+  }
+  return favItem;
+}).filter(ch => {
+  if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
+  return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+});
     const historyChannels = searchQuery.trim() && selectedCategoryId === "channelHistory"
       ? channelHistory.filter(ch => 
           (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -278,6 +289,23 @@ const setHeaderSearchFocus = (active) => {
       list[idx].scrollIntoView({ block: "nearest", inline: "nearest" });
     }
   };
+
+
+  // Helper to set focus on favorite button
+const setFavoriteBtnFocus = (active) => {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  if (!card) return;
+  
+  const favBtn = card.querySelector(".favorite-btn");
+  if (active) {
+    favBtn.style.outline = "3px solid #0ea5e9";
+    favBtn.style.outlineOffset = "2px";
+    favBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+  } else {
+    favBtn.style.outline = "none";
+  }
+};
 
   // Play channel function
 // ===== PLAY CHANNEL FUNCTION (UPDATED) =====
@@ -464,6 +492,22 @@ setTimeout(() => {
     console.log("✅ Channel playback initiated");
   };
 
+  window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
+  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+  
+  const currentPlaylist = playlistsData.find(
+    pl => pl.playlistName === selectedPlaylist.playlistName
+  );
+  
+  if (!currentPlaylist || !currentPlaylist[favoriteKey]) {
+    return false;
+  }
+  
+  // Check if stream_id exists in array (not object)
+  return currentPlaylist[favoriteKey].includes(item.stream_id);
+};
+
   // ===== UPDATE EPG (Program Guide) =====
 const updateEPG = (channelData) => {
   const epgList = qs(".epg-list");
@@ -613,9 +657,49 @@ function decodeBase64(str) {
     renderEPGList(programs);
   };
 
+window.toggleFavoriteItem = (item, favoriteKey) => {
+  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+  
+  const currentPlaylist = playlistsData.find(
+    pl => pl.playlistName === selectedPlaylist.playlistName
+  );
+  
+  if (!currentPlaylist[favoriteKey]) {
+    currentPlaylist[favoriteKey] = [];
+  }
+  
+  const index = currentPlaylist[favoriteKey].findIndex(
+    fav => (typeof fav === 'object' ? fav.stream_id : fav) === item.stream_id
+  );
+  
+  let isFav;
+  if (index > -1) {
+    currentPlaylist[favoriteKey].splice(index, 1);
+    isFav = false;
+  } else {
+    // Store the FULL item object with all properties
+    const fullItem = {
+      stream_id: item.stream_id,
+      name: item.name,
+      stream_icon: item.stream_icon,  // Make sure this is included
+      stream_type: item.stream_type,
+      category_id: item.category_id,
+      // Add any other properties you need
+    };
+    currentPlaylist[favoriteKey].push(fullItem);
+    isFav = true;
+  }
+  
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+  
+  return { isFav, item };
+};
 
   // ===== TOGGLE FAVORITE =====
   const toggleFavorite = (channelData) => {
+      console.log("toggleFavorite called with:", channelData); // ADD THIS
+
     const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
     
     // Update heart button UI
@@ -651,62 +735,70 @@ function decodeBase64(str) {
 
 
 // ===== RENDER CHANNELS =====
-  const renderChannels = () => {
-    const filtered = getFilteredCategories();
-    
-    // Find selected category
-    let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-    if (!selectedCat) {
-      selectedCat = filtered[0];
-      selectedCategoryId = selectedCat.category_id;
-    }
+// ===== RENDER CHANNELS =====
+const renderChannels = () => {
+  const filtered = getFilteredCategories();
+  
+  // Find selected category
+  let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+  if (!selectedCat) {
+    selectedCat = filtered[0];
+    selectedCategoryId = selectedCat.category_id;
+  }
 
-    // Get channels for selected category
-    const allChannels = selectedCat.channels || [];
-    
-    // Apply pagination
-    const channelsToShow = allChannels.slice(0, currentChunk * pageSize);
-    
-    // Update channel grid
-    const channelGrid = qs(".channel-grid");
-    if (!channelGrid) return;
+  // Get channels for selected category
+  const allChannels = selectedCat.channels || [];
+  
+  // Apply pagination
+  const channelsToShow = allChannels.slice(0, currentChunk * pageSize);
+  
+  // Update channel grid
+  const channelGrid = qs(".channel-grid");
+  if (!channelGrid) return;
 
-    if (channelsToShow.length === 0) {
-      channelGrid.innerHTML = `
-        <div class="no-channels">
-          <p>No channels found in this category</p>
-        </div>`;
-      return;
-    }
+  if (channelsToShow.length === 0) {
+    channelGrid.innerHTML = `
+      <div class="no-channels">
+        <p>No channels found in this category</p>
+      </div>`;
+    return;
+  }
 
-    // Build channel cards HTML
-    const channelCardsHTML = channelsToShow.map(ch => {
-      const isFav = window.isItemFavoriteForPlaylist ? 
-        window.isItemFavoriteForPlaylist(ch, "favoritesLiveTV") : false;
-      
-      return `
-        <div class="channel-card" 
-             data-stream-id="${ch.stream_id}" 
-             data-name="${ch.name}" 
-             data-logo="${ch.stream_icon }">
-          <div class="channel-card-header">
-            <img src="${ch.stream_icon }" 
-                 class="channel-logo" 
-                 alt="${ch.name}"
-                 onerror="this.src='/assets/profile.png'" />
-            <button class="favorite-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="channel-name">${ch.name}</div>
+  // Get favorites list for checking
+  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
+  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
+    pl => pl.playlistName === currentPlaylistName
+  );
+  const favoritesList = currentPlaylist?.favoritesLiveTV || [];
+
+  // Build channel cards HTML
+  const channelCardsHTML = channelsToShow.map(ch => {
+    // CHECK IF STREAM_ID IS IN FAVORITES ARRAY
+    const isFav = favoritesList.includes(ch.stream_id);
+    
+    return `
+      <div class="channel-card" 
+           data-stream-id="${ch.stream_id}" 
+           data-name="${ch.name}" 
+           data-logo="${ch.stream_icon}">
+        <div class="channel-card-header">
+          <img src="${ch.stream_icon}" 
+               class="channel-logo" 
+               alt="${ch.name}"
+               onerror="this.src='/assets/profile.png'" />
+          <button class="favorite-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </button>
         </div>
-      `;
-    }).join("");
+        <div class="channel-name">${ch.name}</div>
+      </div>
+    `;
+  }).join("");
 
-    channelGrid.innerHTML = channelCardsHTML;
-  };
+  channelGrid.innerHTML = channelCardsHTML;
+};
 
   // ===== RENDER SIDEBAR CATEGORIES =====
   const renderSidebarCategories = () => {
@@ -747,7 +839,42 @@ function decodeBase64(str) {
   // CLICK HANDLER
  // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
+    console.log("Click detected on:", e.target);
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
+
+
+       // Check if click is on favorite button OR its children (svg/path)
+const favBtn = e.target.closest(".favorite-btn");
+const isFavClick = favBtn || e.target.closest("svg")?.parentElement?.classList.contains("favorite-btn");
+
+if (favBtn || isFavClick) {
+  e.stopPropagation();
+  
+  const targetBtn = favBtn || e.target.closest("svg").parentElement;
+  const card = targetBtn.closest(".channel-card");
+  
+  if (!card) return;
+  
+  const streamId = card.dataset.streamId;
+  const channelData = allStreams.find(ch => ch.stream_id == streamId);
+  
+  if (channelData) {
+    toggleFavorite(channelData);
+    
+    if (selectedCategoryId === "favorites") {
+      setTimeout(() => {
+        renderChannels();
+        renderSidebarCategories();
+        const channels = qsa(".channel-card");
+        if (channels.length > 0) {
+          focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        }
+      }, 100);
+    }
+  }
+  return;
+}
 
 
       const playPauseBtn = e.target.closest(".play-pause-btn");
@@ -765,6 +892,8 @@ if (aspectBtn) {
   return;
 }
 
+
+
     // Channel card click
     const card = e.target.closest(".channel-card");
     if (card) {
@@ -780,34 +909,7 @@ if (aspectBtn) {
       return;
     }
 
-    // Favorite button click
-    const favBtn = e.target.closest(".favorite-btn");
-    if (favBtn) {
-      e.stopPropagation();
-      const card = favBtn.closest(".channel-card");
-      const streamId = card.dataset.streamId;
-      const channelData = allStreams.find(ch => ch.stream_id == streamId);
-      
-      if (channelData) {
-        toggleFavorite(channelData);
-        
-        // Re-render if in favorites category and removed
-        if (selectedCategoryId === "favorites") {
-          setTimeout(() => {
-            renderChannels();
-            renderSidebarCategories();
-            
-            // Restore focus
-            const channels = qsa(".channel-card");
-            if (channels.length > 0) {
-              focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
-              setFocus(channels, focusedChannelIndex, "channel-card-focused");
-            }
-          }, 100);
-        }
-      }
-      return;
-    }
+
 
     // Sidebar category click
     const sidebarItem = e.target.closest(".sidebar-item");
@@ -1272,6 +1374,84 @@ if (inAspectRatioBtn) {
       return;
     }
 
+    // FAVORITE BUTTON NAVIGATION
+if (inFavoriteBtn) {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  const favBtn = card?.querySelector(".favorite-btn");
+  const cols = 5;
+
+  if (isLeft) {
+    // Go back to channel card
+    inFavoriteBtn = false;
+    inChannelGrid = true;
+    if (favBtn) favBtn.style.outline = "none";
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+
+  if (isRight) {
+    // Go to next channel card
+    inFavoriteBtn = false;
+    inChannelGrid = true;
+    if (favBtn) favBtn.style.outline = "none";
+    
+    if (focusedChannelIndex < channels.length - 1) {
+      focusedChannelIndex++;
+    }
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    // Click the favorite button
+    favBtn?.click();
+    e.preventDefault();
+    return;
+  }
+
+  // UP/DOWN: Navigate to adjacent rows while staying on favorite button
+  if (isUp && focusedChannelIndex >= cols) {
+    focusedChannelIndex -= cols;
+    if (favBtn) favBtn.style.outline = "none";
+    setFavoriteBtnFocus(true);
+    e.preventDefault();
+    return;
+  }
+
+ if (isDown) {
+  inFavoriteBtn = false;
+  inChannelGrid = true;
+  if (favBtn) favBtn.style.outline = "none";
+  
+  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+  
+  if (focusedChannelIndex >= lastRowStart) {
+    // In last row - go to video player
+    channels.forEach(c => c.classList.remove("channel-card-focused"));
+    inVideoPlayer = true;
+    const videoDiv = qs(".live-video-player-div");
+    if (videoDiv) {
+      videoDiv.classList.add("video-focused");
+      videoDiv.style.border = "3px solid #0ea5e9";
+      videoDiv.style.boxSizing = "border-box";
+      videoDiv.style.outline = "3px solid #0ea5e9";
+      videoDiv.style.outlineOffset = "-3px";
+    }
+  } else {
+    // Move to card below (not its heart)
+    focusedChannelIndex += cols;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  }
+  e.preventDefault();
+  return;
+}
+
+  return;
+}
+
     // CHANNEL GRID NAVIGATION
     if (inChannelGrid) {
       const cols = 5;
@@ -1349,14 +1529,15 @@ if (isDown) {
         return;
       }
 
-      if (isRight) {
-        if (focusedChannelIndex < channels.length - 1) {
-          focusedChannelIndex++;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        }
-        e.preventDefault();
-        return;
-      }
+   if (isRight) {
+  // Go to favorite button of current card
+  inChannelGrid = false;
+  inFavoriteBtn = true;
+  channels.forEach(c => c.classList.remove("channel-card-focused"));
+  setFavoriteBtnFocus(true);
+  e.preventDefault();
+  return;
+}
 
       if (isEnter) {
         const selected = channels[focusedChannelIndex];
@@ -1402,6 +1583,8 @@ if (isDown) {
         inHeaderSearch = false;
         inEPG = false;
         inVideoPlayer = false;
+            inFavoriteBtn = false; // ADD THIS
+
       }
     }, 50);
 
