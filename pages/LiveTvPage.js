@@ -1,4 +1,65 @@
 
+// Add this BEFORE or AFTER your LiveTvPage function
+window.addItemToHistory = (item, historyKey) => {
+  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+  
+  const currentPlaylist = playlistsData.find(
+    pl => pl.playlistName === selectedPlaylist.playlistName
+  );
+  
+  if (!currentPlaylist) return;
+  
+  // Initialize history array if it doesn't exist
+  if (!currentPlaylist[historyKey]) {
+    currentPlaylist[historyKey] = [];
+  }
+  
+  // Remove item if it already exists (to avoid duplicates)
+  const existingIndex = currentPlaylist[historyKey].findIndex(
+    h => (typeof h === 'object' ? h.stream_id : h) === item.stream_id
+  );
+  
+  if (existingIndex > -1) {
+    currentPlaylist[historyKey].splice(existingIndex, 1);
+  }
+  
+  // Add item to the beginning of the history array
+  const historyItem = {
+    stream_id: item.stream_id,
+    name: item.name,
+    stream_icon: item.stream_icon,
+    stream_type: item.stream_type,
+    category_id: item.category_id,
+    addedAt: new Date().toISOString()
+  };
+  
+  currentPlaylist[historyKey].unshift(historyItem);
+  
+  // Limit history to last 50 items
+  if (currentPlaylist[historyKey].length > 50) {
+    currentPlaylist[historyKey] = currentPlaylist[historyKey].slice(0, 50);
+  }
+  
+  // Save back to localStorage
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+  
+  console.log("✅ Added to history:", item.name);
+  
+  // **TRIGGER SIDEBAR UPDATE IF ON LIVE TV PAGE**
+  if (localStorage.getItem("currentPage") === "liveTvPage") {
+    // Find and call renderSidebarCategories if it exists
+    const sidebarArea = document.querySelector("#sidebar-area");
+    if (sidebarArea) {
+      // This will be called from within LiveTvPage context
+      // We'll add a global reference to renderSidebarCategories
+      if (window.updateLiveTvSidebar) {
+        window.updateLiveTvSidebar();
+      }
+    }
+  }
+};
+
 function LiveTvPage() {
   // ===== API DATA (NEW) =====
   const categories = window.liveCategories || [];
@@ -177,6 +238,8 @@ const toggleAspectRatio = () => {
         )
       : window.allLiveStreams;
 
+      
+
   // Replace with this:
 const favoritesChannels = updatedFavorites.map(favItem => {
   // If favItem is just an ID, find the full object
@@ -193,11 +256,21 @@ const favoritesChannels = updatedFavorites.map(favItem => {
   if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
   return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
 });
-    const historyChannels = searchQuery.trim() && selectedCategoryId === "channelHistory"
-      ? channelHistory.filter(ch => 
-          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : channelHistory;
+  const historyChannels = (channelHistory || []).map(histItem => {
+  // If histItem is just an ID, find the full object
+  if (typeof histItem === 'number') {
+    return allStreams.find(s => s.stream_id === histItem) || histItem;
+  }
+  // If histItem is an object but missing stream_icon, merge with full data
+  if (!histItem.stream_icon) {
+    const fullData = allStreams.find(s => s.stream_id === histItem.stream_id);
+    return fullData || histItem;
+  }
+  return histItem;
+}).filter(ch => {
+  if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
+  return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+});
 
     return [
       {
@@ -217,6 +290,8 @@ const favoritesChannels = updatedFavorites.map(favItem => {
       },
       ...filteredCategories
     ];
+
+    
   };
 
   // ===== HELPER: Dispose Player =====
@@ -395,6 +470,15 @@ const setFavoriteBtnFocus = (active) => {
         channelData.name || "Unknown Channel"
       );
       
+      if (selectedCategoryId !== "channelHistory") {
+  const selectedChannelItem = allStreams.find(
+    (item) => item.stream_id == channelData.stream_id
+  );
+  if (selectedChannelItem && typeof window.addItemToHistory === "function") {
+    window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+  }
+}
+
     // Initialize Video.js if available
 setTimeout(() => {
   const videoEl = document.getElementById("live-video-player");
@@ -492,7 +576,7 @@ setTimeout(() => {
     console.log("✅ Channel playback initiated");
   };
 
-  window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
+window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
   const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
   
@@ -504,8 +588,10 @@ setTimeout(() => {
     return false;
   }
   
-  // Check if stream_id exists in array (not object)
-  return currentPlaylist[favoriteKey].includes(item.stream_id);
+  // Check if stream_id exists (works for both objects and IDs)
+  return currentPlaylist[favoriteKey].some(fav => 
+    (typeof fav === 'object' ? fav.stream_id : fav) === item.stream_id
+  );
 };
 
   // ===== UPDATE EPG (Program Guide) =====
@@ -697,33 +783,76 @@ window.toggleFavoriteItem = (item, favoriteKey) => {
 };
 
   // ===== TOGGLE FAVORITE =====
-  const toggleFavorite = (channelData) => {
-      console.log("toggleFavorite called with:", channelData); // ADD THIS
+ // ===== TOGGLE FAVORITE =====
+const toggleFavorite = (channelData) => {
+  console.log("toggleFavorite called with:", channelData);
 
-    const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
-    
-    // Update heart button UI
-    const card = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
-    if (card) {
-      const favBtn = card.querySelector(".favorite-btn");
-      if (favBtn) {
-        const svg = favBtn.querySelector("svg path");
-        if (svg) {
-          svg.setAttribute("fill", result.isFav ? "red" : "none");
-        }
+  const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
+  
+  // Update heart button UI
+  const card = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
+  if (card) {
+    const favBtn = card.querySelector(".favorite-btn");
+    if (favBtn) {
+      const svg = favBtn.querySelector("svg path");
+      if (svg) {
+        svg.setAttribute("fill", result.isFav ? "red" : "none");
       }
     }
+  }
+  
+  // **UPDATE SIDEBAR COUNTS IMMEDIATELY**
+  renderSidebarCategories();
+  
+  // Show toast notification
+  if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+    Toaster.showToast(
+      result.isFav ? "success" : "error",
+      `Channel ${result.isFav ? "added to" : "removed from"} favorites`
+    );
+  }
+  
+  return result;
+};
+
+
+
+// Add this function after toggleFavorite
+const removeFromHistory = (channelData) => {
+  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+  
+  const currentPlaylist = playlistsData.find(
+    pl => pl.playlistName === selectedPlaylist.playlistName
+  );
+  
+  if (!currentPlaylist || !currentPlaylist.ChannelListLive) return;
+  
+  const index = currentPlaylist.ChannelListLive.findIndex(
+    h => (typeof h === 'object' ? h.stream_id : h) === channelData.stream_id
+  );
+  
+  if (index > -1) {
+    currentPlaylist.ChannelListLive.splice(index, 1);
+    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
     
-    // Show toast notification
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast(
-        result.isFav ? "success" : "error",
-        `Channel ${result.isFav ? "added to" : "removed from"} favorites`
-      );
+    // Update UI
+    renderChannels();
+    renderSidebarCategories();
+    
+    // Refocus
+    const channels = qsa(".channel-card");
+    if (channels.length > 0) {
+      focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
     }
     
-    return result;
-  };
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "Channel removed from history");
+    }
+  }
+};
+
 
   // ===== ADD TO HISTORY =====
   const addItemToHistory = (item, historyKey) => {
@@ -739,20 +868,15 @@ window.toggleFavoriteItem = (item, favoriteKey) => {
 const renderChannels = () => {
   const filtered = getFilteredCategories();
   
-  // Find selected category
   let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
   if (!selectedCat) {
     selectedCat = filtered[0];
     selectedCategoryId = selectedCat.category_id;
   }
 
-  // Get channels for selected category
   const allChannels = selectedCat.channels || [];
-  
-  // Apply pagination
   const channelsToShow = allChannels.slice(0, currentChunk * pageSize);
   
-  // Update channel grid
   const channelGrid = qs(".channel-grid");
   if (!channelGrid) return;
 
@@ -764,17 +888,19 @@ const renderChannels = () => {
     return;
   }
 
-  // Get favorites list for checking
   const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
   const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
     pl => pl.playlistName === currentPlaylistName
   );
   const favoritesList = currentPlaylist?.favoritesLiveTV || [];
+  
+  // Check if we're in history view
+  const isHistoryView = selectedCategoryId === "channelHistory";
 
-  // Build channel cards HTML
   const channelCardsHTML = channelsToShow.map(ch => {
-    // CHECK IF STREAM_ID IS IN FAVORITES ARRAY
-    const isFav = favoritesList.includes(ch.stream_id);
+    const isFav = favoritesList.some(fav => 
+      (typeof fav === 'object' ? fav.stream_id : fav) === ch.stream_id
+    );
     
     return `
       <div class="channel-card" 
@@ -786,11 +912,21 @@ const renderChannels = () => {
                class="channel-logo" 
                alt="${ch.name}"
                onerror="this.src='/assets/profile.png'" />
-          <button class="favorite-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-          </button>
+          <div class="channel-actions">
+            <button class="favorite-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+            ${isHistoryView ? `
+              <button class="remove-history-btn" title="Remove from history">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            ` : ''}
+          </div>
         </div>
         <div class="channel-name">${ch.name}</div>
       </div>
@@ -831,6 +967,7 @@ const renderChannels = () => {
     }
   };
 
+window.updateLiveTvSidebar = renderSidebarCategories;
 
 
 
@@ -843,6 +980,22 @@ const renderChannels = () => {
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
 
+    // Remove from history button click
+const removeHistoryBtn = e.target.closest(".remove-history-btn");
+if (removeHistoryBtn) {
+  e.stopPropagation();
+  
+  const card = removeHistoryBtn.closest(".channel-card");
+  if (!card) return;
+  
+  const streamId = card.dataset.streamId;
+  const channelData = allStreams.find(ch => ch.stream_id == streamId);
+  
+  if (channelData) {
+    removeFromHistory(channelData);
+  }
+  return;
+}
        // Check if click is on favorite button OR its children (svg/path)
 const favBtn = e.target.closest(".favorite-btn");
 const isFavClick = favBtn || e.target.closest("svg")?.parentElement?.classList.contains("favorite-btn");
