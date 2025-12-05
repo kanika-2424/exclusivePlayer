@@ -65,8 +65,8 @@ function VideoJsPlayer(poster = "") {
       
       // Add updated entry
       updatedSeries.unshift({
-        itemId: seriesId,
-        episodeId: episodeId,
+      itemId: seriesId.toString(),
+episodeId: episodeId.toString(),
         resumeTime: resumeTime,
         duration: duration,
         type: "series",
@@ -689,9 +689,10 @@ function VideoJsPlayer(poster = "") {
         
         if (currentEpisodeIndex !== -1 && currentEpisodeIndex < seasonEpisodes.length - 1) {
           const nextEpisodeId = seasonEpisodes[currentEpisodeIndex + 1].id;
-          localStorage.setItem("lastPlayedEpisodeId", nextEpisodeId.toString());
+       localStorage.setItem(`lastPlayedEpisode_${seriesId}`, nextEpisodeId.toString());
+
         } else {
-          localStorage.removeItem("lastPlayedEpisodeId");
+localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
         }
         
         removeEpisodeFromContinueWatching(currentEpisodeId);

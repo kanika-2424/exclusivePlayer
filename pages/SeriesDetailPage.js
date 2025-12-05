@@ -367,10 +367,9 @@ function updatePlayButtonText() {
   const playBtn = container.querySelector(".play-button");
   if (!playBtn) return;
   
-  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
   const selectedPlaylistData = localStorage.getItem("selectedPlaylist");
   
-  if (!lastPlayedEpisodeId || !selectedPlaylistData) {
+  if (!selectedPlaylistData) {
     playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
     return;
   }
@@ -387,8 +386,9 @@ function updatePlayButtonText() {
       return;
     }
     
+    // Find any continue watching item for this series
     const continueWatchingItem = currentPlaylist.continueWatchingSeries.find(
-      item => item.itemId === seriesData.id.toString() && item.episodeId === lastPlayedEpisodeId
+      item => item.itemId === seriesData.id.toString()
     );
     
     if (!continueWatchingItem) {
@@ -396,18 +396,19 @@ function updatePlayButtonText() {
       return;
     }
     
-    // Find episode details
+    // Find episode details using the episodeId from continue watching
     for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
-      const episode = seasonEpisodes.find(ep => ep.id.toString() === lastPlayedEpisodeId);
+      const episode = seasonEpisodes.find(ep => ep.id.toString() === continueWatchingItem.episodeId);
       if (episode) {
-        const resumePercent = Math.round((continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100);
-        playBtn.querySelector("span:last-child").innerHTML = `
-          Continue S${seasonNum}.E${episode.episode_num}
-          <span class="resume-hint">${resumePercent}% watched</span>
-        `;
-        break;
+        playBtn.querySelector("span:last-child").innerHTML = `Continue S${seasonNum}.E${episode.episode_num}`;
+        // Store this episode ID for later use
+        localStorage.setItem(`lastPlayedEpisode_${seriesData.id}`, continueWatchingItem.episodeId);
+        return;
       }
     }
+    
+    // If episode not found, default to S1.E1
+    playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
   } catch (error) {
     console.error("Error updating play button text:", error);
     playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
@@ -455,8 +456,7 @@ setTimeout(updatePlayButtonText, 100);
     currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
   }
 
-  const continueWatchingData = currentPlaylist?.continueWatchingSeries || [];
-  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+const continueWatchingData = currentPlaylist?.continueWatchingSeries || [];
 
   episodesGrid.innerHTML = episodes.map((ep, index) => {
     const episodeTitle = ep.title || `Episode ${ep.episode_num}`;
@@ -466,17 +466,19 @@ setTimeout(updatePlayButtonText, 100);
     const episodeRating = episodeInfo.rating || ep.rating || "";
     const episodeCover = episodeInfo.movie_image || ep.cover || seriesData.posterImage;
     
-    // Check continue watching
-    const continueWatchingItem = continueWatchingData.find(
-      item => item.itemId === seriesData.id.toString() && item.episodeId === ep.id.toString()
-    );
-    
-    const hasProgress = !!continueWatchingItem;
-    const progressPercent = hasProgress 
-      ? Math.round((continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
-      : 0;
-    
-    const isLastPlayed = lastPlayedEpisodeId && lastPlayedEpisodeId === ep.id.toString();
+// Check continue watching - match by series ID and episode ID
+const continueWatchingItem = continueWatchingData.find(
+  item => item.itemId === seriesData.id.toString() && item.episodeId === ep.id.toString()
+);
+
+const hasProgress = !!continueWatchingItem;
+const progressPercent = hasProgress 
+  ? Math.round((continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
+  : 0;
+
+// Check if this is the last played episode
+const lastPlayedEpisodeId = localStorage.getItem(`lastPlayedEpisode_${seriesData.id}`);
+const isLastPlayed = lastPlayedEpisodeId && lastPlayedEpisodeId === ep.id.toString();
     
     return `
       <div class="episode-card ${isLastPlayed ? 'last-played' : ''}" 
@@ -531,7 +533,7 @@ setTimeout(updatePlayButtonText, 100);
   renderEpisodes(currentSeasonNumber);
 
   function scrollToLastPlayedEpisode() {
-  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+const lastPlayedEpisodeId = localStorage.getItem(`lastPlayedEpisode_${seriesData.id}`);
   if (!lastPlayedEpisodeId) return;
   
   const lastPlayedCard = container.querySelector(`.episode-card[data-episode-id="${lastPlayedEpisodeId}"]`);
@@ -707,21 +709,40 @@ setTimeout(scrollToLastPlayedEpisode, 500);
 
 if (playBtn) {
   playBtn.addEventListener("click", () => {
-    const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+    const selectedPlaylistData = localStorage.getItem("selectedPlaylist");
     
     let episodeToPlay = null;
     let seasonToPlay = null;
     
-    // Try to find last played episode
-    if (lastPlayedEpisodeId) {
-      for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
-        const foundEpisode = seasonEpisodes.find(ep => ep.id.toString() === lastPlayedEpisodeId);
-        if (foundEpisode) {
-          episodeToPlay = foundEpisode;
-          seasonToPlay = parseInt(seasonNum);
-          console.log("▶️ Resuming last played episode S" + seasonNum + ".E" + foundEpisode.episode_num);
-          break;
+    // Try to find continue watching episode from playlist data
+    if (selectedPlaylistData) {
+      try {
+        const parsedPlaylist = JSON.parse(selectedPlaylistData);
+        const currentPlaylistName = parsedPlaylist.playlistName || "";
+        
+        let playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]");
+        const currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
+        
+        if (currentPlaylist?.continueWatchingSeries) {
+          const continueWatchingItem = currentPlaylist.continueWatchingSeries.find(
+            item => item.itemId === seriesData.id.toString()
+          );
+          
+          if (continueWatchingItem) {
+            // Find the episode
+            for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
+              const foundEpisode = seasonEpisodes.find(ep => ep.id.toString() === continueWatchingItem.episodeId);
+              if (foundEpisode) {
+                episodeToPlay = foundEpisode;
+                seasonToPlay = parseInt(seasonNum);
+                console.log("▶️ Resuming continue watching episode S" + seasonNum + ".E" + foundEpisode.episode_num);
+                break;
+              }
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error finding continue watching episode:", error);
       }
     }
     

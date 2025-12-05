@@ -193,6 +193,7 @@
   padding-bottom: 56.25%;
   border-radius: 12px;
   overflow: hidden;
+ height: -webkit-fill-available
 }
 
 
@@ -590,8 +591,29 @@ margin-right: 8px;
   height: 20px;
 }
 
-.action-button.focused {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-  transform: scale(1.05);
+.episode-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  z-index: 2;
 }
+
+.episode-progress-fill {
+  height: 100%;
+  background: #0099ff;
+  transition: width 0.3s ease;
+}
+
+
+
+
+
+
+
+
+
+
+

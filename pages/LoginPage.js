@@ -188,6 +188,14 @@ console.log("READ VALUES:", {
 
       // --- CLICK HANDLER -------------------------------------------------------
       function handleClick(e) {
+
+        // If toggle was clicked -> toggle password (do not focus input)
+var toggleEl = t.closest ? t.closest(".toggle-password") : null;
+if (toggleEl) {
+    togglePassword();
+    return;
+}
+
         try {
           var t = e && e.target ? e.target : null;
           if (!t) return;
@@ -376,7 +384,12 @@ console.log("READ VALUES:", {
             var cur = focusable[focusIndex];
 
             // If current is an input -> now actually focus it (this will open keyboard on TV)
-     if (cur && cur.tagName === "INPUT") {
+if (isToggle(cur)) {
+    togglePassword();
+    return;
+}
+
+if (cur && cur.tagName === "INPUT") {
     try {
         let target = cur;
 
