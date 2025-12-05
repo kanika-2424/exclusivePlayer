@@ -64,6 +64,156 @@ function LiveTvPage() {
   // ===== API DATA (NEW) =====
   const categories = window.liveCategories || [];
   const allStreams = window.allLiveStreams || [];
+
+
+  console.log('====================================');
+  console.log("allStreams" , allStreams);
+  console.log('====================================');
+
+// ===== HELPER: Get Filtered Categories =====
+const getFilteredCategories = () => {
+  try {
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    )?.playlistName;
+    
+    if (!currentPlaylistName) {
+      console.error("❌ No playlist name found");
+      return [];
+    }
+    
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    if (!playlistsData) {
+      console.error("❌ No playlists data found");
+      return [];
+    }
+    
+    const currentPlaylist = playlistsData.find((pl) => pl.playlistName === currentPlaylistName);
+    if (!currentPlaylist) {
+      console.error("❌ Current playlist not found");
+      return [];
+    }
+
+    const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
+    const channelHistory = currentPlaylist.ChannelListLive || [];
+    
+    // **CRITICAL: Get streams from multiple sources**
+    const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+    
+    console.log("🔍 Streams available:", streams.length);
+    
+    if (streams.length === 0) {
+      console.warn("⚠️ No streams available in getFilteredCategories");
+    }
+    
+    // **SAFE MAPPING**
+    const filteredCategories = (categories || window.liveCategories || []).map(c => {
+      let categoryChannels = [];
+      
+      try {
+        categoryChannels = streams.filter(s => s.category_id === c.category_id) || [];
+        
+        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+          categoryChannels = categoryChannels.filter(ch => 
+            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+      } catch (err) {
+        console.error("Error filtering category channels:", err);
+      }
+      
+      return {
+        ...c,
+        channels: categoryChannels
+      };
+    });
+
+    const allLiveStreams = searchQuery.trim() && selectedCategoryId === "All" 
+      ? streams.filter(ch => 
+          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : streams;
+
+    console.log("🔍 Processing favorites:", updatedFavorites.length);
+    
+    // **SAFE FAVORITES MAPPING**
+    const favoritesChannels = (updatedFavorites || []).map(favItem => {
+      try {
+        if (typeof favItem === 'number') {
+          return streams.find(s => s.stream_id === favItem) || { stream_id: favItem, name: 'Unknown', stream_icon: '/assets/profile.png' };
+        }
+        if (!favItem.stream_icon) {
+          const fullData = streams.find(s => s.stream_id === favItem.stream_id);
+          return fullData || favItem;
+        }
+        return favItem;
+      } catch (err) {
+        console.error("Error mapping favorite:", err, favItem);
+        return favItem;
+      }
+    }).filter(ch => {
+      if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
+      return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+    });
+    
+    console.log("🔍 Processing history:", channelHistory.length);
+    
+    // **SAFE HISTORY MAPPING**
+    const historyChannels = (channelHistory || []).map(histItem => {
+      try {
+        if (typeof histItem === 'number') {
+          return streams.find(s => s.stream_id === histItem) || { stream_id: histItem, name: 'Unknown', stream_icon: '/assets/profile.png' };
+        }
+        if (!histItem.stream_icon) {
+          const fullData = streams.find(s => s.stream_id === histItem.stream_id);
+          return fullData || histItem;
+        }
+        return histItem;
+      } catch (err) {
+        console.error("Error mapping history item:", err, histItem);
+        return histItem;
+      }
+    }).filter(ch => {
+      if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
+      return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+    const result = [
+      {
+        category_id: "All",
+        category_name: "All",
+        channels: allLiveStreams || []
+      },
+      {
+        category_id: "favorites",
+        category_name: "Favorites", 
+        channels: favoritesChannels || []
+      },
+      {
+        category_id: "channelHistory",
+        category_name: "Channel History",
+        channels: historyChannels || []
+      },
+      ...filteredCategories
+    ];
+    
+    console.log("✅ getFilteredCategories result:", result.length, "categories");
+    return result;
+    
+  } catch (error) {
+    console.error("❌ ERROR in getFilteredCategories:", error);
+    console.error("Stack:", error.stack);
+    return [
+      {
+        category_id: "All",
+        category_name: "All",
+        channels: []
+      }
+    ];
+  }
+};
+
+
   
   const currentPlaylistName = JSON.parse(
     localStorage.getItem("selectedPlaylist")
@@ -286,93 +436,8 @@ const toggleAspectRatio = () => {
 };
 
 // ===== HELPER: Get Filtered Categories =====
-  const getFilteredCategories = () => {
-    const currentPlaylistName = JSON.parse(
-      localStorage.getItem("selectedPlaylist")
-    ).playlistName;
-    const currentPlaylist = JSON.parse(
-      localStorage.getItem("playlistsData")
-    ).find((pl) => pl.playlistName === currentPlaylistName);
+// ===== HELPER: Get Filtered Categories =====
 
-    const updatedFavorites = currentPlaylist ? currentPlaylist.favoritesLiveTV : [];
-    const channelHistory = currentPlaylist ? currentPlaylist.ChannelListLive || [] : [];
-    
-    const filteredCategories = categories.map(c => {
-      let categoryChannels = allStreams.filter(s => s.category_id === c.category_id) || [];
-      
-      if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-        categoryChannels = categoryChannels.filter(ch => 
-          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
-      return {
-        ...c,
-        channels: categoryChannels || []
-      };
-    });
-
-    const allLiveStreams = searchQuery.trim() && selectedCategoryId === "All" 
-      ? window.allLiveStreams.filter(ch => 
-          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : window.allLiveStreams;
-
-      
-
-  // Replace with this:
-const favoritesChannels = updatedFavorites.map(favItem => {
-  // If favItem is just an ID, find the full object
-  if (typeof favItem === 'number') {
-    return allStreams.find(s => s.stream_id === favItem) || favItem;
-  }
-  // If favItem is an object but missing stream_icon, merge with full data
-  if (!favItem.stream_icon) {
-    const fullData = allStreams.find(s => s.stream_id === favItem.stream_id);
-    return fullData || favItem;
-  }
-  return favItem;
-}).filter(ch => {
-  if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
-  return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-});
-  const historyChannels = (channelHistory || []).map(histItem => {
-  // If histItem is just an ID, find the full object
-  if (typeof histItem === 'number') {
-    return allStreams.find(s => s.stream_id === histItem) || histItem;
-  }
-  // If histItem is an object but missing stream_icon, merge with full data
-  if (!histItem.stream_icon) {
-    const fullData = allStreams.find(s => s.stream_id === histItem.stream_id);
-    return fullData || histItem;
-  }
-  return histItem;
-}).filter(ch => {
-  if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
-  return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-});
-
-    return [
-      {
-        category_id: "All",
-        category_name: "All",
-        channels: allLiveStreams || []
-      },
-      {
-        category_id: "favorites",
-        category_name: "Favorites", 
-        channels: favoritesChannels || []
-      },
-      {
-        category_id: "channelHistory",
-        category_name: "Channel History",
-        channels: historyChannels || []
-      },
-      ...filteredCategories
-    ];
-
-    
-  };
 
   // ===== HELPER: Dispose Player =====
   const disposeLivePlayer = () => {
@@ -567,8 +632,9 @@ const setRemoveHistoryBtnFocus = (active) => {
         channelData.name || "Unknown Channel"
       );
       
-      if (selectedCategoryId !== "channelHistory") {
-  const selectedChannelItem = allStreams.find(
+   if (selectedCategoryId !== "channelHistory") {
+  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+  const selectedChannelItem = streams.find(
     (item) => item.stream_id == channelData.stream_id
   );
   if (selectedChannelItem && typeof window.addItemToHistory === "function") {
