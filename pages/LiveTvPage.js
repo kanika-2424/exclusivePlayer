@@ -95,6 +95,8 @@ function LiveTvPage() {
   let isHeaderSearchActive = false;
 let isSidebarSearchActive = false;
 let inFavoriteBtn = false; // ADD THIS LINE
+let inRemoveHistoryBtn = false; // ADD THIS
+
 
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
@@ -379,6 +381,23 @@ const setFavoriteBtnFocus = (active) => {
     favBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
   } else {
     favBtn.style.outline = "none";
+  }
+};
+
+
+// Helper to set focus on remove history button
+const setRemoveHistoryBtnFocus = (active) => {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  if (!card) return;
+  
+  const removeBtn = card.querySelector(".remove-history-btn");
+  if (active && removeBtn) {
+    removeBtn.style.outline = "3px solid #0ea5e9";
+    removeBtn.style.outlineOffset = "2px";
+    removeBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+  } else if (removeBtn) {
+    removeBtn.style.outline = "none";
   }
 };
 
@@ -1544,19 +1563,32 @@ if (inFavoriteBtn) {
     return;
   }
 
-  if (isRight) {
-    // Go to next channel card
+ if (isRight) {
+  const card = channels[focusedChannelIndex];
+  const removeBtn = card?.querySelector(".remove-history-btn");
+  
+  // If remove button exists (in history view), go to it
+  if (removeBtn && selectedCategoryId === "channelHistory") {
     inFavoriteBtn = false;
-    inChannelGrid = true;
+    inRemoveHistoryBtn = true;
     if (favBtn) favBtn.style.outline = "none";
-    
-    if (focusedChannelIndex < channels.length - 1) {
-      focusedChannelIndex++;
-    }
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    setRemoveHistoryBtnFocus(true);
     e.preventDefault();
     return;
   }
+  
+  // Otherwise, go to next channel card
+  inFavoriteBtn = false;
+  inChannelGrid = true;
+  if (favBtn) favBtn.style.outline = "none";
+  
+  if (focusedChannelIndex < channels.length - 1) {
+    focusedChannelIndex++;
+  }
+  setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  e.preventDefault();
+  return;
+}
 
   if (isEnter) {
     // Click the favorite button
@@ -1605,6 +1637,84 @@ if (inFavoriteBtn) {
   return;
 }
 
+
+// REMOVE HISTORY BUTTON NAVIGATION
+if (inRemoveHistoryBtn) {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  const removeBtn = card?.querySelector(".remove-history-btn");
+  const cols = 5;
+
+  if (isLeft) {
+    // Go back to favorite button
+    inRemoveHistoryBtn = false;
+    inFavoriteBtn = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+    setFavoriteBtnFocus(true);
+    e.preventDefault();
+    return;
+  }
+
+  if (isRight) {
+    // Go to next channel card
+    inRemoveHistoryBtn = false;
+    inChannelGrid = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+    
+    if (focusedChannelIndex < channels.length - 1) {
+      focusedChannelIndex++;
+    }
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    // Click the remove button
+    removeBtn?.click();
+    e.preventDefault();
+    return;
+  }
+
+  // UP/DOWN: Navigate to adjacent rows while staying on remove button
+  if (isUp && focusedChannelIndex >= cols) {
+    focusedChannelIndex -= cols;
+    if (removeBtn) removeBtn.style.outline = "none";
+    setRemoveHistoryBtnFocus(true);
+    e.preventDefault();
+    return;
+  }
+
+  if (isDown) {
+    inRemoveHistoryBtn = false;
+    inChannelGrid = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+    
+    const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+    
+    if (focusedChannelIndex >= lastRowStart) {
+      // In last row - go to video player
+      channels.forEach(c => c.classList.remove("channel-card-focused"));
+      inVideoPlayer = true;
+      const videoDiv = qs(".live-video-player-div");
+      if (videoDiv) {
+        videoDiv.classList.add("video-focused");
+        videoDiv.style.border = "3px solid #0ea5e9";
+        videoDiv.style.boxSizing = "border-box";
+        videoDiv.style.outline = "3px solid #0ea5e9";
+        videoDiv.style.outlineOffset = "-3px";
+      }
+    } else {
+      // Move to card below
+      focusedChannelIndex += cols;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    }
+    e.preventDefault();
+    return;
+  }
+
+  return;
+}
     // CHANNEL GRID NAVIGATION
     if (inChannelGrid) {
       const cols = 5;
@@ -1682,7 +1792,7 @@ if (isDown) {
         return;
       }
 
-   if (isRight) {
+ if (isRight) {
   // Go to favorite button of current card
   inChannelGrid = false;
   inFavoriteBtn = true;
@@ -1737,6 +1847,8 @@ if (isDown) {
         inEPG = false;
         inVideoPlayer = false;
             inFavoriteBtn = false; // ADD THIS
+            inRemoveHistoryBtn = false; // ADD THIS
+
 
       }
     }, 50);
