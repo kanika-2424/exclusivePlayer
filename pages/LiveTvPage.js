@@ -101,20 +101,96 @@ let inRemoveHistoryBtn = false; // ADD THIS
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
 
+
+  // ===== VIDEO ASPECT RATIO MANAGER =====
+// ===== VIDEO ASPECT RATIO MANAGER =====
+// ===== VIDEO ASPECT RATIO MANAGER =====
+window.VideoAspectRatio = {
+  ratios: ['16:9', '4:3', '2.35:1'],
+  classes: ['video-aspect-169', 'video-aspect-43', 'video-aspect-235'],
+  currentIndex: 0,
+  overlayTimeout: null,
+  
+  initialize(videoElement) {
+    this.currentIndex = 0; // Start with 16:9
+    this.apply(videoElement, 0);
+  },
+  
+  apply(videoElement, index) {
+    if (!videoElement) return;
+    
+    // Remove all aspect ratio classes
+    this.classes.forEach(cls => videoElement.classList.remove(cls));
+    
+    // Add the selected class
+    videoElement.classList.add(this.classes[index]);
+  },
+  
+  cycle(videoElement) {
+    this.currentIndex = (this.currentIndex + 1) % this.ratios.length;
+    this.apply(videoElement, this.currentIndex);
+    return this.ratios[this.currentIndex];
+  },
+  
+  getCurrentRatio() {
+    return this.ratios[this.currentIndex];
+  },
+  
+  showOverlay(message) {
+    // Remove existing overlay
+    const existingOverlay = document.querySelector('.aspect-ratio-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    
+    // Create new overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'aspect-ratio-overlay';
+    overlay.textContent = message;
+    overlay.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 30px 60px;
+      border-radius: 12px;
+      font-size: 32px;
+      font-weight: bold;
+      z-index: 10000;
+      pointer-events: none;
+      border: 4px solid #0ea5e9;
+      box-shadow: 0 0 30px rgba(14, 165, 233, 0.5);
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Clear existing timeout
+    if (this.overlayTimeout) {
+      clearTimeout(this.overlayTimeout);
+    }
+    
+    // Auto-remove after 2 seconds
+    this.overlayTimeout = setTimeout(() => {
+      overlay.remove();
+    }, 2000);
+  }
+};
 // ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
 // Find this function and replace it:
 const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   return `
-    <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000; box-sizing: border-box;">
+    <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
       <video 
         id="live-video-player" 
-        class="video-js vjs-default-skin" 
+        class="video-js vjs-default-skin video-aspect-169" 
         controls 
         autoplay
         preload="auto"
         data-stream-id="${streamId}"
         poster="${logo}"
-        style="width: 100%; height: 100%; object-fit: contain; display: block;"
+        style="display: block;"
       >
         <source src="${streamUrl}" type="application/x-mpegURL">
       </video>
@@ -123,20 +199,18 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
         <h3 style="margin: 0; font-size: 16px;">${channelName}</h3>
       </div>
 
-      <button class="aspect-ratio-btn" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; border: 2px solid #0ea5e9; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; z-index: 1000;">
-        <span style="margin-right: 5px;">⛶</span>Fit
+      <!-- ASPECT RATIO BUTTON -->
+      <button id="videojs-aspect-ratio" class="aspect-ratio-btn" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(255, 165, 0, 0.9); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 1000; min-width: 200px; text-align: center;">
+        <span style="margin-right: 8px;">⛶</span><span class="aspect-label">16:9</span>
       </button>
 
-      <!-- PLAY/PAUSE BUTTON -->
-   <button class="play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; border: 3px solid #0ea5e9; width: 80px; height: 80px; border-radius: 50%; cursor: pointer; z-index: 9999; display: none; transition: all 0.3s ease;">
-  <img src="/assets/play.png" style="width: 40px; height: 40px;" />
-</button>
-
-<button class="aspect-ratio-btn" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(255, 165, 0, 0.9); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; z-index: 1000; min-width: 200px; text-align: center;">
-  <span style="margin-right: 8px; z-index: 1000;">⛶</span>Aspect Ratio
-</button>
-
-
+      <!-- PLAY/PAUSE BUTTON with SVG Icons -->
+      <button class="play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; border: 4px solid #0ea5e9; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);">
+        <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white" style="display: block;">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      </button>
 
       <div class="live-video-loader hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 998;">
         <div class="spinner"></div>
@@ -145,40 +219,46 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
   `;
 };
 
-
 const togglePlayPause = () => {
   const videoEl = document.getElementById("live-video-player");
   const playPauseBtn = document.querySelector(".play-pause-btn");
   
-  if (!videoEl) return;
+  if (!videoEl || !playPauseBtn) return;
+  
+  // SVG for Play icon
+  const playIconSVG = `
+    <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  `;
+  
+  // SVG for Pause icon
+  const pauseIconSVG = `
+    <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+  `;
   
   if (videoEl.paused) {
     videoEl.play();
-    if (playPauseBtn) {
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.alignItems = "center";
-      playPauseBtn.style.justifyContent = "center";
-      playPauseBtn.innerHTML = `
-        <img src="/assets/pause.png" style="width: 40px; height: 40px;" />
-      `;
-    }
+    playPauseBtn.innerHTML = pauseIconSVG;
+    playPauseBtn.style.opacity = "1";
+    
+    // Hide after 1.5 seconds
+    setTimeout(() => {
+      if (!videoEl.paused) {
+        playPauseBtn.style.opacity = "0";
+        setTimeout(() => {
+          playPauseBtn.style.display = "none";
+        }, 300);
+      }
+    }, 1500);
   } else {
     videoEl.pause();
-    if (playPauseBtn) {
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.alignItems = "center";
-      playPauseBtn.style.justifyContent = "center";
-      playPauseBtn.innerHTML = `
-        <img src="/assets/play.png" style="width: 40px; height: 40px;" />
-      `;
-    }
-  }
-  
-  // Show button briefly when playing
-  if (playPauseBtn && !videoEl.paused) {
-    setTimeout(() => {
-      playPauseBtn.style.display = "none";
-    }, 1000);
+    playPauseBtn.style.display = "flex";
+    playPauseBtn.style.opacity = "1";
+    playPauseBtn.innerHTML = playIconSVG;
   }
 };
 
@@ -187,24 +267,22 @@ const togglePlayPause = () => {
 const toggleAspectRatio = () => {
   const videoEl = document.getElementById("live-video-player");
   const aspectBtn = document.querySelector(".aspect-ratio-btn");
+  const aspectLabel = aspectBtn?.querySelector(".aspect-label");
   
-  if (!videoEl || !aspectBtn) return;
+  if (!videoEl || !aspectBtn || !window.VideoAspectRatio) return;
   
-  const ratios = [
-    { value: "contain", label: "Fit" },
-    { value: "cover", label: "Fill" },
-    { value: "fill", label: "Stretch" },
-    { value: "none", label: "Original" }
-  ];
+  // Cycle to next aspect ratio
+  const newLabel = window.VideoAspectRatio.cycle(videoEl);
   
-  let currentIndex = ratios.findIndex(r => r.value === currentAspectRatio);
-  currentIndex = (currentIndex + 1) % ratios.length;
-  currentAspectRatio = ratios[currentIndex].value;
+  // Update button label to show current selection
+  if (aspectLabel && newLabel) {
+    aspectLabel.textContent = newLabel;
+  }
   
-  videoEl.style.objectFit = currentAspectRatio;
-  aspectBtn.innerHTML = `<span style="margin-right: 5px;">⛶</span>${ratios[currentIndex].label}`;
+  // Show large overlay notification in center of screen
+  window.VideoAspectRatio.showOverlay(newLabel);
   
-  console.log("Aspect ratio changed to:", currentAspectRatio);
+  console.log("✅ Aspect ratio changed to:", newLabel);
 };
 
 // ===== HELPER: Get Filtered Categories =====
@@ -499,9 +577,13 @@ const setRemoveHistoryBtnFocus = (active) => {
 }
 
     // Initialize Video.js if available
+// Find this section in playChannel function (around line 400)
+// REPLACE the entire setTimeout block with this:
+
 setTimeout(() => {
   const videoEl = document.getElementById("live-video-player");
   const playPauseBtn = document.querySelector(".play-pause-btn");
+  const aspectBtn = document.querySelector(".aspect-ratio-btn");
   
   if (videoEl && typeof videojs !== "undefined") {
     window.livePlayer = videojs(videoEl, {
@@ -511,54 +593,96 @@ setTimeout(() => {
       fluid: true
     });
     
+    // Initialize aspect ratio to default (16:9)
+    if (window.VideoAspectRatio) {
+      window.VideoAspectRatio.initialize(videoEl);
+    }
+    
     window.livePlayer.on("waiting", () => {
-      qs(".live-video-loader").classList.remove("hidden");
+      qs(".live-video-loader")?.classList.remove("hidden");
     });
     
     window.livePlayer.on("playing", () => {
-      qs(".live-video-loader").classList.add("hidden");
+      qs(".live-video-loader")?.classList.add("hidden");
     });
     
     window.livePlayer.on("error", (e) => {
       console.error("❌ Player error:", e);
     });
     
-    // ADD THESE EVENT LISTENERS:
+    // Play/Pause button event listeners
     if (playPauseBtn) {
-  // Show/hide play button on pause/play
-  videoEl.addEventListener("pause", () => {
-    playPauseBtn.style.display = "flex";
-    playPauseBtn.style.alignItems = "center";
-    playPauseBtn.style.justifyContent = "center";
-    playPauseBtn.innerHTML = `
-      <img src="/assets/play.png" style="width: 40px; height: 40px;" />
-    `;
-  });
-  
-  videoEl.addEventListener("play", () => {
-    playPauseBtn.style.display = "flex";
-    playPauseBtn.style.alignItems = "center";
-    playPauseBtn.style.justifyContent = "center";
-    playPauseBtn.innerHTML = `
-      <img src="/assets/pause.png" style="width: 40px; height: 40px;" />
-    `;
-    setTimeout(() => {
-      playPauseBtn.style.display = "none";
-    }, 1000);
-  });
-  
-  // Click on play/pause button
-  playPauseBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    togglePlayPause();
-  });
-  
-  // Click anywhere on video to toggle
-  videoEl.addEventListener("click", (e) => {
-    e.stopPropagation();
-    togglePlayPause();
-  });
-}
+      // SVG icon definitions
+      const playIconSVG = `
+        <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      `;
+      
+      const pauseIconSVG = `
+        <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      `;
+      
+      // Show button initially then hide
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+      setTimeout(() => {
+        playPauseBtn.style.opacity = "0";
+        setTimeout(() => {
+          playPauseBtn.style.display = "none";
+        }, 300);
+      }, 2000);
+      
+      videoEl.addEventListener("pause", () => {
+        playPauseBtn.style.display = "flex";
+        playPauseBtn.style.opacity = "1";
+        playPauseBtn.innerHTML = playIconSVG;
+      });
+      
+      videoEl.addEventListener("play", () => {
+        playPauseBtn.style.display = "flex";
+        playPauseBtn.style.opacity = "1";
+        playPauseBtn.innerHTML = pauseIconSVG;
+        setTimeout(() => {
+          if (!videoEl.paused) {
+            playPauseBtn.style.opacity = "0";
+            setTimeout(() => {
+              playPauseBtn.style.display = "none";
+            }, 300);
+          }
+        }, 1500);
+      });
+      
+      playPauseBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlayPause();
+      });
+      
+      // Click on video to toggle play/pause and show button
+      videoEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        playPauseBtn.style.display = "flex";
+        togglePlayPause();
+      });
+    }
+    
+    // Aspect ratio button event listener
+    if (aspectBtn) {
+      const aspectLabel = aspectBtn.querySelector(".aspect-label");
+      
+      // Set initial aspect ratio label
+      if (aspectLabel && window.VideoAspectRatio) {
+        aspectLabel.textContent = window.VideoAspectRatio.getCurrentRatio();
+      }
+      
+      aspectBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleAspectRatio();
+      });
+    }
   }
 }, 100);
     }
@@ -1249,13 +1373,14 @@ if (inVideoPlayer) {
 
 // Add new navigation section for Aspect Ratio Button
 // Aspect ratio button navigation
+// Aspect ratio button navigation
 if (inAspectRatioBtn) {
-  const aspectBtn = qs("#videojs-aspect-ratio");
+  const aspectBtn = qs(".aspect-ratio-btn");
   
   if (isUp) {
     inAspectRatioBtn = false;
     inVideoPlayer = true;
-    if (aspectBtn) aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+    if (aspectBtn) aspectBtn.style.border = "none";
     const videoDiv = qs(".live-video-player-div");
     if (videoDiv) {
       videoDiv.style.outline = "4px solid #0ea5e9";
@@ -1268,7 +1393,7 @@ if (inAspectRatioBtn) {
   if (isDown) {
     inAspectRatioBtn = false;
     inEPG = true;
-    if (aspectBtn) aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+    if (aspectBtn) aspectBtn.style.border = "none";
     focusedEPGIndex = 0;
     const epgItems = qsa(".epg-item");
     if (epgItems.length) {
@@ -1279,7 +1404,7 @@ if (inAspectRatioBtn) {
   }
   
   if (isEnter) {
-    aspectBtn.click();
+    toggleAspectRatio();
     e.preventDefault();
     return;
   }
