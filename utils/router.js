@@ -70,6 +70,45 @@ const Router = {
         localStorage.setItem('currentPage', 'moviesPage');
         break;
 
+      case 'video-player':
+case 'video-player-page':
+case 'videoPlayerPage':
+case 'videoJsPlayer':
+  console.log("🎬 Loading video player page");
+  
+  pageElement = document.getElementById('video-player');
+  
+  if (!pageElement) {
+    console.error("❌ video-player element not found in DOM!");
+    // Try to create it if it doesn't exist
+    pageElement = document.createElement('div');
+    pageElement.id = 'video-player';
+    pageElement.className = 'page';
+    document.getElementById('app')?.appendChild(pageElement);
+  }
+  
+  // Generate video player HTML
+  const videoPlayerHTML = VideoJsPlayer();
+  console.log("📝 Video player HTML generated");
+  
+  // Insert HTML into page
+  pageElement.innerHTML = videoPlayerHTML;
+  console.log("✅ Video player HTML inserted");
+  
+  this.currentPage = 'VideoJsPlayer';
+  localStorage.setItem('currentPage', 'videojsPlayer');
+  
+  // Wait a bit for DOM to be ready, then verify video element exists
+  setTimeout(() => {
+    const videoEl = document.getElementById('videojs-player-tag');
+    if (videoEl) {
+      console.log("✅ Video element confirmed in DOM");
+    } else {
+      console.error("❌ Video element NOT in DOM after 100ms");
+    }
+  }, 100);
+  
+  break;
       case 'movie-detail':
       case 'movie-detail-page':
       case 'movieDetailPage':
@@ -166,7 +205,9 @@ async function navigateTo(pageName) {
     'series-page': 'series',
     'seriesPage': 'series',
     'series-detail-page': 'series-detail',
-    'seriesDetailPage': 'series-detail'
+    'seriesDetailPage': 'series-detail',
+    'video-player': 'video-player',
+
   };
   
   const normalizedPage = pageMap[pageName] || pageName;

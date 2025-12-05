@@ -567,3 +567,31 @@ margin-right: 8px;
 .cast-dropdown-grid::-webkit-scrollbar {
   height: 0px;
 }
+
+.from-start-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.from-start-button:hover,
+.from-start-button.focused {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.favorite-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorite-button .heart-icon img {
+  width: 20px;
+  height: 20px;
+}
+
+.action-button.focused {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  transform: scale(1.05);
+}

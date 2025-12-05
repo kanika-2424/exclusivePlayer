@@ -143,6 +143,63 @@ var getMovieCastData = null;
     cast: []
   };
 
+  // After movieData object is created, add continue watching logic
+var selectedPlaylistData = localStorage.getItem("selectedPlaylist");
+var currentPlaylistName = "";
+if (selectedPlaylistData) {
+  var parsedPlaylist = JSON.parse(selectedPlaylistData);
+  currentPlaylistName = parsedPlaylist.playlistName || "";
+}
+
+var playlistsData = localStorage.getItem("playlistsData");
+var currentPlaylist = null;
+if (playlistsData) {
+  playlistsData = JSON.parse(playlistsData);
+  for (var i = 0; i < playlistsData.length; i++) {
+    if (playlistsData[i].playlistName === currentPlaylistName) {
+      currentPlaylist = playlistsData[i];
+      break;
+    }
+  }
+}
+
+var continueWatchingIds = [];
+if (
+  currentPlaylist &&
+  currentPlaylist.continueWatchingMovies &&
+  Array.isArray(currentPlaylist.continueWatchingMovies)
+) {
+  continueWatchingIds = currentPlaylist.continueWatchingMovies.map(function (item) {
+    return item.itemId ? Number(item.itemId) : 0;
+  });
+}
+
+var isContinueWatchingMovie = false;
+if (selectedMovieItem && selectedMovieItem.stream_id) {
+  isContinueWatchingMovie = continueWatchingIds.includes(
+    Number(selectedMovieItem.stream_id)
+  );
+}
+
+var resumeTimeDisplay = "";
+if (isContinueWatchingMovie && currentPlaylist && currentPlaylist.continueWatchingMovies) {
+  var matchedMovie = currentPlaylist.continueWatchingMovies.find(function(item) {
+    return item.itemId === selectedMovieItem.stream_id.toString();
+  });
+  
+  if (matchedMovie && matchedMovie.resumeTime && matchedMovie.duration) {
+    var resumeMinutes = Math.floor(matchedMovie.resumeTime / 60);
+    var totalMinutes = Math.floor(matchedMovie.duration / 60);
+    var resumePercent = Math.round((matchedMovie.resumeTime / matchedMovie.duration) * 100);
+    
+    resumeTimeDisplay = `Resume at ${resumeMinutes}min / ${totalMinutes}min (${resumePercent}%)`;
+  }
+}
+
+
+// Add to movieData object
+movieData.isContinueWatching = isContinueWatchingMovie;
+
   // try detect favorite state if helper exists
   try {
     if (movieData.id && typeof isItemFavoriteForPlaylist === "function") {
@@ -168,6 +225,7 @@ var getMovieCastData = null;
     }));
   }
 
+
   // --- Render the UI using your original layout and classes (keeps your UI) ---
   const genresText = movieData.genres.join(" / ");
   const castHtml = movieData.cast
@@ -189,6 +247,52 @@ var getMovieCastData = null;
     console.error("No #movies-detail-page container found to render details.");
     return;
   }
+
+    // Handle Favorite Button
+const favBtn = container.querySelector(".favorite-button");
+if (favBtn) {
+  favBtn.addEventListener("click", () => {
+    if (typeof toggleFavoriteItem === "function") {
+      const res = toggleFavoriteItem(movieData.id || 0, "favouriteMovies");
+      
+      if (res && res.success) {
+        const heartIcon = favBtn.querySelector(".heart-icon");
+        const favText = favBtn.querySelector(".fav-text");
+
+        if (heartIcon) {
+          heartIcon.innerHTML = res.isFav
+            ? '<img src="/assets/heart-filled.svg" alt="fav" />'
+            : '<img src="/assets/heart.png" alt="fav" />';
+        }
+        
+        // if (favText) {
+        //   favText.textContent = res.isFav
+        //     ? "Remove from Favorites"
+        //     : "Add to Favorites";
+        // }
+
+        // Show toast notification if available
+        if (typeof Toaster !== "undefined" && Toaster.showToast) {
+          Toaster.showToast(
+            res.isFav ? "success" : "error",
+            res.isFav ? "Added to Favorites" : "Removed from Favorites"
+          );
+        }
+      } else {
+        alert(res.message || "Unable to update favorites");
+      }
+    } else {
+      // Fallback: toggle UI only
+      favBtn.classList.toggle("active");
+      const img = favBtn.querySelector("img");
+      if (img) {
+        img.src = img.src.includes("heart-filled") 
+          ? "/assets/heart.png" 
+          : "/assets/heart-filled.svg";
+      }
+    }
+  });
+}
 
   function formatDuration(raw) {
   if (!raw) return "";
@@ -271,13 +375,17 @@ function formatReleaseDate(raw) {
 
         <p class="movie-description">${movieData.description}</p>
 
-        <div class="action-buttons">
-          <button class="action-button play-button" tabindex="0">
-            <span class="play-icon">▶</span>
-            <span>Play Now</span>
-          </button>
-          <button class="action-button trailer-button" ${movieDetailData.info && movieDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">Watch Trailer</button>
-        </div>
+      <div class="action-buttons">
+  <button class="action-button play-button" tabindex="0">
+    <span class="play-icon">▶</span>
+    <span>${isContinueWatchingMovie ? "Resume" : "Play Now"}</span>
+  </button>
+
+  <button class="action-button trailer-button" ${movieDetailData.info && movieDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">
+    <span>Watch Trailer</span>
+  </button>
+ 
+</div>
       </div>
     </div>
 
@@ -305,16 +413,22 @@ function formatReleaseDate(raw) {
   let currentFocusIndex = 0;
 
   // Prepare focusable elements arrays
-  function setFocusOnButton(index) {
-    removeAllFocus();
-    currentSection = "buttons";
-    const buttons = Array.from(container.querySelectorAll(".action-button"));
-    if (buttons[index]) {
-      currentFocusIndex = index;
-      buttons[index].classList.add("focused");
-      try { buttons[index].scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); } catch (e){}
-    }
+function setFocusOnButton(index) {
+  removeAllFocus();
+  currentSection = "buttons";
+  const buttons = Array.from(container.querySelectorAll(".action-button"));
+  if (buttons[index]) {
+    currentFocusIndex = index;
+    buttons[index].classList.add("focused");
+    try { 
+      buttons[index].scrollIntoView({ 
+        behavior: "smooth", 
+        block: "center", 
+        inline: "center" 
+      }); 
+    } catch (e){}
   }
+}
 
   function setFocusOnCast(index) {
     removeAllFocus();
@@ -414,54 +528,120 @@ MovieDetailPage.cleanup = () => {
   }
 };
 
+// Reset Resume Time Function
+function resetResumeTime(movieId) {
+  if (!movieId) return;
+  var playlistsData = localStorage.getItem("playlistsData");
+  if (!playlistsData) return;
+  playlistsData = JSON.parse(playlistsData);
+
+  var selectedPlaylist = localStorage.getItem("selectedPlaylist");
+  if (!selectedPlaylist) return;
+  selectedPlaylist = JSON.parse(selectedPlaylist);
+  var playlistName = selectedPlaylist.playlistName;
+
+  for (var i = 0; i < playlistsData.length; i++) {
+    if (
+      playlistsData[i].playlistName === playlistName &&
+      playlistsData[i].continueWatchingMovies
+    ) {
+      for (var j = 0; j < playlistsData[i].continueWatchingMovies.length; j++) {
+        if (
+          Number(playlistsData[i].continueWatchingMovies[j].itemId) ===
+          Number(movieId)
+        ) {
+          playlistsData[i].continueWatchingMovies[j].resumeTime = 0;
+        }
+      }
+    }
+  }
+
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+}
+
   // click handlers for buttons
   const playBtn = container.querySelector(".play-button");
   const trailerBtn = container.querySelector(".trailer-button");
   const favHeartContainer = container.querySelector(".favorite-heart");
 
-  function buildMovieUrl() {
-    var currentPlaylistData = localStorage.getItem("currentPlaylistData");
-    if (!currentPlaylistData) return "";
-    currentPlaylistData = JSON.parse(currentPlaylistData);
-    if (
-      currentPlaylistData.server_info &&
-      currentPlaylistData.user_info &&
-      movieDetailData.movie_data &&
-      movieDetailData.movie_data.stream_id &&
-      movieDetailData.movie_data.container_extension
-    ) {
-      return (
-        currentPlaylistData.server_info.server_protocol +
-        "://" +
-        currentPlaylistData.server_info.url +
-        ":" +
-        currentPlaylistData.server_info.port +
-        "/movie/" +
-        currentPlaylistData.user_info.username +
-        "/" +
-        currentPlaylistData.user_info.password +
-        "/" +
-        movieDetailData.movie_data.stream_id +
-        "." +
-        movieDetailData.movie_data.container_extension
-      );
-    }
+function buildMovieUrl() {
+  var currentPlaylistData = localStorage.getItem("currentPlaylistData");
+  console.log("🔍 Building movie URL - currentPlaylistData:", currentPlaylistData);
+  
+  if (!currentPlaylistData) {
+    console.error("❌ No currentPlaylistData found!");
     return "";
   }
-
-  if (playBtn) {
-    playBtn.addEventListener("click", () => {
-      // set playing item and navigate to player (same as your reference logic)
-      const movieVideoUrl = buildMovieUrl();
-      localStorage.setItem("playingItemData", JSON.stringify(movieDetailData.movie_data || {}));
-      if (movieVideoUrl) localStorage.setItem("selectedVideoItemUrl", movieVideoUrl);
-      localStorage.setItem("from", "movie");
-      localStorage.setItem("currentPage", "videojsPlayer");
-      if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
-      document.body.style.backgroundImage = "none";
-      document.body.style.backgroundColor = "black";
-    });
+  
+  currentPlaylistData = JSON.parse(currentPlaylistData);
+  console.log("📦 Parsed playlist data:", currentPlaylistData);
+  
+  if (
+    currentPlaylistData.server_info &&
+    currentPlaylistData.user_info &&
+    movieDetailData.movie_data &&
+    movieDetailData.movie_data.stream_id &&
+    movieDetailData.movie_data.container_extension
+  ) {
+    const url = 
+      currentPlaylistData.server_info.server_protocol +
+      "://" +
+      currentPlaylistData.server_info.url +
+      ":" +
+      currentPlaylistData.server_info.port +
+      "/movie/" +
+      currentPlaylistData.user_info.username +
+      "/" +
+      currentPlaylistData.user_info.password +
+      "/" +
+      movieDetailData.movie_data.stream_id +
+      "." +
+      movieDetailData.movie_data.container_extension;
+    
+    console.log("✅ Built movie URL:", url);
+    return url;
   }
+  
+  console.error("❌ Missing required data to build URL");
+  console.log("server_info:", currentPlaylistData.server_info);
+  console.log("user_info:", currentPlaylistData.user_info);
+  console.log("movie_data:", movieDetailData.movie_data);
+  
+  return "";
+}
+
+if (playBtn) {
+  playBtn.addEventListener("click", () => {
+    const movieVideoUrl = buildMovieUrl();
+    localStorage.setItem("playingItemData", JSON.stringify(movieDetailData.movie_data || {}));
+    if (movieVideoUrl) localStorage.setItem("selectedVideoItemUrl", movieVideoUrl);
+    localStorage.setItem("from", "movie");
+    localStorage.setItem("currentPage", "videojsPlayer");
+    if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
+    document.body.style.backgroundImage = "none";
+    document.body.style.backgroundColor = "black";
+  });
+}
+
+// Handle "Start from Beginning" button
+const fromStartBtn = container.querySelector(".from-start-button");
+if (fromStartBtn) {
+  fromStartBtn.addEventListener("click", () => {
+    // Reset resume time before playing
+    if (selectedMovieItem && selectedMovieItem.stream_id) {
+      resetResumeTime(selectedMovieItem.stream_id);
+    }
+    
+    const movieVideoUrl = buildMovieUrl();
+    localStorage.setItem("playingItemData", JSON.stringify(movieDetailData.movie_data || {}));
+    if (movieVideoUrl) localStorage.setItem("selectedVideoItemUrl", movieVideoUrl);
+    localStorage.setItem("from", "movie");
+    localStorage.setItem("currentPage", "videojsPlayer");
+    if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
+    document.body.style.backgroundImage = "none";
+    document.body.style.backgroundColor = "black";
+  });
+}
 
   if (trailerBtn) {
     trailerBtn.addEventListener("click", () => {
@@ -625,10 +805,11 @@ function handleRemoteNavigation(e) {
     // -------------------------------------------------
     // ENTER
     // -------------------------------------------------
-  case "Enter":
+case "Enter":
   e.preventDefault();
 
   if (currentSection === "buttons") {
+    const buttons = Array.from(container.querySelectorAll(".action-button"));
     if (buttons && buttons.length > 0 && buttons[currentFocusIndex]) {
       buttons[currentFocusIndex].click();
     }
@@ -642,7 +823,16 @@ function handleRemoteNavigation(e) {
     return;
   }
 
-  return;
+  if (currentSection === "header") {
+    // Handle menu dots click if needed
+    const menuDots = container.querySelector(".menu-dots");
+    if (menuDots) {
+      menuDots.click();
+      // Or open sidebar/menu functionality
+    }
+    return;
+  }
+  break;
 
 
   }

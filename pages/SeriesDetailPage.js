@@ -362,6 +362,61 @@ seriesData.cast = [
   </div>
   `;
 
+
+function updatePlayButtonText() {
+  const playBtn = container.querySelector(".play-button");
+  if (!playBtn) return;
+  
+  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+  const selectedPlaylistData = localStorage.getItem("selectedPlaylist");
+  
+  if (!lastPlayedEpisodeId || !selectedPlaylistData) {
+    playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
+    return;
+  }
+  
+  try {
+    const parsedPlaylist = JSON.parse(selectedPlaylistData);
+    const currentPlaylistName = parsedPlaylist.playlistName || "";
+    
+    let playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]");
+    const currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
+    
+    if (!currentPlaylist?.continueWatchingSeries) {
+      playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
+      return;
+    }
+    
+    const continueWatchingItem = currentPlaylist.continueWatchingSeries.find(
+      item => item.itemId === seriesData.id.toString() && item.episodeId === lastPlayedEpisodeId
+    );
+    
+    if (!continueWatchingItem) {
+      playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
+      return;
+    }
+    
+    // Find episode details
+    for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
+      const episode = seasonEpisodes.find(ep => ep.id.toString() === lastPlayedEpisodeId);
+      if (episode) {
+        const resumePercent = Math.round((continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100);
+        playBtn.querySelector("span:last-child").innerHTML = `
+          Continue S${seasonNum}.E${episode.episode_num}
+          <span class="resume-hint">${resumePercent}% watched</span>
+        `;
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("Error updating play button text:", error);
+    playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
+  }
+}
+
+
+setTimeout(updatePlayButtonText, 100);
+
   // header time/date update
   (function updateTime() {
     const now = new Date();
@@ -375,72 +430,171 @@ seriesData.cast = [
   let currentSeasonNumber = firstSeasonNumber || (seriesData.seasons[0] ? seriesData.seasons[0].season_number : 1);
 
   function renderEpisodes(seasonNumber) {
-    const episodesGrid = container.querySelector("#episodes-grid");
-    if (!episodesGrid) return;
+  const episodesGrid = container.querySelector("#episodes-grid");
+  if (!episodesGrid) return;
 
-    const episodes = seriesData.episodes[seasonNumber] || [];
+  const episodes = seriesData.episodes[seasonNumber] || [];
 
-    if (episodes.length === 0) {
-      episodesGrid.innerHTML = '<p style="color: white; padding: 20px;">No episodes available for this season.</p>';
-      return;
-    }
+  if (episodes.length === 0) {
+    episodesGrid.innerHTML = '<p style="color: white; padding: 20px;">No episodes available for this season.</p>';
+    return;
+  }
 
-    episodesGrid.innerHTML = episodes.map((ep, index) => {
-      const episodeTitle = ep.title || `Episode ${ep.episode_num}`;
-      const episodeInfo = ep.info || {};
-      const episodePlot = episodeInfo.plot ;
-      const episodeDuration = episodeInfo.duration ;
-     
+  // Get continue watching data
+  const selectedPlaylistData = localStorage.getItem("selectedPlaylist");
+  let currentPlaylistName = "";
+  if (selectedPlaylistData) {
+    const parsedPlaylist = JSON.parse(selectedPlaylistData);
+    currentPlaylistName = parsedPlaylist.playlistName || "";
+  }
 
-      const episodeRating = episodeInfo.rating || ep.rating ;
-      const episodeCover = episodeInfo.movie_image || ep.cover || seriesData.posterImage;
-      
-      return `
-        <div class="episode-card" data-episode-index="${index}" data-season="${seasonNumber}" tabindex="0">
-          <div class="episode-image-container">
-            <img src="${episodeCover}" alt="${episodeTitle}" class="episode-image" />
-            <div class="episode-rating-badge">
-                       <span class="star-icon"><img src="/assets/star.png" class="star-icon" /></span>
+  let playlistsData = localStorage.getItem("playlistsData");
+  let currentPlaylist = null;
+  if (playlistsData) {
+    playlistsData = JSON.parse(playlistsData);
+    currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
+  }
 
-              ${episodeRating}
+  const continueWatchingData = currentPlaylist?.continueWatchingSeries || [];
+  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+
+  episodesGrid.innerHTML = episodes.map((ep, index) => {
+    const episodeTitle = ep.title || `Episode ${ep.episode_num}`;
+    const episodeInfo = ep.info || {};
+    const episodePlot = episodeInfo.plot || "";
+    const episodeDuration = episodeInfo.duration || "";
+    const episodeRating = episodeInfo.rating || ep.rating || "";
+    const episodeCover = episodeInfo.movie_image || ep.cover || seriesData.posterImage;
+    
+    // Check continue watching
+    const continueWatchingItem = continueWatchingData.find(
+      item => item.itemId === seriesData.id.toString() && item.episodeId === ep.id.toString()
+    );
+    
+    const hasProgress = !!continueWatchingItem;
+    const progressPercent = hasProgress 
+      ? Math.round((continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
+      : 0;
+    
+    const isLastPlayed = lastPlayedEpisodeId && lastPlayedEpisodeId === ep.id.toString();
+    
+    return `
+      <div class="episode-card ${isLastPlayed ? 'last-played' : ''}" 
+           data-episode-index="${index}" 
+           data-season="${seasonNumber}" 
+           data-episode-id="${ep.id}"
+           tabindex="0">
+        <div class="episode-image-container">
+          <img src="${episodeCover}" alt="${episodeTitle}" class="episode-image" />
+          
+          ${hasProgress ? `
+            <div class="episode-progress-bar">
+              <div class="episode-progress-fill" style="width: ${progressPercent}%"></div>
             </div>
-            <div class="episode-number-badge">S${String(seasonNumber)}.E${String(ep.episode_num || index + 1)}</div>
-            <div class="episode-overlay-content">
-          <img class="playpng" src="/assets/play.png" alt="play"/>
-
-              <h3 class="episode-title">${episodeTitle}</h3>
-              <p class="episode-description">${episodePlot}</p>
-              <p class="episode-duration">${episodeDuration}</p>
-            </div>
+            <div class="episode-resume-badge">${progressPercent}% watched</div>
+          ` : ''}
+          
+          ${isLastPlayed ? '<div class="last-played-badge">Continue Watching</div>' : ''}
+          
+          <div class="episode-rating-badge">
+            <span class="star-icon"><img src="/assets/star.png" class="star-icon" /></span>
+            ${episodeRating}
+          </div>
+          <div class="episode-number-badge">S${String(seasonNumber)}.E${String(ep.episode_num || index + 1)}</div>
+          <div class="episode-overlay-content">
+            <img class="playpng" src="/assets/play.png" alt="play"/>
+            <h3 class="episode-title">${episodeTitle}</h3>
+            <p class="episode-description">${episodePlot}</p>
+            <p class="episode-duration">${episodeDuration}</p>
           </div>
         </div>
-      `;
-    }).join("");
+      </div>
+    `;
+  }).join("");
 
-    // Add click handlers to episode cards
-    const episodeCards = episodesGrid.querySelectorAll(".episode-card");
-    episodeCards.forEach((card) => {
-      card.addEventListener("click", () => {
-        const episodeIndex = parseInt(card.dataset.episodeIndex);
-        const seasonNum = parseInt(card.dataset.season);
-        const episode = seriesData.episodes[seasonNum][episodeIndex];
-        
-        if (episode) {
-          const episodeUrl = buildSeriesUrl(episode.id, episode.container_extension);
-          localStorage.setItem("playingItemData", JSON.stringify(episode));
-          if (episodeUrl) localStorage.setItem("selectedVideoItemUrl", episodeUrl);
-          localStorage.setItem("from", "series");
-          localStorage.setItem("currentPage", "videojsPlayer");
-          if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
-          document.body.style.backgroundImage = "none";
-          document.body.style.backgroundColor = "black";
-        }
-      });
+  // Add click handlers
+  const episodeCards = episodesGrid.querySelectorAll(".episode-card");
+  episodeCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      const episodeIndex = parseInt(card.dataset.episodeIndex);
+      const seasonNum = parseInt(card.dataset.season);
+      const episode = seriesData.episodes[seasonNum][episodeIndex];
+      
+      if (episode) {
+        playEpisode(episode, seasonNum);
+      }
     });
-  }
+  });
+}
 
   // Initial episodes render
   renderEpisodes(currentSeasonNumber);
+
+  function scrollToLastPlayedEpisode() {
+  const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+  if (!lastPlayedEpisodeId) return;
+  
+  const lastPlayedCard = container.querySelector(`.episode-card[data-episode-id="${lastPlayedEpisodeId}"]`);
+  if (lastPlayedCard) {
+    console.log("📍 Scrolling to last played episode:", lastPlayedEpisodeId);
+    
+    // Scroll to the card
+    lastPlayedCard.scrollIntoView({ 
+      behavior: "smooth", 
+      block: "center",
+      inline: "center"
+    });
+    
+    // Add highlight animation
+    lastPlayedCard.classList.add("highlight");
+    setTimeout(() => {
+      lastPlayedCard.classList.remove("highlight");
+    }, 2000);
+  }
+}
+
+
+setTimeout(scrollToLastPlayedEpisode, 500);
+
+
+  function playEpisode(episode, seasonNumber) {
+  console.log("🎬 Playing episode:", episode, "Season:", seasonNumber);
+  
+  const episodeUrl = buildSeriesUrl(episode.id, episode.container_extension);
+  
+  if (!episodeUrl) {
+    console.error("❌ Failed to build episode URL");
+    alert("Unable to play episode. Please try again.");
+    return;
+  }
+  
+  // Store episode data with season info
+  const episodeData = {
+    ...episode,
+    season: seasonNumber,
+    series_id: seriesData.id,
+    series_name: seriesData.title
+  };
+  
+  console.log("📦 Storing episode data:", episodeData);
+  console.log("🔗 Episode URL:", episodeUrl);
+  
+  localStorage.setItem("playingItemData", JSON.stringify(episodeData));
+  localStorage.setItem("selectedVideoItemUrl", episodeUrl);
+  localStorage.setItem("selectedEpisodeId", episode.id.toString());
+  localStorage.setItem("selectedSeriesId", seriesData.id.toString());
+  localStorage.setItem("selectedSeason", seasonNumber.toString());
+  localStorage.setItem("seriesEpisodesData", JSON.stringify(seriesData.episodes));
+  localStorage.setItem("from", "series");
+  localStorage.setItem("currentPage", "videojsPlayer");
+  
+  if (typeof Router !== "undefined" && Router.showPage) {
+    Router.showPage("videoJsPlayer");
+  }
+  
+  document.body.style.backgroundImage = "none";
+  document.body.style.backgroundColor = "black";
+}
 
 
   // --- Remote navigation & interactions ---
@@ -551,23 +705,40 @@ seriesData.cast = [
     return "";
   }
 
-  if (playBtn) {
-    playBtn.addEventListener("click", () => {
+if (playBtn) {
+  playBtn.addEventListener("click", () => {
+    const lastPlayedEpisodeId = localStorage.getItem("lastPlayedEpisodeId");
+    
+    let episodeToPlay = null;
+    let seasonToPlay = null;
+    
+    // Try to find last played episode
+    if (lastPlayedEpisodeId) {
+      for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
+        const foundEpisode = seasonEpisodes.find(ep => ep.id.toString() === lastPlayedEpisodeId);
+        if (foundEpisode) {
+          episodeToPlay = foundEpisode;
+          seasonToPlay = parseInt(seasonNum);
+          console.log("▶️ Resuming last played episode S" + seasonNum + ".E" + foundEpisode.episode_num);
+          break;
+        }
+      }
+    }
+    
+    // Fallback to first episode
+    if (!episodeToPlay) {
       if (!firstEpisode) {
         alert("No episodes available");
         return;
       }
-      
-      const episodeUrl = buildSeriesUrl(firstEpisode.id, firstEpisode.container_extension);
-      localStorage.setItem("playingItemData", JSON.stringify(firstEpisode));
-      if (episodeUrl) localStorage.setItem("selectedVideoItemUrl", episodeUrl);
-      localStorage.setItem("from", "series");
-      localStorage.setItem("currentPage", "videojsPlayer");
-      if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
-      document.body.style.backgroundImage = "none";
-      document.body.style.backgroundColor = "black";
-    });
-  }
+      episodeToPlay = firstEpisode;
+      seasonToPlay = firstSeasonNumber;
+      console.log("▶️ Playing first episode");
+    }
+    
+    playEpisode(episodeToPlay, seasonToPlay);
+  });
+}
 
   if (trailerBtn) {
     trailerBtn.addEventListener("click", () => {

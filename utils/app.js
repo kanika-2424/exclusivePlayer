@@ -17,6 +17,8 @@ async function navigateTo(pageId) {
       targetPage.innerHTML = LoginPage();
     } else if (pageId === 'playlist-page') {
       targetPage.innerHTML = ListPlaylistPage();
+    } else if (pageId === 'video-player') {
+      targetPage.innerHTML = VideoPlayerPage();
     }
     
     else if (pageId === 'dashboard-page') {

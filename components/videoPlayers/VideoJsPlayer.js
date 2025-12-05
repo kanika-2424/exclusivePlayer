@@ -1,10 +1,109 @@
 function VideoJsPlayer(poster = "") {
+
+   if (typeof videojs === 'undefined') {
+    console.error("❌ Video.js library not loaded!");
+    alert("Video player library not available. Please refresh the page.");
+    return `<div class="error">Video player not available</div>`;
+  }
+
+
+  function saveCurrentProgress(player, playingItemData, fromValue) {
+  if (!player || typeof player.currentTime !== 'function') return;
+  
+  const resumeTime = player.currentTime();
+  const duration = player.duration();
+  
+  // Don't save if video just started (less than 5 seconds)
+  if (resumeTime < 5) return;
+  
+  // Don't save if video is almost finished (within 5 seconds of end)
+  if (duration > 0 && Math.abs(resumeTime - duration) < 5) return;
+  
+  console.log("💾 Saving progress:", resumeTime, "of", duration);
+  
+  const currentPlaylistName = JSON.parse(
+    localStorage.getItem("selectedPlaylist")
+  ).playlistName;
+  
+  let playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
+  
+  playlistsData = playlistsData.map((pl) => {
+    if (pl.playlistName !== currentPlaylistName) return pl;
+    
+    if (fromValue === "movie") {
+      const movieId = localStorage.getItem("selectedMovieId");
+      
+      // Remove old entry for same movie
+      let updatedMovies = (pl.continueWatchingMovies || []).filter(
+        (item) => item.itemId !== movieId
+      );
+      
+      // Add updated entry
+      updatedMovies.unshift({
+        itemId: movieId,
+        resumeTime: resumeTime,
+        duration: duration,
+        type: "movie",
+        name: playingItemData.name || playingItemData.title,
+        stream_icon: playingItemData.stream_icon || "",
+        addedAt: new Date().toISOString()
+      });
+      
+      // Keep only last 20 items
+      updatedMovies = updatedMovies.slice(0, 20);
+      
+      return { ...pl, continueWatchingMovies: updatedMovies };
+      
+    } else if (fromValue === "series") {
+      const seriesId = localStorage.getItem("selectedSeriesId");
+      const episodeId = localStorage.getItem("selectedEpisodeId");
+      
+      // Remove old entry for same series+episode
+      let updatedSeries = (pl.continueWatchingSeries || []).filter(
+        (item) => !(item.itemId === seriesId && item.episodeId === episodeId)
+      );
+      
+      // Add updated entry
+      updatedSeries.unshift({
+        itemId: seriesId,
+        episodeId: episodeId,
+        resumeTime: resumeTime,
+        duration: duration,
+        type: "series",
+        name: playingItemData.name || playingItemData.title,
+        stream_icon: playingItemData.stream_icon || "",
+        addedAt: new Date().toISOString()
+      });
+      
+      // Keep only last 20 items
+      updatedSeries = updatedSeries.slice(0, 20);
+      
+      return { ...pl, continueWatchingSeries: updatedSeries };
+    }
+    
+    return pl;
+  });
+  
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+  console.log("✅ Progress saved successfully");
+} 
   const srcUrl =
     window.selectedVideoItemUrl ||
     localStorage.getItem("selectedVideoItemUrl") ||
     "";
+
+      console.log("🎬 VideoJsPlayer - Video URL:", srcUrl);
+  if (!srcUrl) {
+    console.error("❌ No video URL provided!");
+    alert("No video URL available");
+    return `<div class="error">No video source</div>`;
+  }
+
+  
   
   let isYouTube = srcUrl.includes("youtube.com") || srcUrl.includes("youtu.be");
+    console.log("📺 Is YouTube:", isYouTube);
+
 
   const previousCleanup = VideoJsPlayer.cleanup;
   if (previousCleanup) {
@@ -255,13 +354,25 @@ function VideoJsPlayer(poster = "") {
   }
 
   function initPlayer(attempt = 0) {
+      console.log(`🔄 initPlayer attempt ${attempt}`);
+
+
     const videoElement = document.getElementById("videojs-player-tag");
     if (!videoElement) {
+          console.warn("⚠️ Video element not found, attempt:", attempt);
+
       if (attempt < 10) {
         setTimeout(() => initPlayer(attempt + 1), 100);
-      }
+      } else {
+      console.error("❌ Video element never found after 10 attempts");
+    }
       return;
     }
+
+      console.log("✅ Video element found:", videoElement);
+  console.log("🎬 Video source URL:", srcUrl);
+  console.log("📺 Is YouTube:", isYouTube);
+  console.log("📡 Is Live:", isLive);
 
     const options = {
       autoplay: true,
@@ -283,6 +394,9 @@ function VideoJsPlayer(poster = "") {
             },
       ],
     };
+
+      console.log("⚙️ Video.js options:", options);
+
 
     let resumeTime = 0;
 
@@ -445,6 +559,8 @@ function VideoJsPlayer(poster = "") {
     });
 
     player.on("canplay", () => {
+          console.log("▶️ Video can play");
+
       if (!errorActive) {
         loadingEl.classList.add("hidden");
         // If we're paused after loading completes, show pause overlay again
@@ -461,6 +577,8 @@ function VideoJsPlayer(poster = "") {
     });
     
     player.on("loadstart", () => {
+          console.log("📥 Video load started");
+
       if (!errorActive) {
         loadingEl.classList.remove("hidden");
       }
@@ -488,6 +606,13 @@ function VideoJsPlayer(poster = "") {
         userManuallyPaused = false;
       }
     });
+
+      // Add loadeddata event
+  player.on("loadeddata", () => {
+    console.log("✅ Video data loaded");
+  });
+
+
 
     player.on("pause", () => {
       // Don't show pause UI if video is still loading/buffering
@@ -524,164 +649,118 @@ function VideoJsPlayer(poster = "") {
       if (errorDialog) errorDialog.classList.remove("hidden");
     });
 
-    function goBack() {
-      if (fromValue === "series") {
-        const episodeId = localStorage.getItem("selectedEpisodeId");
-        localStorage.setItem("lastPlayedEpisodeId", episodeId);
+  function goBack() {
+  if (fromValue === "series") {
+    const episodeId = localStorage.getItem("selectedEpisodeId");
+    localStorage.setItem("lastPlayedEpisodeId", episodeId);
+  }
+  
+  const currentPlayer = player;
+
+  if (!isYouTube && currentPlayer) {
+    let resumeTime = 0;
+    let duration = 0;
+
+    try {
+      if (!isLive && typeof currentPlayer.currentTime === "function") {
+        resumeTime = currentPlayer.currentTime();
       }
-      
-      const currentPlayer = player;
-
-      if (!isYouTube) {
-        if (currentPlayer) {
-          let resumeTime = 0;
-          let duration = 0;
-
-          try {
-            if (!isLive && typeof currentPlayer.currentTime === "function") {
-              resumeTime = currentPlayer.currentTime();
-            }
-            if (typeof currentPlayer.duration === "function") {
-              duration = currentPlayer.duration();
-            }
-          } catch (e) {
-            resumeTime = 0;
-            duration = 0;
-          }
-
-          const isVideoCompleted = duration > 0 && Math.abs(resumeTime - duration) < 5; // 5 second buffer
-          
-          // If video is completed, focus on next episode (for series)
-          if (isVideoCompleted) {
-            if (fromValue === "series") {
-              const currentEpisodeId = localStorage.getItem("selectedEpisodeId");
-              const seriesEpisodes = JSON.parse(localStorage.getItem("seriesEpisodesData")) || {};
-              const currentSeason = localStorage.getItem("selectedSeason") || "1";
-              
-              // Find current episode and get next one
-              const seasonEpisodes = seriesEpisodes[currentSeason] || [];
-              const currentEpisodeIndex = seasonEpisodes.findIndex(ep => ep.id.toString() === currentEpisodeId);
-              
-              if (currentEpisodeIndex !== -1 && currentEpisodeIndex < seasonEpisodes.length - 1) {
-                // Focus on next episode
-                const nextEpisodeId = seasonEpisodes[currentEpisodeIndex + 1].id;
-                localStorage.setItem("lastPlayedEpisodeId", nextEpisodeId.toString());
-              } else {
-                // No next episode, remove the focus marker
-                localStorage.removeItem("lastPlayedEpisodeId");
-              }
-              
-              // Remove the completed episode from continue watching
-              removeEpisodeFromContinueWatching(currentEpisodeId);
-              
-              // Only remove from continue watching if ALL episodes in the series are completed
-              const allEpisodesCompleted = checkIfAllEpisodesCompleted(currentEpisodeId, seriesEpisodes);
-              if (allEpisodesCompleted) {
-                removeItemFromHistoryById(
-                  localStorage.getItem("selectedSeriesId"),
-                  "continueWatchingSeries"
-                );
-              }
-            } else if (fromValue === "movie") {
-              // MOVIES: Remove from continue watching when completed
-              removeItemFromHistoryById(
-                localStorage.getItem("selectedMovieId"),
-                "continueWatchingMovies"
-              );
-            }
-            // If there are still incomplete episodes, keep the series in continue watching
-          } else if (resumeTime > 5 && !isVideoCompleted) {
-            const continueWatchingItem = {
-              itemId: playingItemData.season
-                ? localStorage.getItem("selectedSeriesId")
-                : localStorage.getItem("selectedMovieId"),
-              episodeId: playingItemData.season
-                ? localStorage.getItem("selectedEpisodeId")
-                : null,
-              resumeTime,
-              duration,
-              type: playingItemData.season ? "series" : "movie",
-            };
-
-            // Load playlists
-            let playlists = JSON.parse(localStorage.getItem("playlistsData")) || [];
-
-            playlists = playlists.map((pl) => {
-              if (pl.playlistName !== currentPlaylistName) return pl;
-
-              if (continueWatchingItem.type === "series") {
-                // Remove old entry for same series+episode
-                let updatedSeries = (pl.continueWatchingSeries || []).filter(
-                  (item) =>
-                    !(
-                      item.itemId === continueWatchingItem.itemId &&
-                      item.episodeId === continueWatchingItem.episodeId
-                    )
-                );
-                pl = { ...pl, continueWatchingSeries: updatedSeries };
-              } else {
-                // Remove old entry for same movie
-                let updatedMovies = (pl.continueWatchingMovies || []).filter(
-                  (item) => item.itemId !== continueWatchingItem.itemId
-                );
-                pl = { ...pl, continueWatchingMovies: updatedMovies };
-              }
-
-              return pl;
-            });
-
-            // Save cleaned playlists back to localStorage
-            localStorage.setItem("playlistsData", JSON.stringify(playlists));
-
-            // Finally, add updated item via your function
-            if (continueWatchingItem.type === "series") {
-              addItemToHistory(continueWatchingItem, "continueWatchingSeries");
-            } else {
-              addItemToHistory(continueWatchingItem, "continueWatchingMovies");
-            }
-          }
-
-          // Set player to null first to prevent further access
-          player = null;
-
-          // Then safely dispose
-          try {
-            if (typeof currentPlayer.pause === "function") {
-              currentPlayer.pause();
-            }
-          } catch (err) {
-            console.warn("Player pause error:", err);
-          }
-
-          try {
-            if (typeof currentPlayer.dispose === "function") {
-              currentPlayer.dispose();
-            }
-          } catch (err) {
-            console.warn("Player dispose error:", err);
-          }
-        }
-
-        if (fromValue == "movie") {
-          localStorage.setItem("currentPage", "moviesDetailPage");
-          Router.showPage("movieDetail");
-        } else {
-          localStorage.setItem("currentPage", "seriesDetailPage");
-          Router.showPage("seriesDetail");
-        }
-      } else {
-        if (typeof currentPlayer.dispose === "function") {
-          currentPlayer.dispose();
-        }
-        if (fromValue == "movie") {
-          localStorage.setItem("currentPage", "moviesDetailPage");
-          Router.showPage("movieDetail");
-        } else {
-          localStorage.setItem("currentPage", "seriesDetailPage");
-          Router.showPage("seriesDetail");
-        }
+      if (typeof currentPlayer.duration === "function") {
+        duration = currentPlayer.duration();
       }
+    } catch (e) {
+      resumeTime = 0;
+      duration = 0;
     }
+
+    const isVideoCompleted = duration > 0 && Math.abs(resumeTime - duration) < 5;
+    
+    console.log("🔄 Going back - Resume time:", resumeTime, "Duration:", duration, "Completed:", isVideoCompleted);
+    
+    // If video is completed, remove from continue watching
+    if (isVideoCompleted) {
+      if (fromValue === "series") {
+        const currentEpisodeId = localStorage.getItem("selectedEpisodeId");
+        const seriesEpisodes = JSON.parse(localStorage.getItem("seriesEpisodesData")) || {};
+        const currentSeason = localStorage.getItem("selectedSeason") || "1";
+        
+        const seasonEpisodes = seriesEpisodes[currentSeason] || [];
+        const currentEpisodeIndex = seasonEpisodes.findIndex(ep => ep.id.toString() === currentEpisodeId);
+        
+        if (currentEpisodeIndex !== -1 && currentEpisodeIndex < seasonEpisodes.length - 1) {
+          const nextEpisodeId = seasonEpisodes[currentEpisodeIndex + 1].id;
+          localStorage.setItem("lastPlayedEpisodeId", nextEpisodeId.toString());
+        } else {
+          localStorage.removeItem("lastPlayedEpisodeId");
+        }
+        
+        removeEpisodeFromContinueWatching(currentEpisodeId);
+        
+        const allEpisodesCompleted = checkIfAllEpisodesCompleted(currentEpisodeId, seriesEpisodes);
+        if (allEpisodesCompleted) {
+          removeItemFromHistoryById(
+            localStorage.getItem("selectedSeriesId"),
+            "continueWatchingSeries"
+          );
+        }
+      } else if (fromValue === "movie") {
+        // Remove completed movie from continue watching
+        removeItemFromHistoryById(
+          localStorage.getItem("selectedMovieId"),
+          "continueWatchingMovies"
+        );
+        console.log("✅ Movie completed - removed from continue watching");
+      }
+    } 
+    // If video has meaningful progress (more than 5 seconds and not completed)
+    else if (resumeTime > 5 && !isVideoCompleted) {
+      console.log("💾 Saving resume time:", resumeTime);
+      
+      // Save progress using the new helper function
+      saveCurrentProgress(currentPlayer, playingItemData, fromValue);
+    }
+
+    // Cleanup player
+    player = null;
+
+    try {
+      if (typeof currentPlayer.pause === "function") {
+        currentPlayer.pause();
+      }
+    } catch (err) {
+      console.warn("Player pause error:", err);
+    }
+
+    try {
+      if (typeof currentPlayer.dispose === "function") {
+        currentPlayer.dispose();
+      }
+    } catch (err) {
+      console.warn("Player dispose error:", err);
+    }
+  } else if (isYouTube && currentPlayer) {
+    try {
+      if (typeof currentPlayer.dispose === "function") {
+        currentPlayer.dispose();
+      }
+    } catch (err) {
+      console.warn("YouTube player dispose error:", err);
+    }
+  }
+
+  // Navigate back to appropriate page
+  if (fromValue === "movie") {
+    localStorage.setItem("currentPage", "moviesDetailPage");
+    if (typeof Router !== "undefined" && Router.showPage) {
+      Router.showPage("movieDetail");
+    }
+  } else {
+    localStorage.setItem("currentPage", "seriesDetailPage");
+    if (typeof Router !== "undefined" && Router.showPage) {
+      Router.showPage("seriesDetail");
+    }
+  }
+}
 
     // Helper function to remove completed episode from continue watching
     function removeEpisodeFromContinueWatching(completedEpisodeId) {

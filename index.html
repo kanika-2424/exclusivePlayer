@@ -28,6 +28,8 @@
   <link rel="stylesheet" href="css/toaster.css" />
   <link rel="stylesheet" href="css/seriesDetailPage.css" />
   <link rel="stylesheet" href="css/listPlaylistPage.css" />
+  <link rel="stylesheet" href="css/videoJsPlayer.css" />
+
 
   
 
@@ -39,6 +41,11 @@
 
     <!-- Video.js YouTube plugin -->
     <script src="https://unpkg.com/videojs-youtube/dist/Youtube.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@2.14.2/dist/videojs-http-streaming.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/videojs-youtube@2.6.1/dist/Youtube.min.js"></script>
+
 
 
 </head>
@@ -53,6 +60,7 @@
     <div id="series-page" class="page" style="display: none"></div>
     <div id="series-detail-page" class="page" style="display: none"></div>
     <div id="playlist-page" class="page" style="display: none"></div>
+    <div id="video-player" class="page" style="display: none"></div> 
 
     <div id="toast-container"></div>
 
@@ -86,6 +94,7 @@
 <script src="pages/MovieDetailPage.js"></script>
 <script src="pages/SeriesPage.js"></script>
 <script src="pages/SeriesDetailPage.js"></script>
+<script src="components/videoPlayers/VideoJsPlayer.js"></script>
 
 
 <!-- Router must load AFTER all page functions exist -->
