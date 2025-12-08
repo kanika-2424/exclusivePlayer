@@ -1,0 +1,100 @@
+.settings-container{
+    padding: 40px 60px;
+
+}
+
+
+.settings-content-wrapper {
+    display: flex;
+    gap: 40px;
+    padding: 40px 60px;
+}
+
+.settings-left-panel {
+    flex: 0 0 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: rgba(217, 217, 217, 0.15);
+    padding: 75px;
+}
+
+.settings-right-panel {
+    flex: 1;
+    background: rgba(30, 40, 50, 0.5);
+    border-radius: 20px;
+    padding: 40px;
+}
+
+.setting-card {
+    border: 2px solid transparent;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 40px;
+}
+
+.setting-card-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.setting-card-icon-wrapper img{
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.setting-card-label h3 {
+    color: white;
+    font-size: 24px;
+    margin: 0;
+}
+
+.setting-card-focused,
+.setting-card:hover {
+    background: rgba(55, 155, 254, 1);
+    border-color: #1E90FF;
+}
+
+.settings-options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.option-selected {
+    border-color: #1E90FF;
+    background: rgba(30, 144, 255, 0.1);
+}
+
+.settings-save-btn {
+    margin-top: 20px;
+    padding: 15px 60px;
+    background: #1E90FF;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    align-self: center;
+}
+
+.setting-header-user {
+    margin-left: auto;
+}

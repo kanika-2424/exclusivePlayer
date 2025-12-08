@@ -220,8 +220,8 @@ async function loginApi(
               loadingOverlay.classList.add("hidden");
               disableKeyBlock();
               resetLoadingPercentage();
-              // Router.showPage("dashboard");
-               navigateTo("dashboard-page");
+              Router.showPage("dashboard");
+              //  navigateTo("dashboard-page");
 
             }, 500);
             return true;
@@ -351,8 +351,8 @@ async function loginApi(
               loadingOverlay.classList.add("hidden");
               disableKeyBlock();
               resetLoadingPercentage();
-              // Router.showPage("dashboard");
-               navigateTo("dashboard-page");
+              Router.showPage("dashboard");
+              //  navigateTo("dashboard-page");
 
             }, 500);
             return true;

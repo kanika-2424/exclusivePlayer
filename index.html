@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="css/seriesDetailPage.css" />
   <link rel="stylesheet" href="css/listPlaylistPage.css" />
   <link rel="stylesheet" href="css/videoJsPlayer.css" />
+  <link rel="stylesheet" href="css/settingsPage.css" />
 
 
   
@@ -48,6 +49,7 @@
 
 
 
+
 </head>
 
 <body>
@@ -60,7 +62,9 @@
     <div id="series-page" class="page" style="display: none"></div>
     <div id="series-detail-page" class="page" style="display: none"></div>
     <div id="playlist-page" class="page" style="display: none"></div>
-    <div id="video-player" class="page" style="display: none"></div> 
+    <div id="video-player" class= "page" style="display: none"></div> 
+    <div id="settings-page" class="page" style="display: none"></div>
+    
 
     <div id="toast-container"></div>
 
@@ -95,7 +99,9 @@
 <script src="pages/SeriesPage.js"></script>
 <script src="pages/SeriesDetailPage.js"></script>
 <script src="components/videoPlayers/VideoJsPlayer.js"></script>
+<script src="components/DateTimeComponent.js"></script>
 
+<script src="pages/SettingsPage.js"></script>
 
 <!-- Router must load AFTER all page functions exist -->
 <script src="utils/router.js"></script>

@@ -141,7 +141,9 @@ Toaster(); // Initialize Toaster
               }
               resetLoadingPercentage();
               localStorage.setItem("currentPage", "dashboard");
-              navigateTo("dashboard-page");
+              // navigateTo("dashboard-page");
+              Router.showPage('dashboard')
+
             }, 500);
             
           } catch (error) {

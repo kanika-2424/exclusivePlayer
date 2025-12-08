@@ -137,6 +137,9 @@ case 'videoJsPlayer':
         localStorage.setItem('currentPage', 'seriesPage');
         break;
 
+
+        
+
       case 'series-detail':
       case 'series-detail-page':
       case 'seriesDetailPage':
@@ -176,6 +179,15 @@ case 'videoJsPlayer':
         }
     }
     break;
+
+
+    case 'settings':
+      case 'settings-page':
+        pageElement = document.getElementById('settings-page');
+        pageElement.innerHTML = SettingsPage();
+        this.currentPage = 'Settings';
+        localStorage.setItem('currentPage', 'settingsPage');
+        break;
 
     }
 
