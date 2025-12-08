@@ -236,7 +236,7 @@ margin-right: 8px;
   font-size: 30px;
   font-weight: 500;
   color: white;
-  z-index: 9999;
+  z-index: 99;
   border-radius: 6px;
 }
 
@@ -611,7 +611,29 @@ margin-right: 8px;
 
 
 
+/* From Start Button - Same style as Trailer Button */
+.from-start-button {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
 
+.from-start-button:hover,
+.from-start-button.focused {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.from-start-button.dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.from-start-button .play-icon {
+  font-size: 18px;
+  font-weight: bold;
+}
 
 
 

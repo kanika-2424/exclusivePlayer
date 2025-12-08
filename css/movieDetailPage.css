@@ -188,7 +188,7 @@
 }
 
 /* Trailer button restored */
-.trailer-button {
+.trailer-button  {
   background: rgba(0, 0, 0, 0.4); /* dark transparent */
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.5);
@@ -291,9 +291,9 @@
   border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
-.trailer-button.focused {
+.trailer-button.focused , .from-start-button.focused {
   background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(55, 155, 254, 1);
+  border: 2px solid rgba(55, 155, 254, 1) !important;
   box-shadow: 0 0 30px rgba(55, 155, 254, 0.8);
 }
 
@@ -321,4 +321,11 @@
 
 .menu-dots.menu-focused {
   background: rgba(55, 155, 254, 0.2);
+}
+
+
+ .from-start-button {
+  background: rgba(0, 0, 0, 0.4) !important; /* dark transparent */
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }

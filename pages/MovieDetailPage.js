@@ -381,6 +381,14 @@ function formatReleaseDate(raw) {
     <span>${isContinueWatchingMovie ? "Resume" : "Play Now"}</span>
   </button>
 
+    ${isContinueWatchingMovie ? `
+    <button class="action-button from-start-button" tabindex="0">
+      <span class="play-icon">↻</span>
+      <span>Start from Beginning</span>
+    </button>
+  ` : ''}
+
+
   <button class="action-button trailer-button" ${movieDetailData.info && movieDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">
     <span>Watch Trailer</span>
   </button>

@@ -170,6 +170,52 @@ console.log("seriesDetailData" , seriesDetailData);
     seasons: seriesDetailData.seasons || []
   };
 
+  // Get continue watching data for series
+var selectedPlaylistData = localStorage.getItem("selectedPlaylist");
+var currentPlaylistName = "";
+if (selectedPlaylistData) {
+  var parsedPlaylist = JSON.parse(selectedPlaylistData);
+  currentPlaylistName = parsedPlaylist.playlistName || "";
+}
+
+var playlistsData = localStorage.getItem("playlistsData");
+var currentPlaylist = null;
+if (playlistsData) {
+  playlistsData = JSON.parse(playlistsData);
+  currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
+}
+
+var continueWatchingSeriesIds = [];
+if (currentPlaylist && currentPlaylist.continueWatchingSeries && Array.isArray(currentPlaylist.continueWatchingSeries)) {
+  continueWatchingSeriesIds = currentPlaylist.continueWatchingSeries.map(function (item) {
+    return item.itemId ? item.itemId.toString() : "";
+  });
+}
+
+var isContinueWatchingSeries = continueWatchingSeriesIds.includes(seriesData.id.toString());
+
+// Get current episode details for "Start from Beginning" button
+let currentEpisodeInfo = '';
+if (isContinueWatchingSeries && currentPlaylist?.continueWatchingSeries) {
+  const continueItem = currentPlaylist.continueWatchingSeries.find(
+    item => item.itemId === seriesData.id.toString()
+  );
+  
+  if (continueItem) {
+    // Find the episode details
+    for (const [seasonNum, seasonEpisodes] of Object.entries(seriesData.episodes)) {
+      const episode = seasonEpisodes.find(ep => ep.id.toString() === continueItem.episodeId);
+      if (episode) {
+        currentEpisodeInfo = `S${seasonNum}.E${episode.episode_num}`;
+        break;
+      }
+    }
+  }
+}
+
+// Add to seriesData object
+seriesData.isContinueWatching = isContinueWatchingSeries;
+
 seriesData.cast = [
   { id: 1, name: "John Doe", image: "/assets/profile.png" },
   { id: 2, name: "Jane Smith", image: "/assets/profile.png" },
@@ -300,6 +346,14 @@ seriesData.cast = [
               <span class="play-icon">▶</span>
               <span>Play S1.E1</span>
             </button>
+
+            ${isContinueWatchingSeries ? `
+  <button class="action-button from-start-button" tabindex="0">
+    <span>Start from Beginning${currentEpisodeInfo ? ` ${currentEpisodeInfo}` : ''}</span>
+  </button>
+` : ''}
+
+
             <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : ''} tabindex="0">Watch Trailer</button>
             <button class="action-button cast-button" tabindex="0">
               <span>Cast</span>
@@ -559,6 +613,38 @@ const lastPlayedEpisodeId = localStorage.getItem(`lastPlayedEpisode_${seriesData
 setTimeout(scrollToLastPlayedEpisode, 500);
 
 
+// Reset Resume Time Function for Series
+function resetSeriesResumeTime(seriesId, episodeId) {
+  if (!seriesId) return;
+  
+  var playlistsData = localStorage.getItem("playlistsData");
+  if (!playlistsData) return;
+  playlistsData = JSON.parse(playlistsData);
+
+  var selectedPlaylist = localStorage.getItem("selectedPlaylist");
+  if (!selectedPlaylist) return;
+  selectedPlaylist = JSON.parse(selectedPlaylist);
+  var playlistName = selectedPlaylist.playlistName;
+
+  for (var i = 0; i < playlistsData.length; i++) {
+    if (playlistsData[i].playlistName === playlistName && playlistsData[i].continueWatchingSeries) {
+      for (var j = 0; j < playlistsData[i].continueWatchingSeries.length; j++) {
+        if (playlistsData[i].continueWatchingSeries[j].itemId === seriesId.toString()) {
+          // If episodeId provided, reset only that episode, otherwise reset entire series
+          if (episodeId && playlistsData[i].continueWatchingSeries[j].episodeId === episodeId.toString()) {
+            playlistsData[i].continueWatchingSeries[j].resumeTime = 0;
+          } else if (!episodeId) {
+            // Reset all episodes for this series
+            playlistsData[i].continueWatchingSeries[j].resumeTime = 0;
+          }
+        }
+      }
+    }
+  }
+
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+}
+
   function playEpisode(episode, seasonNumber) {
   console.log("🎬 Playing episode:", episode, "Season:", seasonNumber);
   
@@ -761,6 +847,26 @@ if (playBtn) {
   });
 }
 
+// Handle "Start from Beginning" button
+const fromStartBtn = container.querySelector(".from-start-button");
+if (fromStartBtn) {
+  fromStartBtn.addEventListener("click", () => {
+    // Reset resume time before playing
+    if (seriesData.id) {
+      resetSeriesResumeTime(seriesData.id, firstEpisode ? firstEpisode.id : null);
+    }
+    
+    // Play first episode from beginning
+    if (!firstEpisode) {
+      alert("No episodes available");
+      return;
+    }
+    
+    console.log("▶️ Starting from beginning - S1.E1");
+    playEpisode(firstEpisode, firstSeasonNumber);
+  });
+}
+
   if (trailerBtn) {
     trailerBtn.addEventListener("click", () => {
       if (seriesDetailData.info && seriesDetailData.info.youtube_trailer) {
@@ -789,6 +895,8 @@ if (castBtn && castWrapper) {
   castBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     const castDropdown = container.querySelector("#cast-dropdown");
+        const fromStartBtn = container.querySelector(".from-start-button"); // ⭐ NEW
+
     
     if (castDropdown) {
       const isHidden = castDropdown.classList.contains("hidden");
@@ -803,6 +911,8 @@ if (castBtn && castWrapper) {
         // Add dimmed class to play and trailer buttons
         if (playBtn) playBtn.classList.add("dimmed");
         if (trailerBtn) trailerBtn.classList.add("dimmed");
+                if (fromStartBtn) fromStartBtn.classList.add("dimmed"); // ⭐ NEW
+
         setTimeout(() => {
     const h = castDropdown.offsetHeight;
     const w = castDropdown.offsetWidth;
@@ -825,6 +935,8 @@ if (castBtn && castWrapper) {
         // Remove dimmed class from play and trailer buttons
         if (playBtn) playBtn.classList.remove("dimmed");
         if (trailerBtn) trailerBtn.classList.remove("dimmed");
+                if (fromStartBtn) fromStartBtn.classList.remove("dimmed"); // ⭐ NEW
+
         
         castWrapper.style.removeProperty("--cast-dropdown-height");
       }
@@ -834,6 +946,8 @@ if (castBtn && castWrapper) {
   // Close dropdown when clicking backdrop
   backdrop.addEventListener("click", () => {
     const castDropdown = container.querySelector("#cast-dropdown");
+      const fromStartBtn = container.querySelector(".from-start-button"); // ⭐ NEW
+
     if (castDropdown && !castDropdown.classList.contains("hidden")) {
       castDropdown.classList.add("hidden");
       castBtn.classList.remove("open");
@@ -843,6 +957,8 @@ if (castBtn && castWrapper) {
       // Remove dimmed class
       if (playBtn) playBtn.classList.remove("dimmed");
       if (trailerBtn) trailerBtn.classList.remove("dimmed");
+          if (fromStartBtn) fromStartBtn.classList.remove("dimmed"); // ⭐ NEW
+
       
       castWrapper.style.removeProperty("--cast-dropdown-height");
     }
@@ -851,6 +967,8 @@ if (castBtn && castWrapper) {
   // Close dropdown when clicking outside
   document.addEventListener("click", (e) => {
     const castDropdown = container.querySelector("#cast-dropdown");
+      const fromStartBtn = container.querySelector(".from-start-button"); // ⭐ NEW
+
     
     if (castWrapper && !castWrapper.contains(e.target)) {
       if (castDropdown && !castDropdown.classList.contains("hidden")) {
@@ -862,6 +980,8 @@ if (castBtn && castWrapper) {
         // Remove dimmed class
         if (playBtn) playBtn.classList.remove("dimmed");
         if (trailerBtn) trailerBtn.classList.remove("dimmed");
+              if (fromStartBtn) fromStartBtn.classList.remove("dimmed"); // ⭐ NEW
+
         
         castWrapper.style.removeProperty("--cast-dropdown-height");
       }
@@ -925,6 +1045,8 @@ document.addEventListener("keydown", function closeCastDropdownHandler(e) {
   const castBtn = container.querySelector(".cast-button");
   const playBtn = container.querySelector(".play-button");
   const trailerBtn = container.querySelector(".trailer-button");
+    const fromStartBtn = container.querySelector(".from-start-button"); // ⭐ NEW
+
   
   if (!castDropdown || castDropdown.classList.contains("hidden")) return;
   
@@ -955,6 +1077,8 @@ document.addEventListener("keydown", function closeCastDropdownHandler(e) {
     // Remove dimmed class from buttons
     if (playBtn) playBtn.classList.remove("dimmed");
     if (trailerBtn) trailerBtn.classList.remove("dimmed");
+        if (fromStartBtn) fromStartBtn.classList.remove("dimmed"); // ⭐ NEW
+
     
     setFocusOnButton(2);
   }
