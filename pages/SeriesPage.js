@@ -39,6 +39,7 @@ function SeriesPage() {
   let currentFocusIndex = 0; // focused card index
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
+  let scrollToTopHandler; // Add this line
 
   let isRestoringState = false;
 const LONG_PRESS_DURATION = 500;
@@ -58,6 +59,15 @@ const currentPlaylist = JSON.parse(
 const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
   ? currentPlaylist.favouriteSeries
   : [];
+
+
+  // Get continue watching data from current playlist
+const continueWatchingSeries = Array.isArray(currentPlaylist.continueWatchingSeries)
+  ? currentPlaylist.continueWatchingSeries
+  : [];
+
+const continueWatchingIds = continueWatchingSeries.map(item => Number(item.itemId));
+
 
   // DOM helpers
   const qs = (s) => document.querySelector(s);
@@ -84,6 +94,22 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
     _movieCount: allFavoritesSeries.length
   };
 
+
+  // Get continue watching series
+const allContinueWatchingSeries = allSeries.filter((s) => {
+  const isInContinueWatching = continueWatchingIds.includes(Number(s.series_id || s.stream_id));
+  return isInContinueWatching;
+});
+
+const continueWatchingCategory = {
+  id: "-2",
+  name: "Continue Watching",
+  parent_id: 0,
+  movies: allContinueWatchingSeries,
+  _movieCount: allContinueWatchingSeries.length
+};
+
+
     // Normalize categories into our structure
    const normalizedCategories = allCats.map(c => ({
     id: String(c.category_id || c.id),
@@ -93,7 +119,7 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
     _movieCount: 0
   }));
 
-    categories = [favoritesCategory, ...normalizedCategories];
+categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategories];
 
 
     // Build map skeleton
@@ -101,6 +127,8 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
     categories.forEach(c => seriesByCategory[c.id] = []);
 
       seriesByCategory["-1"] = allFavoritesSeries;
+      seriesByCategory["-2"] = allContinueWatchingSeries;
+
 
 
     // Group series
@@ -112,7 +140,7 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
 
     // Attach to categories and compute counts
     categories.forEach(c => {
-          if (c.id === "-1") return;
+  if (c.id === "-1" || c.id === "-2") return; // Add -2 here
 
       c.movies = seriesByCategory[c.id] || [];
       c._movieCount = (c.movies && c.movies.length) || 0;
@@ -166,6 +194,17 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
       const isFav = favouriteSeriesIds.includes(Number(seriesId));
   const showFavHeartIcon = String(selectedCategoryId) === "-1";
   const showHeart = showFavHeartIcon || isFav;
+
+  // Check if this series is in continue watching
+const continueWatchingItem = continueWatchingSeries.find(
+  item => Number(item.itemId) === Number(seriesId)
+);
+
+const showProgress = continueWatchingItem && continueWatchingItem.resumeTime > 0;
+
+const progressPercent = continueWatchingItem && continueWatchingItem.duration > 0
+  ? Math.min(100, (continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
+  : 0;
 
 
     return `
@@ -231,6 +270,15 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
     setFocusOnCard(currentFocusIndex);
   }
 
+  function setFocusOnScrollBtn() {
+  removeAllFocus();
+  const btn = qs("#scrollToTopBtn");
+  if (btn) {
+    btn.classList.add("focused");
+  }
+  currentSection = "scrollBtn";
+}
+
   // Focus helpers
   let movieCards = [];
   function setFocusOnCard(index) {
@@ -239,6 +287,8 @@ if (!grid) {
   movieCards = [];
   return;   // ← prevents crash
 }
+
+
 
 movieCards = Array.from(grid.querySelectorAll(".movie-card"));
 
@@ -328,6 +378,9 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
 
     const expandBtn = qs("#expandBtn");
     if (expandBtn) expandBtn.classList.remove("focused");
+
+    const scrollBtn = qs("#scrollToTopBtn");
+if (scrollBtn) scrollBtn.classList.remove("focused");
   }
 
   // Category click handler (delegated)
@@ -757,6 +810,14 @@ else if (currentSection === "categories") {
 
     /* ---------- LEFT ---------- */
     if (isLeft) {
+
+      if (currentSection === "scrollBtn") {
+  setFocusOnCard(currentFocusIndex);
+  e.preventDefault();
+  return;
+}
+
+
       if ((currentSection === "search" || currentSection === "header") &&
         (isSearchInputActive || isHeaderSearchActive)) {
         isSearchInputActive = false;
@@ -889,6 +950,8 @@ else if (currentSection === "categories") {
         const isLastCard = currentFocusIndex === cards.length - 1;
 
         if (isRightmostColumn || isLastCard) {
+              setFocusOnScrollBtn(); // ⭐ Changed from return
+
           // Already at rightmost position - don't move
           e.preventDefault();
           return;
@@ -944,6 +1007,21 @@ if (isEnter && currentSection === "series") {
 
 // ⭐ ENTER handling for other sections (search, categories, expand)
 if (isEnter && currentSection !== "series") {
+
+   if (currentSection === "scrollBtn") {
+        console.log("🔝 Scroll button clicked!");
+        const container = qs(".movies-grid-container");
+        if (container) {
+            container.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        // Reset focus to first card
+        if (movieCards.length > 0) {
+            setTimeout(() => setFocusOnCard(0), 300);
+        }
+        return;
+    }
+
+    
     if (currentSection === "search") {
         // Toggle edit mode for category search
         isSearchInputActive = !isSearchInputActive;
@@ -974,6 +1052,8 @@ if (isEnter && currentSection !== "series") {
         return;
     }
     
+
+
     if (currentSection === "categories") {
         // Select category
         const items = qsa(".movies-category-item");
@@ -1349,6 +1429,26 @@ if (headerSearchEl) {
       
       searchEl.removeEventListener("input", searchInputHandler);
       searchEl.addEventListener("input", searchInputHandler);
+
+
+      // Scroll to top button handler
+const scrollToTopBtn = qs("#scrollToTopBtn");
+if (scrollToTopBtn) {
+  scrollToTopHandler = () => {
+    const container = qs(".movies-grid-container");
+    if (container) {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (currentSection === "series" && movieCards.length > 0) {
+      setFocusOnCard(0);
+    }
+  };
+  
+  scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
+  scrollToTopBtn.addEventListener("click", scrollToTopHandler);
+}
+
+
     }
 
     // cleanup
@@ -1390,6 +1490,11 @@ if (headerSearchEl) {
   if (headerSearchEl && headerSearchInputHandler) {
     headerSearchEl.removeEventListener("input", headerSearchInputHandler);
   }
+
+  const scrollToTopBtn = qs("#scrollToTopBtn");
+if (scrollToTopBtn && scrollToTopHandler) {
+  scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
+}
 
     };
 }, 0);
@@ -1434,6 +1539,13 @@ if (headerSearchEl) {
     <div class="movies-grid">
       <!-- cards injected here -->
     </div>
+
+
+    <button id="scrollToTopBtn" class="scroll-to-top-btn" title="Scroll to Top">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
   </div>
 </div>
 `;
