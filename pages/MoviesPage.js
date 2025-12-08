@@ -22,7 +22,9 @@ let keydownHandler;
 let keyupHandler;
 let expandBtnClickHandler;
 let searchInputHandler;
-let headerSearchInputHandler; // ⭐ Add this
+let headerSearchInputHandler;
+let scrollToTopHandler;
+
 
 function MoviesPage() {
   // CONFIG
@@ -94,9 +96,15 @@ const currentPlaylist = JSON.parse(
 const favoritesMoviesIds = Array.isArray(currentPlaylist.favouriteMovies)
   ? currentPlaylist.favouriteMovies
   : [];
+// Get continue watching data from current playlist
+const continueWatchingMovies = Array.isArray(currentPlaylist.continueWatchingMovies)
+  ? currentPlaylist.continueWatchingMovies
+  : [];
 
+const continueWatchingIds = continueWatchingMovies.map(item => Number(item.itemId));
 
-
+console.log("📺 Continue Watching Movies:", continueWatchingMovies);
+console.log("📺 Continue Watching IDs:", continueWatchingIds);
   // DOM helpers
   const qs = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
@@ -128,6 +136,24 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
     _movieCount: allFavoritesMovies.length
   };
 
+// Get continue watching movies
+const allContinueWatchingMovies = allMovies.filter((m) => {
+  const isInContinueWatching = continueWatchingIds.includes(Number(m.stream_id));
+  if (isInContinueWatching) {
+    console.log("✅ Found continue watching movie:", m.name, m.stream_id);
+  }
+  return isInContinueWatching;
+});
+
+console.log("📺 Total Continue Watching Movies:", allContinueWatchingMovies.length);
+
+const continueWatchingCategory = {
+  id: "-2",
+  name: "Continue Watching",
+  parent_id: 0,
+  movies: allContinueWatchingMovies,
+  _movieCount: allContinueWatchingMovies.length
+};
     
      // Normalize categories into our structure
   const normalizedCategories = allCats.map(c => ({
@@ -138,7 +164,7 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
     _movieCount: 0
   }));
 
-    categories = [favoritesCategory, ...normalizedCategories];
+categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategories];
 
 
     // Build map skeleton`
@@ -146,6 +172,8 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
     categories.forEach(c => moviesByCategory[c.id] = []);
 
       moviesByCategory["-1"] = allFavoritesMovies;
+      moviesByCategory["-2"] = allContinueWatchingMovies;
+
 
 
     // Group movies
@@ -156,8 +184,8 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
     }
 
     // Attach to categories and compute counts
-    categories.forEach(c => {
-          if (c.id === "-1") return;
+  categories.forEach(c => {
+  if (c.id === "-1" || c.id === "-2") return;
 
       c.movies = moviesByCategory[c.id] || [];
       c._movieCount = (c.movies && c.movies.length) || 0;
@@ -199,33 +227,46 @@ console.log("currentPage" , localStorage.getItem("currentPage"));
 visibleCount = adjustToFullRow(visibleCount + PAGE_SIZE);
 
 function buildMovieCardHTML(m) {
-  
   const img = m.stream_icon || "/assets/noImageFound.png";
   const title = m.name || m.title || "Untitled";
   const rating = isNaN(Number(m.rating_5based)) ? 0 : Math.min(5, Number(m.rating_5based));
   const desc = m.overview || m.description || m.plot || m.desc || "";
 
-
-    const isFav = favoritesMoviesIds.includes(m.stream_id);
-  const showFavHeartIcon = String(selectedCategoryId) === "-1"; // Always show in Favorites category
+  const isFav = favoritesMoviesIds.includes(m.stream_id);
+  const showFavHeartIcon = String(selectedCategoryId) === "-1";
   const showHeart = showFavHeartIcon || isFav;
 
+  // Check if this movie is in continue watching
+  const continueWatchingItem = continueWatchingMovies.find(
+    item => Number(item.itemId) === Number(m.stream_id)
+  );
   
+  const showProgress = continueWatchingItem && continueWatchingItem.resumeTime > 0;
+  
+  // Calculate progress percentage for continue watching
+  const progressPercent = continueWatchingItem && continueWatchingItem.duration > 0
+    ? Math.min(100, (continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
+    : 0;
+
   return `
     <div class="movie-card" data-movie-id="${m.stream_id}">
       <div class="movie-card-image-wrapper">
         <img src="${img}" alt="${escapeHtml(title)}" />
       </div>
       
-      <!-- Rating Badge -->
       <div class="movie-rating-badge">
         <img src="/assets/star.png" alt="star" class="star-icon" />
         <span>${rating.toFixed(1)}</span>
       </div>
 
-       <!-- **ADD THIS: Heart Icon** -->
       ${showHeart ? '<img src="/assets/heart.png" alt="heart-icon" class="movie-card-heart-icon"/>' : ''}
       
+      <!-- Continue Watching Progress Bar (using episode-progress classes) -->
+      ${showProgress ? `
+        <div class="episode-progress-bar">
+          <div class="episode-progress-fill" style="width: ${progressPercent.toFixed(1)}%"></div>
+        </div>
+      ` : ''}
       
       <div class="movie-hover">
         <img class="hover-play-btn" src="/assets/play.png" alt="play"/>
@@ -373,6 +414,27 @@ function setFocusOnHeaderSearch() { // header search (top)
     currentSection = "expand";
   }
 
+  function setFocusOnExpandBtn() {
+  removeAllFocus();
+  const btn = qs("#expandBtn");
+  if (btn) {
+    btn.classList.add("focused");
+    btn.scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
+  }
+  currentSection = "expand";
+}
+
+// ADD THIS NEW FUNCTION:
+function setFocusOnScrollBtn() {
+  removeAllFocus();
+  const btn = qs("#scrollToTopBtn");
+  if (btn) {
+    btn.classList.add("focused");
+    // Don't scroll - button is fixed position
+  }
+  currentSection = "scrollBtn";
+}
+
 function removeAllFocus() {
     qsa(".movie-card").forEach(c => c.classList.remove("focused"));
     qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
@@ -386,6 +448,10 @@ function removeAllFocus() {
     
     const expandBtn = qs("#expandBtn");
     if (expandBtn) expandBtn.classList.remove("focused");
+
+      const scrollBtn = qs("#scrollToTopBtn");
+  if (scrollBtn) scrollBtn.classList.remove("focused");
+
 }
 
   // Category click handler (delegated)
@@ -830,6 +896,13 @@ setFocusOnCategory(lastCategoryIndex);
     /* ---------- LEFT ---------- */
     if (isLeft) {
 
+        if (currentSection === "scrollBtn") {
+    // Go back to last focused card
+    setFocusOnCard(currentFocusIndex);
+    e.preventDefault();
+    return;
+  }
+
        if ((currentSection === "search" || currentSection === "header") && 
       (isSearchInputActive || isHeaderSearchActive)) {
     isSearchInputActive = false;
@@ -968,29 +1041,21 @@ setFocusOnCategory(lastCategoryIndex);
         return;
       }
 
-      else if (currentSection === "movies") {
-        // move right in movie grid
-        
-      //   if (currentFocusIndex < cards.length - 1) {
-      //     setFocusOnCard(currentFocusIndex + 1);
-      //   }
-      //   e.preventDefault();
-      //   return;
-      // }
-
-         const isRightmostColumn = (currentFocusIndex % cardsPerRow) === (cardsPerRow - 1);
-    const isLastCard = currentFocusIndex === cards.length - 1;
-    
-    if (isRightmostColumn || isLastCard) {
-      // Already at rightmost position - don't move
-      e.preventDefault();
-      return;
-    }
-    
-    setFocusOnCard(currentFocusIndex + 1);
+     else if (currentSection === "movies") {
+  const isRightmostColumn = (currentFocusIndex % cardsPerRow) === (cardsPerRow - 1);
+  const isLastCard = currentFocusIndex === cards.length - 1;
+  
+  if (isRightmostColumn || isLastCard) {
+    // Go to scroll-to-top button
+    setFocusOnScrollBtn();
     e.preventDefault();
     return;
   }
+  
+  setFocusOnCard(currentFocusIndex + 1);
+  e.preventDefault();
+  return;
+}
 
       else if (currentSection === "expand") {
         // from expand button → go to movies
@@ -1006,6 +1071,7 @@ setFocusOnCategory(lastCategoryIndex);
       ENTER → LONG PRESS (Fav) / SHORT PRESS (Open Detail)
 -------------------------------------------- */
 
+/* ---------- ENTER / SELECT ---------- */
 /* ---------- ENTER / SELECT ---------- */
 if (isEnter && currentSection === "movies") {
     e.preventDefault();
@@ -1040,6 +1106,70 @@ if (isEnter && currentSection === "movies") {
     }, LONG_PRESS_DURATION);
 
     return;
+}
+
+// REPLACE THIS ENTIRE BLOCK:
+if (isEnter && currentSection !== "movies") {
+    e.preventDefault();
+    
+    if (currentSection === "scrollBtn") {
+        console.log("🔝 Scroll button clicked!");
+        const container = qs(".movies-grid-container");
+        if (container) {
+            container.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        // Reset focus to first card
+        if (movieCards.length > 0) {
+            setTimeout(() => setFocusOnCard(0), 300);
+        }
+        return;
+    }
+    
+    if (currentSection === "search") {
+        // Toggle edit mode for category search
+        isSearchInputActive = !isSearchInputActive;
+        const input = qs(".search-category-input");
+        if (input) {
+            if (isSearchInputActive) {
+                input.focus();
+            } else {
+                input.blur();
+            }
+        }
+        return;
+    }
+    
+    if (currentSection === "header") {
+        // Toggle edit mode for header search
+        isHeaderSearchActive = !isHeaderSearchActive;
+        const input = qs(".search-input");
+        if (input) {
+            if (isHeaderSearchActive) {
+                input.focus();
+                const textLength = input.value.length;
+                input.setSelectionRange(textLength, textLength);
+            } else {
+                input.blur();
+            }
+        }
+        return;
+    }
+    
+    if (currentSection === "categories") {
+        // Select category
+        const items = qsa(".movies-category-item");
+        if (items[currentCategoryIndex]) {
+            items[currentCategoryIndex].click();
+        }
+        return;
+    }
+    
+    if (currentSection === "expand") {
+        // Toggle expand
+        const expandBtn = qs("#expandBtn");
+        if (expandBtn) expandBtn.click();
+        return;
+    }
 }
 
 
@@ -1093,6 +1223,13 @@ if (isEnter && currentSection !== "movies") {
         e.preventDefault();
         return;
     }
+     if (currentSection === "scrollBtn") {
+    const scrollBtn = qs("#scrollToTopBtn");
+    if (scrollBtn) scrollBtn.click();
+    e.preventDefault();
+    return;
+  }
+  
 }
 
   }
@@ -1285,6 +1422,14 @@ function handleHeaderSearch(searchQuery) {
 // Initialize & event registration
 setTimeout(() => {
     buildCategoryMap();
+
+    const continueWatchingCat = categories.find(c => c.id === "-2");
+console.log("🎬 Continue Watching Category:", continueWatchingCat);
+if (continueWatchingCat) {
+  console.log("📊 Continue Watching Count:", continueWatchingCat._movieCount);
+  console.log("📦 Continue Watching Movies:", continueWatchingCat.movies);
+}
+
     renderCategoriesUI();
     visibleCount = PAGE_SIZE;
     renderCards();
@@ -1524,6 +1669,26 @@ if (headerSearchEl) {
   });
 }
 
+
+// Scroll to top button handler
+// Scroll to top button handler (ALWAYS VISIBLE)
+const scrollToTopBtn = qs("#scrollToTopBtn");
+if (scrollToTopBtn) {
+  scrollToTopHandler = () => {
+    const container = qs(".movies-grid-container");
+    if (container) {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // Also reset focus to first card
+    if (currentSection === "movies" && movieCards.length > 0) {
+      setFocusOnCard(0);
+    }
+  };
+  
+  scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
+  scrollToTopBtn.addEventListener("click", scrollToTopHandler);
+}
+
     // cleanup
     MoviesPage.cleanup = () => {
       console.log("🧹 MoviesPage cleanup called - removing event listeners");
@@ -1566,6 +1731,11 @@ if (headerSearchEl) {
   if (headerSearchEl && headerSearchInputHandler) {
     headerSearchEl.removeEventListener("input", headerSearchInputHandler);
   }
+
+  const scrollToTopBtn = qs("#scrollToTopBtn");
+if (scrollToTopBtn && scrollToTopHandler) {
+  scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
+}
 
     };
 }, 0);
@@ -1610,6 +1780,14 @@ if (headerSearchEl) {
     <div class="movies-grid">
       <!-- cards injected here -->
     </div>
+
+     <button id="scrollToTopBtn" class="scroll-to-top-btn" title="Scroll to Top">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+
   </div>
 </div>
 

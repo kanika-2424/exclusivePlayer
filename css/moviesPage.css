@@ -557,3 +557,62 @@
     /* justify-content: center; */
     /* background-color: red; */
 }
+
+/* Scroll to Top Button - ALWAYS VISIBLE */
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  background: rgb(55, 155, 254);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.scroll-to-top-btn:hover {
+  background: rgb(55, 155, 254);
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.scroll-to-top-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.scroll-to-top-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.episode-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+
+.episode-progress-fill {
+  height: 100%;
+  background: #0099ff;
+  transition: width 0.3s ease;
+}
+
+
+.scroll-to-top-btn.focused {
+  background: #0099ff;
+  border: #0099ff 2px solid;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 3px white;
+}
