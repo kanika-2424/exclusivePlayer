@@ -53,15 +53,20 @@
     margin: 0;
 }
 
-.setting-card-focused,
-.setting-card:hover {
+
+
+
+.setting-card-focused
+ {
     background: rgba(55, 155, 254, 1);
     border-color: #1E90FF;
+    transform: scale(1.05);
 }
 
 .settings-options-container {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 20px;
 }
 
@@ -71,26 +76,26 @@
     gap: 15px;
     padding: 20px;
     background: rgba(0, 0, 0, 0.3);
-    border: 2px solid transparent;
+    border: 3px solid rgba(255, 255, 255, 0.24);
     border-radius: 12px;
     color: white;
     font-size: 20px;
     cursor: pointer;
 }
 
-.option-selected {
+/* .option-selected {
     border-color: #1E90FF;
     background: rgba(30, 144, 255, 0.1);
-}
+} */
 
 .settings-save-btn {
     margin-top: 20px;
-    padding: 15px 60px;
+    padding: 20px 60px;
     background: #1E90FF;
     color: white;
     border: none;
     border-radius: 50px;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     align-self: center;
 }
@@ -98,3 +103,101 @@
 .setting-header-user {
     margin-left: auto;
 }
+
+.option-focused {
+  /* background-color: #1E90FF; */
+  border: 3px solid #1E90FF;
+}
+
+.setting-btn-focused {
+  background-color: #1E90FF;
+  transform: scale(1.05);
+  border: white 2px solid;
+}
+
+.parental-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.clear-parental-btn {
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.clear-parental-btn:hover,
+.clear-focused {
+  color: var(--gold);
+}
+
+.parental-input-group {
+  margin-bottom: 15px;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.parental-input {
+  flex: 1;
+  padding: 20px;
+  font-size: large;
+  border: 3px solid rgba(255, 255, 255, 0.24);
+  background: #1a1a1a;
+  color: white;
+  border-radius: 5px;
+}
+
+.parental-input-focused {
+  border-color: #1E90FF;
+}
+
+
+
+/* ///////////////// */
+
+/* Radio Icon Styles */
+.radio-icon {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #666;
+  border-radius: 50%;
+  margin-right: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+/* Checkmark inside the circle */
+.radio-icon::after {
+  content: '✓';
+  font-size: 14px;
+  color: transparent;
+  transition: color 0.3s ease;
+}
+
+/* When option is selected */
+.option-selected .radio-icon {
+  border-color: #007bff;
+  background-color: #007bff;
+}
+
+.option-selected .radio-icon::after {
+  color: white;
+}
+
+
+
+
+.option-item span {
+  font-size: 16px;
+  color: #fff;
+}
+

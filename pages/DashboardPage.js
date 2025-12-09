@@ -2,7 +2,6 @@
 
 function DashboardPage() {
   setTimeout(() => {
-    console.log("Dashboard Page Loaded");
 
     // Collect all focusable elements in navigation order
     const focusableItems = [
@@ -294,6 +293,10 @@ else if (e.key === "ArrowRight") {
     };
 
   }, 0);
+
+
+    console.log("Dashboard Page Loaded");
+
 
   // ------------------ UI Rendering ------------------
 

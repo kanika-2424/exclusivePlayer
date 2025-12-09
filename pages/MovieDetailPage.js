@@ -383,7 +383,6 @@ function formatReleaseDate(raw) {
 
     ${isContinueWatchingMovie ? `
     <button class="action-button from-start-button" tabindex="0">
-      <span class="play-icon">↻</span>
       <span>Start from Beginning</span>
     </button>
   ` : ''}
