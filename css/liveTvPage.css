@@ -326,6 +326,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s;
+    z-index: 99;
 }
 
 .favorite-btn:hover {
@@ -755,6 +756,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 0;
+  z-index: 99;
 }
 
 .remove-history-btn:hover {
@@ -831,4 +833,146 @@
   border: 3px solid #0ea5e9 !important;
   outline: 3px solid #0ea5e9 !important;
   outline-offset: 2px;
+}
+/* Blurred channel card styling */
+.channel-card.channel-blurred .channel-logo {
+  filter: blur(20px);
+}
+
+.channel-card.channel-blurred .channel-name {
+  filter: blur(8px);
+}
+
+.blur-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.blur-overlay i {
+  font-size: 48px;
+  color: #fff;
+}
+
+/* Password Modal Styles */
+.password-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.password-modal {
+  background: #1a1a1a;
+  border: 2px solid #0ea5e9;
+  border-radius: 16px;
+  padding: 40px;
+  min-width: 500px;
+  box-shadow: 0 10px 50px rgba(14, 165, 233, 0.3);
+}
+
+.password-modal-header h2 {
+  color: #0ea5e9;
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.password-modal-header p {
+  color: #ccc;
+  margin: 0 0 30px 0;
+  font-size: 16px;
+}
+
+.password-modal-body {
+  margin-bottom: 30px;
+}
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-modal-input {
+  width: 100%;
+  padding: 15px 50px 15px 15px;
+  font-size: 18px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.password-modal-input:focus,
+.password-modal-input.password-input-focused {
+  border-color: #0ea5e9;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ccc;
+  cursor: pointer;
+  font-size: 20px;
+  transition: color 0.3s;
+}
+
+.eye-icon:hover {
+  color: #0ea5e9;
+}
+
+.password-modal-footer {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.password-modal-btn {
+  padding: 12px 40px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: bold;
+}
+
+.password-submit-btn {
+  background: #0ea5e9;
+  color: white;
+}
+
+.password-submit-btn:hover,
+.password-submit-btn.password-btn-focused {
+  background: #0284c7;
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+}
+
+.password-cancel-btn {
+  background: #666;
+  color: white;
+}
+
+.password-cancel-btn:hover,
+.password-cancel-btn.password-btn-focused {
+  background: #888;
+  transform: scale(1.05);
 }

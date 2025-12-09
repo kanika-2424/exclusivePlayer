@@ -248,8 +248,27 @@ let inFavoriteBtn = false; // ADD THIS LINE
 let inRemoveHistoryBtn = false; // ADD THIS
 
 
+let inPasswordModal = false;
+let pendingChannel = null; // Store channel data when password is required
+let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
+
+  // ===== CHECK IF CONTENT IS 18+ =====
+// ===== CHECK IF CONTENT IS 18+ =====
+const isAdultContent = (channelData) => {
+  if (!channelData) return false;
+  
+  const name = (channelData.name || "").toLowerCase();
+  const categoryName = (channelData.category_name || "").toLowerCase();
+  
+  // Check for adult keywords in channel name or category
+  const adultKeywords = ['18+', 'xxx', 'adult', 'porn', 'sexy', 'hot', 'erotic', 'sex'];
+  
+  return adultKeywords.some(keyword => 
+    name.includes(keyword) || categoryName.includes(keyword)
+  );
+};
 
 
   // ===== VIDEO ASPECT RATIO MANAGER =====
@@ -544,11 +563,425 @@ const setRemoveHistoryBtnFocus = (active) => {
   }
 };
 
+
+// ===== PASSWORD MODAL COMPONENT =====
+const PasswordModal = () => {
+  return `
+    <div class="password-modal-overlay" id="passwordModalOverlay">
+      <div class="password-modal">
+        <div class="password-modal-header">
+          <h2>Parental Control</h2>
+          <p>This content is restricted. Please enter your password.</p>
+        </div>
+        
+        <div class="password-modal-body">
+          <div class="password-input-wrapper">
+            <input 
+              type="password" 
+              id="passwordModalInput" 
+              class="password-modal-input" 
+              placeholder="Enter Password"
+              maxlength="20"
+            />
+            <i class="fa fa-eye eye-icon" id="passwordModalEye"></i>
+          </div>
+        </div>
+        
+        <div class="password-modal-footer">
+          <button class="password-modal-btn password-submit-btn">Submit</button>
+          <button class="password-modal-btn password-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// ===== SHOW PASSWORD MODAL =====
+const showPasswordModal = (channelData) => {
+  pendingChannel = channelData;
+  inPasswordModal = true;
+  inChannelGrid = false;
+  passwordModalFocusIndex = 0;
+  
+  // Add modal to page
+  const modalContainer = document.createElement('div');
+  modalContainer.innerHTML = PasswordModal();
+  document.body.appendChild(modalContainer.firstElementChild);
+  
+  // Focus input
+  setTimeout(() => {
+    const input = document.getElementById('passwordModalInput');
+    if (input) {
+      input.focus();
+    }
+    updatePasswordModalFocus();
+  }, 100);
+  
+  // Add eye icon toggle
+  const eyeIcon = document.getElementById('passwordModalEye');
+  const input = document.getElementById('passwordModalInput');
+  
+  if (eyeIcon && input) {
+    eyeIcon.addEventListener('click', () => {
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    });
+  }
+};
+
+// ===== HIDE PASSWORD MODAL =====
+// ===== HIDE PASSWORD MODAL (UPDATED) =====
+const hidePasswordModal = (clearPending = true) => {
+  const modal = document.getElementById('passwordModalOverlay');
+  if (modal) {
+    modal.remove();
+  }
+  inPasswordModal = false;
+  
+  // Only clear pending channel if explicitly requested (for cancel)
+  if (clearPending) {
+    pendingChannel = null;
+  }
+  
+  passwordModalFocusIndex = 0;
+  
+  // Return focus to channel grid
+  inChannelGrid = true;
+  const channels = qsa(".channel-card");
+  if (channels.length > 0) {
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  }
+};
+
+// ===== UPDATE PASSWORD MODAL FOCUS =====
+const updatePasswordModalFocus = () => {
+  const input = document.getElementById('passwordModalInput');
+  const submitBtn = document.querySelector('.password-submit-btn');
+  const cancelBtn = document.querySelector('.password-cancel-btn');
+  
+  // Remove all focus
+  if (input) input.classList.remove('password-input-focused');
+  if (submitBtn) submitBtn.classList.remove('password-btn-focused');
+  if (cancelBtn) cancelBtn.classList.remove('password-btn-focused');
+  
+  // Add focus to current element
+  if (passwordModalFocusIndex === 0 && input) {
+    input.classList.add('password-input-focused');
+    input.focus();
+  } else if (passwordModalFocusIndex === 1 && submitBtn) {
+    submitBtn.classList.add('password-btn-focused');
+  } else if (passwordModalFocusIndex === 2 && cancelBtn) {
+    cancelBtn.classList.add('password-btn-focused');
+  }
+};
+
+// ===== VERIFY PASSWORD =====
+// ===== VERIFY PASSWORD (UPDATED) =====
+// ===== VERIFY PASSWORD (FINAL VERSION) =====
+// ===== VERIFY PASSWORD (FIXED) =====
+const verifyPassword = () => {
+  const input = document.getElementById('passwordModalInput');
+  const enteredPassword = input?.value.trim() || "";
+  
+  console.log("🔑 Verifying password...", { enteredPassword }); // Debug
+  
+  if (!enteredPassword) {
+    console.log("❌ No password entered");
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "Please enter password");
+    } else {
+      alert("Please enter password");
+    }
+    return;
+  }
+  
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const savedPassword = selectedPlaylist.parentalPassword || "";
+  
+  console.log("🔑 Comparing passwords..."); // Debug
+  
+  if (!savedPassword) {
+    console.log("❌ No password set in settings");
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "No parental password set. Please set one in Settings.");
+    } else {
+      alert("No parental password set. Please set one in Settings.");
+    }
+    hidePasswordModal(true); // Clear pending
+    return;
+  }
+  
+  if (enteredPassword === savedPassword) {
+    console.log("✅ Password correct!");
+    
+    // Store the channel data BEFORE closing modal
+    const channelToPlay = { ...pendingChannel };
+    
+    console.log("📺 Channel to play:", channelToPlay); // Debug
+    
+    // Close modal WITHOUT clearing pendingChannel
+    hidePasswordModal(false);
+    
+    // Show success message
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("success", "Access granted");
+    }
+    
+    // Clear pendingChannel manually
+    pendingChannel = null;
+    
+    // Play channel after a small delay
+    setTimeout(() => {
+      if (channelToPlay && channelToPlay.stream_id) {
+        console.log("🎬 Now playing:", channelToPlay.name);
+        
+        // Call playChannel again, but this time it will bypass password check
+        // because we're passing the actual channel play logic
+        const videoWrapper = qs(".livetv-video-wrapper");
+        if (!videoWrapper) {
+          console.error("❌ Video wrapper not found!");
+          return;
+        }
+
+        // Get playlist data for stream URL
+        const currentPlaylistData = JSON.parse(
+          localStorage.getItem("currentPlaylistData")
+        );
+        const playlistLiveExtension = JSON.parse(
+          localStorage.getItem("selectedPlaylist")
+        );
+
+        if (!currentPlaylistData || !playlistLiveExtension) {
+          console.error("❌ Playlist data not found!");
+          return;
+        }
+
+        // Build stream URL
+        const liveVideoUrl = `${
+          currentPlaylistData.server_info.server_protocol
+        }://${currentPlaylistData.server_info.url}:${
+          currentPlaylistData.server_info.port
+        }/live/${currentPlaylistData.user_info.username}/${
+          currentPlaylistData.user_info.password
+        }/${channelToPlay.stream_id}.${
+          playlistLiveExtension.streamFormat || "m3u8"
+        }`;
+
+        console.log("🔗 Stream URL:", liveVideoUrl);
+
+        // Clean up existing player
+        if (window.livePlayer) {
+          try {
+            window.livePlayer.dispose();
+          } catch (err) {
+            console.warn("Player disposal error:", err);
+          }
+          window.livePlayer = null;
+        }
+
+        // Create player HTML
+        const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
+        const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
+        
+        const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+        const currentPlaylist = playlistsData.find(pl => pl.playlistName === selectedPlaylist.playlistName);
+        
+        const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
+        
+        if (isTs && hasFlowPlayer) {
+          videoWrapper.innerHTML = FlowLivePlayerComponent(
+            channelToPlay.stream_id,
+            liveVideoUrl,
+            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
+            "400px",
+            channelToPlay.name || "Unknown Channel"
+          );
+        } else if (hasLiveVideoJs) {
+          videoWrapper.innerHTML = LiveVideoJsComponent(
+            channelToPlay.stream_id,
+            liveVideoUrl,
+            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
+            "400px",
+            channelToPlay.name || "Unknown Channel"
+          );
+        } else {
+          videoWrapper.innerHTML = SimpleVideoPlayer(
+            channelToPlay.stream_id,
+            liveVideoUrl,
+            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
+            "400px",
+            channelToPlay.name || "Unknown Channel"
+          );
+          
+          // Initialize Video.js
+          setTimeout(() => {
+            const videoEl = document.getElementById("live-video-player");
+            const playPauseBtn = document.querySelector(".play-pause-btn");
+            const aspectBtn = document.querySelector(".aspect-ratio-btn");
+            
+            if (videoEl && typeof videojs !== "undefined") {
+              window.livePlayer = videojs(videoEl, {
+                controls: true,
+                autoplay: true,
+                preload: "auto",
+                fluid: true
+              });
+              
+              if (window.VideoAspectRatio) {
+                window.VideoAspectRatio.initialize(videoEl);
+              }
+              
+              window.livePlayer.on("waiting", () => {
+                qs(".live-video-loader")?.classList.remove("hidden");
+              });
+              
+              window.livePlayer.on("playing", () => {
+                qs(".live-video-loader")?.classList.add("hidden");
+              });
+              
+              window.livePlayer.on("error", (e) => {
+                console.error("❌ Player error:", e);
+              });
+              
+              // Play/Pause button handlers
+              if (playPauseBtn) {
+                const playIconSVG = `
+                  <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                `;
+                
+                const pauseIconSVG = `
+                  <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
+                    <rect x="6" y="4" width="4" height="16" rx="1"/>
+                    <rect x="14" y="4" width="4" height="16" rx="1"/>
+                  </svg>
+                `;
+                
+                playPauseBtn.style.display = "flex";
+                playPauseBtn.style.opacity = "1";
+                setTimeout(() => {
+                  playPauseBtn.style.opacity = "0";
+                  setTimeout(() => {
+                    playPauseBtn.style.display = "none";
+                  }, 300);
+                }, 2000);
+                
+                videoEl.addEventListener("pause", () => {
+                  playPauseBtn.style.display = "flex";
+                  playPauseBtn.style.opacity = "1";
+                  playPauseBtn.innerHTML = playIconSVG;
+                });
+                
+                videoEl.addEventListener("play", () => {
+                  playPauseBtn.style.display = "flex";
+                  playPauseBtn.style.opacity = "1";
+                  playPauseBtn.innerHTML = pauseIconSVG;
+                  setTimeout(() => {
+                    if (!videoEl.paused) {
+                      playPauseBtn.style.opacity = "0";
+                      setTimeout(() => {
+                        playPauseBtn.style.display = "none";
+                      }, 300);
+                    }
+                  }, 1500);
+                });
+                
+                playPauseBtn.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  togglePlayPause();
+                });
+                
+                videoEl.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  playPauseBtn.style.display = "flex";
+                  togglePlayPause();
+                });
+              }
+              
+              if (aspectBtn) {
+                const aspectLabel = aspectBtn.querySelector(".aspect-label");
+                if (aspectLabel && window.VideoAspectRatio) {
+                  aspectLabel.textContent = window.VideoAspectRatio.getCurrentRatio();
+                }
+                
+                aspectBtn.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  toggleAspectRatio();
+                });
+              }
+            }
+          }, 100);
+        }
+
+        // Update visual states
+        qsa(".channel-card").forEach(c => {
+          c.classList.remove("channel-card-selected", "channel-card-focused", "channel-card-playing");
+        });
+
+        const selectedCard = qs(`.channel-card[data-stream-id="${channelToPlay.stream_id}"]`);
+        if (selectedCard) {
+          selectedCard.classList.add("channel-card-selected", "channel-card-focused", "channel-card-playing");
+          
+          const allCards = qsa(".channel-card");
+          const cardIndex = Array.from(allCards).indexOf(selectedCard);
+          if (cardIndex !== -1) {
+            focusedChannelIndex = cardIndex;
+          }
+        }
+
+        // Update EPG
+        updateEPG(channelToPlay);
+
+        // Add to history
+        if (selectedCategoryId !== "channelHistory") {
+          const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+          const selectedChannelItem = streams.find(
+            (item) => item.stream_id == channelToPlay.stream_id
+          );
+          if (selectedChannelItem && typeof window.addItemToHistory === "function") {
+            window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+          }
+        }
+        
+        console.log("✅ Channel playback initiated");
+      }
+    }, 300);
+  } else {
+    console.log("❌ Password incorrect");
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "Incorrect password");
+    } else {
+      alert("Incorrect password");
+    }
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+  }
+};
+
   // Play channel function
 // ===== PLAY CHANNEL FUNCTION (UPDATED) =====
  // ===== PLAY CHANNEL FUNCTION (FIXED) =====
   const playChannel = (channelData) => {
     console.log("🎬 Playing channel:", channelData); // Debug log
+
+    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+  
+  if (hasParentalPassword && isAdultContent(channelData)) {
+    console.log("🔒 Adult content detected - showing password prompt");
+    showPasswordModal(channelData);
+    return; // Stop here and wait for password verification
+  }
     
     const videoWrapper = qs(".livetv-video-wrapper");
     if (!videoWrapper) {
@@ -600,7 +1033,6 @@ const setRemoveHistoryBtnFocus = (active) => {
 
     // Get stream format
     const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
     const currentPlaylist = playlistsData.find(pl => pl.playlistName === selectedPlaylist.playlistName);
     
     const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
@@ -1074,6 +1506,7 @@ const removeFromHistory = (channelData) => {
 
 // ===== RENDER CHANNELS =====
 // ===== RENDER CHANNELS =====
+// ===== RENDER CHANNELS =====
 const renderChannels = () => {
   const filtered = getFilteredCategories();
   
@@ -1084,7 +1517,7 @@ const renderChannels = () => {
   }
 
   const allChannels = selectedCat.channels || [];
-  const channelsToShow = allChannels.slice(0, currentChunk * pageSize);
+  const channelsToShow = allChannels
   
   const channelGrid = qs(".channel-grid");
   if (!channelGrid) return;
@@ -1106,13 +1539,20 @@ const renderChannels = () => {
   // Check if we're in history view
   const isHistoryView = selectedCategoryId === "channelHistory";
 
+  // Get parental control settings
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+
   const channelCardsHTML = channelsToShow.map(ch => {
     const isFav = favoritesList.some(fav => 
       (typeof fav === 'object' ? fav.stream_id : fav) === ch.stream_id
     );
     
+    // Check if content should be blurred
+    const shouldBlur = hasParentalPassword && isAdultContent(ch);
+    
     return `
-      <div class="channel-card" 
+      <div class="channel-card ${shouldBlur ? 'channel-blurred' : ''}" 
            data-stream-id="${ch.stream_id}" 
            data-name="${ch.name}" 
            data-logo="${ch.stream_icon}">
@@ -1138,6 +1578,7 @@ const renderChannels = () => {
           </div>
         </div>
         <div class="channel-name">${ch.name}</div>
+        ${shouldBlur ? '<div class="blur-overlay"><i class="fa fa-lock"></i></div>' : ''}
       </div>
     `;
   }).join("");
@@ -1187,7 +1628,27 @@ window.updateLiveTvSidebar = renderSidebarCategories;
   function handleClick(e) {
     console.log("Click detected on:", e.target);
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
-
+  if (inPasswordModal) {
+    // Submit button
+    if (e.target.classList.contains('password-submit-btn')) {
+      verifyPassword();
+      return;
+    }
+    
+    // Cancel button
+    if (e.target.classList.contains('password-cancel-btn')) {
+      hidePasswordModal();
+      return;
+    }
+    
+    // Click outside modal to close
+    if (e.target.id === 'passwordModalOverlay') {
+      hidePasswordModal();
+      return;
+    }
+    
+    return; // Block all other clicks when modal is open
+  }
 
     // Remove from history button click
 const removeHistoryBtn = e.target.closest(".remove-history-btn");
@@ -1321,6 +1782,45 @@ if (aspectBtn) {
     const isEnter = e.key === "Enter" || e.keyCode === 13;
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
+      if (inPasswordModal) {
+    if (e.key === "ArrowDown") {
+      passwordModalFocusIndex++;
+      if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
+      updatePasswordModalFocus();
+      e.preventDefault();
+      return;
+    }
+    
+    if (e.key === "ArrowUp") {
+      passwordModalFocusIndex--;
+      if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
+      updatePasswordModalFocus();
+      e.preventDefault();
+      return;
+    }
+    
+    if (e.key === "Enter") {
+      if (passwordModalFocusIndex === 1) {
+        // Submit
+        verifyPassword();
+      } else if (passwordModalFocusIndex === 2) {
+        // Cancel
+        hidePasswordModal();
+      }
+      e.preventDefault();
+      return;
+    }
+    
+    // Back button closes modal
+    if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
+      hidePasswordModal();
+      e.preventDefault();
+      return;
+    }
+    
+    return; // Block all other keys when modal is open
+  }
+  
     // Handle back button
  // Handle back button
     if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
@@ -2064,6 +2564,15 @@ if (isDown) {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeydown);
       
+
+        const modal = document.getElementById('passwordModalOverlay');
+  if (modal) {
+    modal.remove();
+  }
+  
+ 
+  
+
       // Dispose video player
       disposeLivePlayer();
       

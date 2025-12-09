@@ -187,123 +187,55 @@ console.log("READ VALUES:", {
       if (focusable[0]) addFocus(focusable[0]);
 
       // --- CLICK HANDLER -------------------------------------------------------
-      function handleClick(e) {
+   function handleClick(e) {
+    try {
+        var t = e && e.target ? e.target : null;
+        if (!t) return;
 
         // If toggle was clicked -> toggle password (do not focus input)
-var toggleEl = t.closest ? t.closest(".toggle-password") : null;
-if (toggleEl) {
-    togglePassword();
-    return;
-}
-
-        try {
-          var t = e && e.target ? e.target : null;
-          if (!t) return;
-
-          // If toggle was clicked -> toggle password (do not focus input)
-          var toggleEl = t.closest ? t.closest(".toggle-password") : null;
-          if (toggleEl) {
+        var toggleEl = t.closest ? t.closest(".toggle-password") : null;
+        if (toggleEl) {
             togglePassword();
             return;
-          }
+        }
 
-
-          if (t.closest && t.closest(".add-user-btn")) {
-    handleAddUserClick();
-    return;
-}
-          // If Add User clicked
-          // if (t.closest && t.closest(".add-user-btn")) {
-          //   // Use visible inputs values (they may not be focused)
-          //   var name = inputs[0] ? (inputs[0].value || "").trim() : "";
-          //   var username = inputs[1] ? (inputs[1].value || "").trim() : "";
-          //   var password = inputs[2] ? (inputs[2].value || "").trim() : "";
-
-          //   if (!name || !username || !password) {
-          //     if (typeof Toaster !== "undefined") {
-          //       Toaster.showToast("error", "Please complete all fields!");
-          //       return;
-          //     } else {
-          //       alert("Please complete all fields!");
-          //     }
-          //     return;
-          //   }
-
-          //   if (typeof loginApi !== "function") {
-          //     console.error("❌ loginApi function not found in global scope");
-          //     alert("Login system not initialized! Please check if API file is loaded.");
-          //     return;
-          //   }
-
-          //   try {
-          //     console.log("🚀 Calling loginApi...");
-          //     loginApi(username, password, name, false, "").then(function (response) {
-          //       try {
-          //         console.log("✅ Login API response:", response);
-          //         if (response) {
-          //           console.log("Login successful");
-          //           if (typeof LoginPage.cleanup === "function") LoginPage.cleanup();
-          //         } else {
-          //           console.log("❌ Login failed - no response");
-          //         }
-          //       } catch (e) {}
-          //     }).catch(function (err) {
-          //       console.error("❌ Login API error:", err);
-          //       if (typeof Toaster !== "undefined") {
-          //         Toaster.showToast("error", "Login failed: " + (err && err.message ? err.message : "error"));
-          //       } else {
-          //         alert("Login failed: " + (err && err.message ? err.message : "error"));
-          //       }
-          //     });
-          //   } catch (ex) {
-          //     console.error("loginApi call failed:", ex);
-          //   }
-          //   return;
-          // }
-
-          // List users button
-          if (t.closest && t.closest(".list-users-btn")) {
-            try {
-              var playlistsData = [];
-              try { playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]"); } catch (e) { playlistsData = []; }
-              if (playlistsData.length === 0) {
-                if (typeof Toaster !== "undefined") {
-                  Toaster.showToast("error", "No Playlists Available! Please Add One.");
-                } else {
-                  alert("No Playlists Available! Please Add One.");
-                }
-                return;
-              }
-              try { localStorage.setItem("currentPage", "playlist"); } catch (e) {}
-              if (typeof LoginPage.cleanup === "function") LoginPage.cleanup();
-              if (typeof Router !== "undefined" && Router.showPage) {
-                Router.showPage("playlist");
-              } else if (typeof navigateTo === "function") {
-                navigateTo("playlist-page");
-              } else {
-                console.error("Navigation function not found");
-              }
-            } catch (err) {}
+        // Add User Button
+        if (t.closest && t.closest(".add-user-btn")) {
+            handleAddUserClick();
             return;
-          }
+        }
 
-          // If an input is clicked, visually focus it but DO NOT call .focus() (prevents keyboard)
-          var inputClicked = t.closest ? t.closest(".input-group input") : null;
-          if (inputClicked) {
-            // Find the index of this input in focusable
+        // List Users Button
+        if (t.closest && t.closest(".list-users-btn")) {
+            var playlistsData = [];
+            try { playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]"); } catch (e) {}
+            if (playlistsData.length === 0) {
+                Toaster?.showToast("error", "No Playlists Available!");
+                return;
+            }
+            localStorage.setItem("currentPage", "playlist");
+            LoginPage.cleanup?.();
+            Router.showPage("playlist");
+            return;
+        }
+
+        // Input clicked → Just visually focus it
+        var inputClicked = t.closest ? t.closest(".input-group input") : null;
+        if (inputClicked) {
             for (var i = 0; i < focusable.length; i++) {
-              if (focusable[i] === inputClicked) {
-                visuallyFocusIndex(i);
-                break;
-              }
+                if (focusable[i] === inputClicked) {
+                    visuallyFocusIndex(i);
+                    break;
+                }
             }
             return;
-          }
-        } catch (outer) {
-          // swallow
-          try { console.warn("handleClick error", outer && outer.message); } catch (e) {}
         }
-      }
+
+    } catch (outer) {
+        console.warn("handleClick error", outer?.message);
+    }
+}
+
 
       // --- REMOTE / KEYBOARD HANDLER ------------------------------------------
       function handleKeydown(e) {
