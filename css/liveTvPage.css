@@ -834,6 +834,10 @@
   outline: 3px solid #0ea5e9 !important;
   outline-offset: 2px;
 }
+
+
+
+
 /* Blurred channel card styling */
 .channel-card.channel-blurred .channel-logo {
   filter: blur(20px);

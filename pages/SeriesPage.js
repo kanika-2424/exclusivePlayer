@@ -44,10 +44,7 @@ function SeriesPage() {
   let isRestoringState = false;
 const LONG_PRESS_DURATION = 500;
 
-const enterState = window.seriesPageEnterState;
-const pageState = window.seriesPageState;
 
-// Get favorites data (same structure as movies)
 const currentPlaylistName = JSON.parse(
   localStorage.getItem("selectedPlaylist")
 ).playlistName;
@@ -56,10 +53,232 @@ const currentPlaylist = JSON.parse(
   localStorage.getItem("playlistsData")
 ).filter((pl) => pl.playlistName === currentPlaylistName)[0];
 
+
+const adultsCategories = currentPlaylist.adultsCategories || [];
+const unlockedSeriesAdultCatIds = new Set();
+
+const enterState = window.seriesPageEnterState;
+const pageState = window.seriesPageState;
+
+// Get favorites data (same structure as movies)
+
 const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
   ? currentPlaylist.favouriteSeries
   : [];
 
+
+  // Check if a category is adult based on name patterns
+function isSeriesAdultCategory(categoryName) {
+  if (!categoryName) return false;
+  const normalized = categoryName.trim().toLowerCase();
+  
+  const configuredAdultCategories = adultsCategories || [];
+  if (configuredAdultCategories.includes(normalized)) return true;
+  
+  return /(adult|xxx|18\+|18\s*plus|sex|porn|erotic|nsfw|mature)/i.test(normalized);
+}
+
+// Check if a series belongs to an adult category
+function isSeriesAdult(series) {
+  if (!series) return false;
+  
+  const seriesCategoryIds = new Set();
+  if (series.category_id != null) {
+    seriesCategoryIds.add(Number(series.category_id));
+  }
+  if (Array.isArray(series.category_ids)) {
+    series.category_ids.forEach(cid => seriesCategoryIds.add(Number(cid)));
+  }
+  
+  for (const catId of seriesCategoryIds) {
+    const category = (window.seriesCategories || window.allseriesCategories || []).find(
+      c => (c.category_id === catId || c.id === catId)
+    );
+    if (category && isSeriesAdultCategory(category.category_name || category.name)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Determine if a series card should be blurred
+function shouldBlurSeries(series) {
+  const parentalLockEnabled = !!getParentalPassword();
+  if (!parentalLockEnabled) return false;
+  
+  if (!isSeriesAdult(series)) return false;
+  
+  const currentCategory = categories.find(c => String(c.id) === String(selectedCategoryId));
+  if (currentCategory && isSeriesAdultCategory(currentCategory.name)) {
+    return false;
+  }
+  
+  const specialCategoryIds = ["-1", "-2", "-3"];
+  return specialCategoryIds.includes(String(selectedCategoryId));
+}
+
+// Get parental password
+function getParentalPassword() {
+  try {
+    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    return selectedPlaylist.parentalPassword || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+// Show password modal
+function showPasswordModal(seriesId, seriesName, onSuccess) {
+  const modalHTML = `
+    <div class="password-modal-overlay" id="passwordModalOverlay">
+      <div class="password-modal">
+        <div class="password-modal-header">
+          <h2>Parental Control</h2>
+          <p>Enter password to access "${seriesName}"</p>
+        </div>
+        <div class="password-modal-body">
+          <div class="password-input-wrapper">
+            <input 
+              type="password" 
+              id="passwordModalInput" 
+              class="password-modal-input password-input-focused" 
+              placeholder="Enter Password"
+              autocomplete="off"
+            />
+            <i class="fa fa-eye password-eye-icon" id="passwordEyeIcon"></i>
+          </div>
+        </div>
+        <div class="password-modal-footer">
+          <button class="password-modal-btn password-submit-btn password-btn-focused" id="passwordSubmitBtn">
+            Submit
+          </button>
+          <button class="password-modal-btn password-cancel-btn" id="passwordCancelBtn">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  const overlay = document.getElementById('passwordModalOverlay');
+  const input = document.getElementById('passwordModalInput');
+  const eyeIcon = document.getElementById('passwordEyeIcon');
+  const submitBtn = document.getElementById('passwordSubmitBtn');
+  const cancelBtn = document.getElementById('passwordCancelBtn');
+  
+  let focusIndex = 0;
+  
+  setTimeout(() => input.focus(), 100);
+  
+  function togglePasswordVisibility() {
+    if (input.type === 'password') {
+      input.type = 'text';
+      eyeIcon.classList.remove('fa-eye');
+      eyeIcon.classList.add('fa-eye-slash');
+    } else {
+      input.type = 'password';
+      eyeIcon.classList.remove('fa-eye-slash');
+      eyeIcon.classList.add('fa-eye');
+    }
+  }
+  
+  eyeIcon.addEventListener('click', togglePasswordVisibility);
+  
+  function updateModalFocus() {
+    input.classList.remove('password-input-focused');
+    submitBtn.classList.remove('password-btn-focused');
+    cancelBtn.classList.remove('password-btn-focused');
+    
+    if (focusIndex === 0) {
+      input.classList.add('password-input-focused');
+      input.focus();
+    } else if (focusIndex === 1) {
+      submitBtn.classList.add('password-btn-focused');
+      input.blur();
+    } else if (focusIndex === 2) {
+      cancelBtn.classList.add('password-btn-focused');
+      input.blur();
+    }
+  }
+  
+  function verifyPassword() {
+    const enteredPassword = input.value.trim();
+    const correctPassword = getParentalPassword();
+    
+    if (!enteredPassword) {
+      if (typeof Toaster !== 'undefined') {
+        Toaster.showToast("error", "Please enter password");
+      }
+      return;
+    }
+    
+    if (enteredPassword === correctPassword) {
+      const currentCategory = categories.find(c => String(c.id) === String(selectedCategoryId));
+      if (currentCategory && isSeriesAdultCategory(currentCategory.name)) {
+        unlockedSeriesAdultCatIds.add(String(selectedCategoryId));
+      }
+      
+      if (typeof Toaster !== 'undefined') {
+        Toaster.showToast("success", "Access Granted");
+      }
+      closeModal();
+      if (onSuccess) onSuccess();
+    } else {
+      if (typeof Toaster !== 'undefined') {
+        Toaster.showToast("error", "Incorrect Password");
+      }
+      input.value = '';
+      input.focus();
+    }
+  }
+  
+  function closeModal() {
+    if (overlay) {
+      overlay.remove();
+    }
+    document.removeEventListener('keydown', handleModalKeydown);
+    localStorage.setItem("currentPage", "seriesPage");
+  }
+  
+  submitBtn.addEventListener('click', verifyPassword);
+  cancelBtn.addEventListener('click', closeModal);
+  
+  function handleModalKeydown(e) {
+    if (e.key === 'ArrowDown') {
+      focusIndex = Math.min(2, focusIndex + 1);
+      updateModalFocus();
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp') {
+      focusIndex = Math.max(0, focusIndex - 1);
+      updateModalFocus();
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft' && focusIndex > 0) {
+      focusIndex--;
+      updateModalFocus();
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight' && focusIndex < 2) {
+      focusIndex++;
+      updateModalFocus();
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      if (focusIndex === 0 || focusIndex === 1) {
+        verifyPassword();
+      } else if (focusIndex === 2) {
+        closeModal();
+      }
+      e.preventDefault();
+    } else if (e.key === 'Escape' || e.keyCode === 10009 || e.key === 'Back') {
+      closeModal();
+      e.preventDefault();
+    }
+  }
+  
+  document.addEventListener('keydown', handleModalKeydown);
+  localStorage.setItem("currentPage", "passwordModal");
+}
 
   // Get continue watching data from current playlist
 const continueWatchingSeries = Array.isArray(currentPlaylist.continueWatchingSeries)
@@ -154,24 +373,36 @@ categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategori
   }
 
   // Render sidebar categories (same markup as movies so CSS applies)
-  function renderCategoriesUI() {
-    const wrapper = qs(".movies-categories-list");
-    if (!wrapper) return;
-    wrapper.innerHTML = categories.map((c, idx) => `
-      <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
-        <span  style="display: -webkit-box; text-align: center;  margin: 0 auto; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 1em;" class="" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-        
-        
-      </div>
-    `).join("");
+function renderCategoriesUI() {
+  const wrapper = qs(".movies-categories-list");
+  if (!wrapper) return;
+  
+  wrapper.innerHTML = categories
+    .map((c, idx) => {
+      const isAdultCat = isSeriesAdultCategory(c.name);
+      const parentalLockEnabled = !!getParentalPassword();
+      const isCatUnlocked = unlockedSeriesAdultCatIds.has(String(c.id));
+      const shouldBlur = parentalLockEnabled && isAdultCat && !isCatUnlocked;
+      
+      return `
+      <div class="movies-category-item ${
+        String(c.id) === String(selectedCategoryId) ? "active" : ""
+      } ${shouldBlur ? 'movie-category-blurred' : ''}" 
+           data-id="${c.id}" 
+           data-idx="${idx}"
+           data-category-name="${escapeHtml(c.name)}">
+        ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
+        <span style="display: -webkit-box; text-align: center; margin: 0 auto; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 1em;" class="" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+      </div>`;
+    })
+    .join("");
 
-    // Show/hide expand button based on whether we have categories
-    const expandBtn = qs("#expandBtn");
-    const categoriesEls = Array.from(wrapper.querySelectorAll(".movies-category-item"));
-    if (expandBtn) {
-      expandBtn.style.display = categoriesEls.length > 0 ? "flex" : "none";
-    }
+  const expandBtn = qs("#expandBtn");
+  const categoriesEls = Array.from(wrapper.querySelectorAll(".movies-category-item"));
+  if (expandBtn) {
+    expandBtn.style.display = categoriesEls.length > 0 ? "flex" : "none";
   }
+}
 
   // Helper: ensure visibleCount aligns to full rows like movies page
   function adjustToFullRow(count) {
@@ -182,56 +413,59 @@ categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategori
   visibleCount = adjustToFullRow(visibleCount + PAGE_SIZE);
 
   // Build a single series card HTML (keeps classes identical to movies cards so CSS works)
-  function buildMovieCardHTML(s) {
-    
-    const img = s.cover || s.stream_icon || "/assets/noImageFound.png";
-    const title = s.name || s.title || "Untitled";
-    const rating = isNaN(Number(s.rating_5based)) ? 0 : Math.min(5, Number(s.rating_5based));
-    const desc = s.plot || s.overview || s.description || "";
-    const seriesId = s.series_id || s.stream_id || s.id || "";
+ function buildMovieCardHTML(s) {
+  const img = s.cover || s.stream_icon || "/assets/noImageFound.png";
+  const title = s.name || s.title || "Untitled";
+  const rating = isNaN(Number(s.rating_5based)) ? 0 : Math.min(5, Number(s.rating_5based));
+  const desc = s.plot || s.overview || s.description || "";
+  const seriesId = s.series_id || s.stream_id || s.id || "";
 
-
-      const isFav = favouriteSeriesIds.includes(Number(seriesId));
+  const isFav = favouriteSeriesIds.includes(Number(seriesId));
   const showFavHeartIcon = String(selectedCategoryId) === "-1";
   const showHeart = showFavHeartIcon || isFav;
 
-  // Check if this series is in continue watching
-const continueWatchingItem = continueWatchingSeries.find(
-  item => Number(item.itemId) === Number(seriesId)
-);
+  const continueWatchingItem = continueWatchingSeries.find(
+    item => Number(item.itemId) === Number(seriesId)
+  );
 
-const showProgress = continueWatchingItem && continueWatchingItem.resumeTime > 0;
+  const showProgress = continueWatchingItem && continueWatchingItem.resumeTime > 0;
+  const progressPercent = continueWatchingItem && continueWatchingItem.duration > 0
+    ? Math.min(100, (continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
+    : 0;
 
-const progressPercent = continueWatchingItem && continueWatchingItem.duration > 0
-  ? Math.min(100, (continueWatchingItem.resumeTime / continueWatchingItem.duration) * 100)
-  : 0;
+  const shouldBlur = shouldBlurSeries(s);
 
-
-    return `
-      <div class="movie-card" data-movie-id="${seriesId}">
-        <div class="movie-card-image-wrapper">
-          <img src="${img}" alt="${escapeHtml(title)}" onerror="this.onerror=null;this.src='/assets/noImageFound.png'"/>
-        </div>
-
-        <div class="movie-rating-badge">
-          <img src="/assets/star.png" alt="star" class="star-icon" />
-          <span>${rating.toFixed(1)}</span>
-        </div>
-
-              ${showHeart ? '<img src="/assets/heart.png" alt="heart-icon" class="movie-card-heart-icon"/>' : ''}
-
-
-        <div class="movie-hover">
-          <img class="hover-play-btn" src="/assets/play.png" alt="play"/>
-          <div class="hover-title">${escapeHtml(title)}</div>
-        
-        <span style="display: -webkit-box; margin: 0 auto; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 3em;" class="description-text">${escapeHtml(desc)}</span>
-
-
-        </div>
+  return `
+    <div class="movie-card ${shouldBlur ? 'movie-blurred' : ''}" 
+         data-movie-id="${seriesId}"
+         data-is-adult="${shouldBlur}">
+      <div class="movie-card-image-wrapper">
+        <img src="${img}" alt="${escapeHtml(title)}" onerror="this.onerror=null;this.src='/assets/noImageFound.png'"/>
       </div>
-    `;
-  }
+
+      <div class="movie-rating-badge">
+        <img src="/assets/star.png" alt="star" class="star-icon" />
+        <span>${rating.toFixed(1)}</span>
+      </div>
+
+      ${showHeart ? '<img src="/assets/heart.png" alt="heart-icon" class="movie-card-heart-icon"/>' : ''}
+      
+      ${showProgress ? `
+        <div class="episode-progress-bar">
+          <div class="episode-progress-fill" style="width: ${progressPercent.toFixed(1)}%"></div>
+        </div>
+      ` : ''}
+      
+      ${shouldBlur ? '<div class="movie-blur-overlay"><i class="fa fa-lock"></i></div>' : ''}
+
+      <div class="movie-hover">
+        <img class="hover-play-btn" src="/assets/play.png" alt="play"/>
+        <div class="hover-title">${escapeHtml(title)}</div>
+        <span style="display: -webkit-box; margin: 0 auto; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 3em;" class="description-text">${escapeHtml(desc)}</span>
+      </div>
+    </div>
+  `;
+}
 
   // Simple escaping to avoid XSS in injected strings
   function escapeHtml(str) {
@@ -384,41 +618,81 @@ if (scrollBtn) scrollBtn.classList.remove("focused");
   }
 
   // Category click handler (delegated)
-  function onCategoryClick(e) {
-    const cat = e.target.closest(".movies-category-item");
-    if (!cat) return;
-    const catId = String(cat.dataset.id);
-    selectedCategoryId = catId;
-    visibleCount = PAGE_SIZE;
-    qsa(".movies-category-item").forEach(i => i.classList.remove("active"));
-    cat.classList.add("active");
-    renderCards();
-    setTimeout(() => setFocusOnCard(0), 50);
+ function onCategoryClick(e) {
+  const cat = e.target.closest(".movies-category-item");
+  if (!cat) return;
+  
+  const catId = String(cat.dataset.id);
+  const catName = cat.dataset.categoryName || categories.find(c => String(c.id) === catId)?.name;
+  const isAdultCat = isSeriesAdultCategory(catName);
+  const isUnlocked = unlockedSeriesAdultCatIds.has(catId);
+  
+  if (isAdultCat && !!getParentalPassword() && !isUnlocked) {
+    showPasswordModal(null, catName, () => {
+      unlockedSeriesAdultCatIds.add(catId);
+      selectedCategoryId = catId;
+      visibleCount = PAGE_SIZE;
+      qsa(".movies-category-item").forEach((i) => i.classList.remove("active"));
+      cat.classList.add("active");
+      renderCards();
+      setTimeout(() => setFocusOnCard(0), 50);
+    });
+    return;
   }
+  
+  selectedCategoryId = catId;
+  visibleCount = PAGE_SIZE;
+  qsa(".movies-category-item").forEach(i => i.classList.remove("active"));
+  cat.classList.add("active");
+  renderCards();
+  setTimeout(() => setFocusOnCard(0), 50);
+}
 
   // Card click handler (delegated)
-  function onCardClick(e) {
-    const card = e.target.closest(".movie-card");
-    if (!card) return;
-    const seriesId = Number(card.dataset.seriesId);
-    // Try common property names in data
-    const seriesObj = (window.allSeriesStreams || []).find(s => Number(s.series_id || s.stream_id || s.id) === Number(seriesId));
-    if (seriesObj) {
-      localStorage.setItem("selectedSeriesData", JSON.stringify(seriesObj));
-      localStorage.setItem("selectedSeriesId", seriesId);
-      localStorage.setItem("seriesSelectedCategoryId", selectedCategoryId);
-      localStorage.setItem("seriesCategoryIndex", currentCategoryIndex);
-      localStorage.setItem("seriesCardIndex", currentFocusIndex);
-      localStorage.setItem("currentPage", "seriesDetailPage");
-      const lp = qs("#loading-progress");
-      if (lp) lp.style.display = "none";
-      if (typeof navigateTo === "function") {
-        navigateTo("series-detail-page");
-      } else {
-        console.log("Navigate to series detail", seriesId);
-      }
+ function onCardClick(e) {
+  const card = e.target.closest(".movie-card");
+  if (!card) return;
+  
+  const seriesId = Number(card.dataset.movieId);
+  const isAdult = card.dataset.isAdult === "true";
+  
+  if (isAdult) {
+    const seriesObj = (window.allSeriesStreams || []).find(
+      s => Number(s.series_id || s.stream_id || s.id) === seriesId
+    );
+    const seriesName = seriesObj ? (seriesObj.name || seriesObj.title || "Series") : "Series";
+    
+    showPasswordModal(seriesId, seriesName, () => {
+      openSeriesDetail(seriesId);
+    });
+    return;
+  }
+  
+  openSeriesDetail(seriesId);
+}
+
+function openSeriesDetail(seriesId) {
+  const seriesObj = (window.allSeriesStreams || []).find(
+    s => Number(s.series_id || s.stream_id || s.id) === seriesId
+  );
+  if (seriesObj) {
+    localStorage.setItem("selectedSeriesData", JSON.stringify(seriesObj));
+    localStorage.setItem("selectedSeriesId", seriesId);
+    localStorage.setItem("seriesSelectedCategoryId", selectedCategoryId);
+    localStorage.setItem("seriesCategoryIndex", currentCategoryIndex);
+    localStorage.setItem("seriesCardIndex", currentFocusIndex);
+    localStorage.setItem("currentPage", "seriesDetailPage");
+    
+    const lp = qs("#loading-progress");
+    if (lp) lp.style.display = "none";
+    
+    if (typeof navigateTo === "function") {
+      navigateTo("series-detail-page");
+    } else if (typeof Router !== "undefined" && Router.showPage) {
+      Router.showPage("series-detail-page");
     }
   }
+}
 
 function toggleFavoriteItem(seriesId) {
   console.log("🎯 toggleFavoriteItem called with seriesId:", seriesId, "type:", typeof seriesId);
@@ -1101,6 +1375,8 @@ if (isEnter && currentSection !== "series") {
     if (enterState.enterPressTimer) {
       clearTimeout(enterState.enterPressTimer);
       enterState.enterPressTimer = null;
+        enterState.isProcessingEnter = false;
+
     }
     
     // ⭐ RESET FLAGS with a small delay
@@ -1117,45 +1393,40 @@ if (isEnter && currentSection !== "series") {
   }
 
   // ⭐ SHORT PRESS - Open detail page
-  if (enterState.enterPressTimer) {
-    clearTimeout(enterState.enterPressTimer);
-    enterState.enterPressTimer = null;
-    enterState.isProcessingEnter = false;
-    
-    console.log("➡️ SHORT PRESS → OPEN SERIES DETAIL");
-    
-    const card = movieCards[currentFocusIndex];
-    if (!card) {
-      console.log("⚠️ No card at index", currentFocusIndex);
-      e.preventDefault();
-      return;
-    }
-
-    const seriesId = Number(card.dataset.movieId);
-    console.log("📍 Opening detail for series:", seriesId, "at index:", currentFocusIndex);
-    
-    const seriesObj = (window.allSeriesStreams || []).find(
-      (s) => Number(s.series_id || s.stream_id || s.id) === seriesId
-    );
-
-    if (seriesObj) {
-      localStorage.setItem("selectedSeriesData", JSON.stringify(seriesObj));
-      localStorage.setItem("selectedSeriesId", seriesId);
-      localStorage.setItem("seriesSelectedCategoryId", selectedCategoryId);
-      localStorage.setItem("seriesCategoryIndex", currentCategoryIndex);
-      localStorage.setItem("seriesCardIndex", currentFocusIndex);
-      localStorage.setItem("currentPage", "seriesDetailPage");
-
-      if (typeof Router !== "undefined" && Router.showPage) {
-        Router.showPage("series-detail-page");
-      } else if (typeof navigateTo === "function") {
-        navigateTo("series-detail-page");
-      }
-    }
-    
+// Inside handleKeyUp, replace the SHORT PRESS section:
+if (enterState.enterPressTimer) {
+  clearTimeout(enterState.enterPressTimer);
+  enterState.enterPressTimer = null;
+  enterState.isProcessingEnter = false;
+  
+  console.log("➡️ SHORT PRESS → OPEN SERIES DETAIL");
+  
+  const card = movieCards[currentFocusIndex];
+  if (!card) {
+    console.log("⚠️ No card at index", currentFocusIndex);
     e.preventDefault();
     return;
   }
+
+  const seriesId = Number(card.dataset.movieId);
+  const isAdult = card.dataset.isAdult === "true";
+  
+  if (isAdult) {
+    const seriesObj = (window.allSeriesStreams || []).find(
+      s => Number(s.series_id || s.stream_id || s.id) === seriesId
+    );
+    const seriesName = seriesObj ? (seriesObj.name || seriesObj.title || "Series") : "Series";
+    
+    showPasswordModal(seriesId, seriesName, () => {
+      openSeriesDetail(seriesId);
+    });
+  } else {
+    openSeriesDetail(seriesId);
+  }
+  
+  e.preventDefault();
+  return;
+}
   
   // ⭐ Fallback reset
   enterState.isProcessingEnter = false;

@@ -583,7 +583,6 @@ const PasswordModal = () => {
               placeholder="Enter Password"
               maxlength="20"
             />
-            <i class="fa fa-eye eye-icon" id="passwordModalEye"></i>
           </div>
         </div>
         
@@ -957,7 +956,7 @@ const verifyPassword = () => {
   } else {
     console.log("❌ Password incorrect");
     if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Incorrect password");
+      Toaster.showToast("error", "Incorrect Password");
     } else {
       alert("Incorrect password");
     }
