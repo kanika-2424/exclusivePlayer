@@ -424,12 +424,20 @@ function decodeBase64(str) {
   }
 }
 
-// blocking keys when loading is shown
 let loginCancelled = false;
 let keyBlockHandler = null;
+let keyBlockActive = false;
 
- function enableKeyBlock(onCancel) {
+function enableKeyBlock(onCancel) {
+  // ✅ If already active, disable first to clean up
+  if (keyBlockActive) {
+    console.log("⚠️ KeyBlock already active, cleaning up first...");
+    disableKeyBlock();
+  }
+
   loginCancelled = false;
+  keyBlockActive = true;
+  console.log("🔒 KeyBlock ENABLED");
 
   keyBlockHandler = (e) => {
     if (e.key === "Escape" || e.keyCode === 10009) {
@@ -453,11 +461,18 @@ let keyBlockHandler = null;
   document.addEventListener("keydown", keyBlockHandler, true);
 }
 
- function disableKeyBlock() {
+function disableKeyBlock() {
+  console.log("🔓 KeyBlock DISABLED");
   if (keyBlockHandler) {
     document.removeEventListener("keydown", keyBlockHandler, true);
     keyBlockHandler = null;
   }
+  keyBlockActive = false;
+  loginCancelled = false;
+}
+
+function isLoginCancelled() {
+  return loginCancelled;
 }
 
  function isLoginCancelled() {

@@ -90,6 +90,21 @@ Toaster(); // Initialize Toaster
     if (isLogin && selectedPlaylist) {
       // User already logged in with playlist
       console.log("✅ User is logged in, loading dashboard...");
+
+
+        const allPlaylists = JSON.parse(localStorage.getItem('playlistsData')) || [];
+  const fullPlaylistData = allPlaylists.find(p => p.playlistName === selectedPlaylist.playlistName);
+  
+  if (fullPlaylistData) {
+    // ✅ Merge the full data back into selectedPlaylist to restore parentalPassword, etc.
+    const restoredPlaylist = {
+      ...fullPlaylistData,
+      playlistUrl: selectedPlaylist.playlistUrl || fullPlaylistData.playlistUrl,
+      playlistUsername: selectedPlaylist.playlistUsername || fullPlaylistData.playlistUsername
+    };
+    localStorage.setItem('selectedPlaylist', JSON.stringify(restoredPlaylist));
+    selectedPlaylist = restoredPlaylist; // Update the variable too
+  }
       
       // Check if we already have data in localStorage
       if (currentPlaylistDataRaw) {
@@ -135,16 +150,21 @@ Toaster(); // Initialize Toaster
 
             updateLoadingPercentage(100, "Ready!");
             
-            setTimeout(() => {
-              if (loadingOverlay) {
-                loadingOverlay.classList.add("hidden");
-              }
-              resetLoadingPercentage();
-              localStorage.setItem("currentPage", "dashboard");
-              // navigateTo("dashboard-page");
-              Router.showPage('dashboard')
+         setTimeout(() => {
+  if (loadingOverlay) {
+    loadingOverlay.classList.add("hidden");
+  }
+  resetLoadingPercentage();
+  
+  // ✅ Only navigate to dashboard if we're still on splash/loading
+  const currentPage = localStorage.getItem("currentPage");
+  if (!currentPage || currentPage === "splash" || currentPage === "loading") {
+    localStorage.setItem("currentPage", "dashboard");
+    Router.showPage('dashboard');
+  }
+  // ✅ Otherwise, user already navigated somewhere - don't interrupt them
 
-            }, 500);
+}, 500);
             
           } catch (error) {
             console.error("❌ Failed to load data on refresh:", error);

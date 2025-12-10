@@ -18,15 +18,15 @@ function LoginPage() {
 }
 
 
-  window.enableKeyBlock = function(callback) {
-    keyBlockCallback = callback;
-    try { console.log("🔒 Key blocking enabled"); } catch (e) {}
-  };
+  // window.enableKeyBlock = function(callback) {
+  //   keyBlockCallback = callback;
+  //   try { console.log("🔒 Key blocking enabled"); } catch (e) {}
+  // };
 
-  window.disableKeyBlock = function() {
-    keyBlockCallback = null;
-    try { console.log("🔓 Key blocking disabled"); } catch (e) {}
-  };
+  // window.disableKeyBlock = function() {
+  //   keyBlockCallback = null;
+  //   try { console.log("🔓 Key blocking disabled"); } catch (e) {}
+  // };
 
   // DOM helpers
   function qs(selector) {

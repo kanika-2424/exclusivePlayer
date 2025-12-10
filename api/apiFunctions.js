@@ -1,5 +1,5 @@
-window.enableKeyBlock = window.enableKeyBlock || function () {};
-window.disableKeyBlock = window.disableKeyBlock || function () {};
+// window.enableKeyBlock = window.enableKeyBlock || function () {};
+// window.disableKeyBlock = window.disableKeyBlock || function () {};
 
 
 const TMBD_API_KEY = localStorage.getItem("tmbdId") 
@@ -144,8 +144,13 @@ async function loginApi(
         }
 
         if (data && data.user_info) {
+          
           if (data.user_info.auth === 1 && data.user_info.status === "Active") {
+            const existingPlaylist = existingPlaylists.find(p => p.playlistName === playlistName) || {};
+
             const newPlaylist = {
+                ...existingPlaylist,  // ✅ Preserve existing data
+
               playlistName,
               playlistUrl,
               playlistUsername: username,
@@ -275,7 +280,11 @@ async function loginApi(
 
         if (data && data.user_info) {
           if (data.user_info.auth === 1 && data.user_info.status === "Active") {
+            const existingPlaylist = existingPlaylists.find(p => p.playlistName === playlistName) || {};
+
             const newPlaylist = {
+                ...existingPlaylist,  // ✅ Preserve existing data
+
               playlistName,
               playlistUrl: apiUrl,
               playlistUsername: username,
