@@ -40,6 +40,7 @@ function SeriesPage() {
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
   let scrollToTopHandler; // Add this line
+let isMenuDotsActive = false; // Track if menu dots are focused
 
   let isRestoringState = false;
 const LONG_PRESS_DURATION = 500;
@@ -66,7 +67,15 @@ const favouriteSeriesIds = Array.isArray(currentPlaylist.favouriteSeries)
   ? currentPlaylist.favouriteSeries
   : [];
 
-
+function setFocusOnMenuDots() {
+  removeAllFocus();
+  const menuDots = document.querySelector('.menu-dots');
+  if (menuDots) {
+    menuDots.classList.add('focused');
+  }
+  currentSection = "menuDots";
+  isMenuDotsActive = true;
+}
   // Check if a category is adult based on name patterns
 function isSeriesAdultCategory(categoryName) {
   if (!categoryName) return false;
@@ -617,7 +626,9 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
 
     const scrollBtn = qs("#scrollToTopBtn");
 if (scrollBtn) scrollBtn.classList.remove("focused");
-  }
+  const menuDots = qs(".menu-dots");
+  if (menuDots) menuDots.classList.remove("focused");
+}
 
   // Category click handler (delegated)
  function onCategoryClick(e) {
@@ -949,6 +960,14 @@ else if (currentSection === "categories") {
 
     /* ---------- DOWN ---------- */
     if (isDown) {
+
+        if (currentSection === "menuDots") {
+    // Open sidebar on down
+    openSidebar('seriesPage');
+    e.preventDefault();
+    return;
+  }
+
       if ((currentSection === "search" || currentSection === "header") &&
         (isSearchInputActive || isHeaderSearchActive)) {
         isSearchInputActive = false;
@@ -1087,6 +1106,13 @@ else if (currentSection === "categories") {
     /* ---------- LEFT ---------- */
     if (isLeft) {
 
+        if (currentSection === "menuDots") {
+    setFocusOnHeaderSearch();
+    e.preventDefault();
+    return;
+  }
+
+
       if (currentSection === "scrollBtn") {
   setFocusOnCard(currentFocusIndex);
   e.preventDefault();
@@ -1171,15 +1197,14 @@ else if (currentSection === "categories") {
         if (headerContainer) headerContainer.classList.remove("focused");
       }
 
-      if (currentSection === "header") {
-        // From header search → go to lastFocusedCategory
-        const input = qs(".search-category-input");
-        if (input) input.blur();
-        setFocusOnCategory(lastFocusedCategory);
-
-        e.preventDefault();
-        return;
-      } else if (currentSection === "search") {
+     if (currentSection === "header") {
+    // From header search → go to menu dots
+    const headerInput = qs(".search-input");
+    if (headerInput) headerInput.blur();
+    setFocusOnMenuDots();
+    e.preventDefault();
+    return;
+  }else if (currentSection === "search") {
         // Leaving search → remove cursor + go to first category
         const input = qs(".search-category-input");
         if (input) input.blur();
@@ -1283,6 +1308,12 @@ if (isEnter && currentSection === "series") {
 
 // ⭐ ENTER handling for other sections (search, categories, expand)
 if (isEnter && currentSection !== "series") {
+
+    if (currentSection === "menuDots") {
+    console.log("📂 Opening sidebar from menu dots");
+    openSidebar('seriesPage');
+    return;
+  }
 
    if (currentSection === "scrollBtn") {
         console.log("🔝 Scroll button clicked!");
@@ -1506,6 +1537,19 @@ function handleHeaderSearch(searchQuery) {
   // Initialize & event registration
  setTimeout(() => {
     buildCategoryMap();
+
+     const sortingContainer = document.createElement('div');
+    sortingContainer.innerHTML = SortingDialog();
+    document.body.appendChild(sortingContainer);
+    
+    // Attach sorting dialog events
+    attachSortingDialogEvents();
+    // END OF NEW ADDITIONS
+    
+    renderCategoriesUI();
+    visibleCount = PAGE_SIZE;
+    renderCards();
+    
     renderCategoriesUI();
     visibleCount = PAGE_SIZE;
     renderCards();
@@ -1590,6 +1634,19 @@ function handleHeaderSearch(searchQuery) {
       localStorage.removeItem("seriesCategoryIndex");
       localStorage.removeItem("seriesCardIndex");
     }
+
+    const menuKeyHandler = (e) => {
+  const currentPage = localStorage.getItem('currentPage');
+  if (currentPage !== 'seriesPage') return;
+  
+  // Handle Menu/ContextMenu key
+  if (e.key === 'Menu' || e.key === 'ContextMenu' || e.key === 'F2') {
+    openSidebar('seriesPage');
+    e.preventDefault();
+  }
+};
+
+document.addEventListener('keydown', menuKeyHandler);
 
     // Expand toggle button
     const expandBtn = qs("#expandBtn");
@@ -1703,6 +1760,14 @@ if (headerSearchEl) {
       searchEl.removeEventListener("input", searchInputHandler);
       searchEl.addEventListener("input", searchInputHandler);
 
+      // Add after the scroll button handler
+const menuDots = document.querySelector('.menu-dots');
+if (menuDots) {
+  menuDots.addEventListener('click', () => {
+    openSidebar('seriesPage');
+  });
+}
+
 
       // Scroll to top button handler
 const scrollToTopBtn = qs("#scrollToTopBtn");
@@ -1769,6 +1834,8 @@ if (scrollToTopBtn && scrollToTopHandler) {
   scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
 }
 
+  document.removeEventListener('keydown', menuKeyHandler);
+
     };
 }, 0);
 
@@ -1797,6 +1864,16 @@ const time = formatTime(now);
           <div class="menu-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
       </div>
   </header>
+
+    <!-- ADD THESE LINES HERE (right after header): -->
+  <div class="sidebar-container-movie" style="display: none;">
+    ${Sidebar({ from: "seriesPage" })}
+  </div>
+
+  <!-- Add Sorting Dialog -->
+  ${SortingDialog()}
+  <!-- END OF NEW ADDITIONS -->
+
 
   <div class="movies-sidebar">
       <div class="search-category-name">

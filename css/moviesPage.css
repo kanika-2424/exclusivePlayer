@@ -197,7 +197,7 @@
 .hover-play-btn {
     width: 70px !important;
     height: 70px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 60px !important;
 }
 
 /* Bottom Content Block */
@@ -213,7 +213,7 @@
     font-family: Poppins;
     font-weight: 600;
     font-size: 20px;
-    margin-bottom: 4px;
+    margin-bottom: 24px;
 }
 
 .hover-time {
@@ -792,4 +792,75 @@
 .movie-blur-overlay i {
   font-size: 48px;
   color: white;
+}
+
+.sidebar-container-movie {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 400px;
+    max-width: 90vw;
+    height: 100vh;
+    z-index: 9999;
+}
+
+.sidebar-main-container {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+}
+
+.sidebar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 60px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.sidebar-link:hover,
+.sidebar-link.selected,
+.sidebar-link.focused {
+    background: rgba(231, 161, 1, 0.3);
+    border: white 2px solid;
+    width: 255px;
+}
+
+.sidebar-link span {
+    width: 30px;
+}
+
+.sidebar-link i {
+    font-size: 18px;
+}
+
+.menu-dots.focused {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.menu-dots {
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.menu-dots:hover,
+.menu-dots.focused {
+    background: rgba(255, 255, 255, 0.15);
 }

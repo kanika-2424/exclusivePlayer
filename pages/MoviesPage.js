@@ -44,6 +44,7 @@ function MoviesPage() {
   let currentFocusIndex = 0; // focused card index
   let currentCategoryIndex = 0; // focused category index for sidebar
   let isExpanded = false;
+let isMenuDotsActive = false; // Track if menu dots are focused
 
     // After CONFIG section, add:
   const currentPlaylistName = JSON.parse(
@@ -72,6 +73,17 @@ function isMovieAdultCategory(categoryName) {
   
   // Check against common adult keywords
   return /(adult|xxx|18\+|18\s*plus|sex|porn|erotic|nsfw|mature)/i.test(normalized);
+}
+
+
+function setFocusOnMenuDots() {
+  removeAllFocus();
+  const menuDots = document.querySelector('.menu-dots');
+  if (menuDots) {
+    menuDots.classList.add('focused');
+  }
+  currentSection = "menuDots";
+  isMenuDotsActive = true;
 }
 
 // Check if a movie belongs to an adult category
@@ -776,7 +788,9 @@ function buildMovieCardHTML(m) {
 
     const scrollBtn = qs("#scrollToTopBtn");
     if (scrollBtn) scrollBtn.classList.remove("focused");
-  }
+  const menuDots = qs(".menu-dots");
+  if (menuDots) menuDots.classList.remove("focused");
+}
 
   // Category click handler (delegated)
 function onCategoryClick(e) {
@@ -1133,6 +1147,15 @@ function openMovieDetail(movieId) {
 
     /* ---------- DOWN ---------- */
     if (isDown) {
+
+        if (currentSection === "menuDots") {
+    // Open sidebar on down
+    openSidebar('moviesPage');
+    e.preventDefault();
+    return;
+  }
+
+
       if (
         (currentSection === "search" || currentSection === "header") &&
         (isSearchInputActive || isHeaderSearchActive)
@@ -1296,6 +1319,12 @@ function openMovieDetail(movieId) {
         return;
       }
 
+        if (currentSection === "menuDots") {
+    setFocusOnHeaderSearch();
+    e.preventDefault();
+    return;
+  }
+
       if (
         (currentSection === "search" || currentSection === "header") &&
         (isSearchInputActive || isHeaderSearchActive)
@@ -1368,16 +1397,14 @@ function openMovieDetail(movieId) {
         if (headerInput) headerInput.blur();
         if (headerContainer) headerContainer.classList.remove("focused");
       }
-
-      if (currentSection === "header") {
-        // From header search → go to first category
-        const input = qs(".search-category-input");
-        if (input) input.blur();
-        setFocusOnCategory(lastFocusedCategory);
-
-        e.preventDefault();
-        return;
-      } else if (currentSection === "search") {
+if (currentSection === "header") {
+    // From header search → go to menu dots
+    const headerInput = qs(".search-input");
+    if (headerInput) headerInput.blur();
+    setFocusOnMenuDots();
+    e.preventDefault();
+    return;
+  }else if (currentSection === "search") {
         // Leaving search → remove cursor + go to first category
         const input = qs(".search-category-input");
         if (input) input.blur();
@@ -1498,6 +1525,12 @@ function openMovieDetail(movieId) {
     // REPLACE THIS ENTIRE BLOCK:
     if (isEnter && currentSection !== "movies") {
       e.preventDefault();
+
+        if (currentSection === "menuDots") {
+    console.log("📂 Opening sidebar from menu dots");
+    openSidebar('moviesPage');
+    return;
+  }
 
       if (currentSection === "scrollBtn") {
         console.log("🔝 Scroll button clicked!");
@@ -1909,25 +1942,36 @@ function openMovieDetail(movieId) {
       localStorage.removeItem("moviesCardIndex");
     }
 
-    // if (savedCatId) {
-    //   selectedCategoryId = String(savedCatId);
-    //   currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
-    //   visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
-    //   renderCategoriesUI();
-    //   renderCards();
-    //   setTimeout(() => {
-    //     if (savedCardIndex) setFocusOnCard(Number(savedCardIndex));
-    //     else setFocusOnCategory(currentCategoryIndex);
-    //   }, 80);
-    //   localStorage.removeItem("moviesSelectedCategoryId");
-    //   localStorage.removeItem("moviesCategoryIndex");
-    //   localStorage.removeItem("moviesCardIndex");
-    // } else {
-    //       currentFocusIndex = 0;
-    //   currentCategoryIndex = 0;
-    //   currentSection = "movies";
-    //   setTimeout(() => setFocusOnCard(0), 80);
-    // }
+      const menuDots = document.querySelector('.menu-dots');
+    if (menuDots) {
+        menuDots.addEventListener('click', () => {
+            openSidebar('moviesPage');
+        });
+    }
+    
+
+    const menuKeyHandler = (e) => {
+    const currentPage = localStorage.getItem('currentPage');
+    if (currentPage !== 'moviesPage') return;
+    
+    // Handle Menu/ContextMenu key
+    if (e.key === 'Menu' || e.key === 'ContextMenu' || e.key === 'F2') {
+        openSidebar('moviesPage');
+        e.preventDefault();
+    }
+};
+
+document.addEventListener('keydown', menuKeyHandler);
+
+    // Add keydown handler for menu button (if needed)
+    document.addEventListener('keydown', (e) => {
+        if (localStorage.getItem('currentPage') === 'moviesPage') {
+            if (e.key === 'Menu' || e.key === 'ContextMenu') {
+                openSidebar('moviesPage');
+                e.preventDefault();
+            }
+        }
+    });
 
     // ⭐ IMPORTANT: Remove any existing listeners first
     document.removeEventListener("click", categoryClickHandler);
@@ -2027,6 +2071,13 @@ function openMovieDetail(movieId) {
       searchEl.addEventListener("input", searchInputHandler);
     }
 
+
+      const sortingContainer = document.createElement('div');
+    sortingContainer.innerHTML = SortingDialog();
+    document.body.appendChild(sortingContainer);
+    
+    // Attach sorting dialog events
+    attachSortingDialogEvents();
     // Inside the setTimeout initialization block, after the category search input handler:
 
     // Header search input (add after searchEl handler)
@@ -2132,6 +2183,9 @@ function openMovieDetail(movieId) {
       if (scrollToTopBtn && scrollToTopHandler) {
         scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
       }
+
+document.removeEventListener('keydown', menuKeyHandler);
+      
     };
   }, 0);
 
@@ -2156,13 +2210,25 @@ const time = formatTime(now);
           </div>
       </div>
       <div class="live-indicator"><span class="current-time">Movies</span></div>
-      <div class="header-right">
-          <div class="search-container">
-              <div class="search-icon"><img src="/assets/search.png" /></div>
-              <input type="text" class="search-input" placeholder="Search Movies" />
-          </div>
-          <div class="menu-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-      </div>
+    <div class="header-right">
+    <div class="search-container">
+        <div class="search-icon"><img src="/assets/search.png" /></div>
+        <input type="text" class="search-input" placeholder="Search Movies" />
+    </div>
+    <div class="menu-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+    </div>
+</div>
+
+<!-- Add Sidebar Container -->
+<div class="sidebar-container-movie" style="display: none;">
+    ${Sidebar({ from: "moviesPage" })}
+</div>
+
+<!-- Add Sorting Dialog -->
+${SortingDialog()}
   </header>
 
   <div class="movies-sidebar">

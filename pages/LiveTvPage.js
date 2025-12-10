@@ -1331,22 +1331,22 @@ const renderEPGList = (epgData) => {
 };
 
 // Helper functions (copy from LiveVideoJsComponent)
-function formatTime(dateStr, format) {
-  let date;
-  if (!isNaN(dateStr)) {
-    const ts = dateStr.toString().length === 10 ? dateStr * 1000 : dateStr;
-    date = new Date(parseInt(ts));
-  } else {
-    date = new Date(dateStr);
-  }
-  if (isNaN(date)) return dateStr;
+// function formatTime(dateStr, format) {
+//   let date;
+//   if (!isNaN(dateStr)) {
+//     const ts = dateStr.toString().length === 10 ? dateStr * 1000 : dateStr;
+//     date = new Date(parseInt(ts));
+//   } else {
+//     date = new Date(dateStr);
+//   }
+//   if (isNaN(date)) return dateStr;
 
-  const options = format === "12hrs"
-    ? { hour: "numeric", minute: "2-digit", hour12: true }
-    : { hour: "2-digit", minute: "2-digit", hour12: false };
+//   const options = format === "12hrs"
+//     ? { hour: "numeric", minute: "2-digit", hour12: true }
+//     : { hour: "2-digit", minute: "2-digit", hour12: false };
 
-  return new Intl.DateTimeFormat(undefined, options).format(date);
-}
+//   return new Intl.DateTimeFormat(undefined, options).format(date);
+// }
 
 function decodeBase64(str) {
   try {
@@ -2655,7 +2655,11 @@ return `
 
       <div class="header-center">
           <span class="current-time">${time}</span>
-          <span class="current-date">${date}</span>
+           <span class="current-date">${new Date().toLocaleDateString([], {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}</span>
       </div>
 
       <div class="header-right">

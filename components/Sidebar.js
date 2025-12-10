@@ -487,7 +487,7 @@ function openSidebar(from = "") {
     from === "moviesPage"
       ? document.querySelector(".sidebar-container-movie")
       : from === "seriesPage"
-      ? document.querySelector(".sidebar-container-series")
+      ? document.querySelector(".sidebar-container-movie")
       : from === "liveTvPage"
       ? document.querySelector(".sidebar-container-live")
       : from === "moviesDetailPage"
@@ -498,6 +498,8 @@ function openSidebar(from = "") {
 
   if (!sidebar) return;
   sidebar.style.display = "block";
+  sidebar.style.transform = "translateX(0)"; // Add this line
+
   localStorage.setItem("currentPage", "sidebar");
   localStorage.setItem("sidebarPage", from);
 
@@ -521,7 +523,7 @@ function closeSidebar(from = "") {
     from === "moviesPage"
       ? document.querySelector(".sidebar-container-movie")
       : from === "seriesPage"
-      ? document.querySelector(".sidebar-container-series")
+      ? document.querySelector(".sidebar-container-movie")
       : from === "liveTvPage"
       ? document.querySelector(".sidebar-container-live")
       : from === "moviesDetailPage"
@@ -531,6 +533,11 @@ function closeSidebar(from = "") {
       : null;
 
   if (!sidebar) return;
+
+  sidebar.style.transform = "translateX(100%)";
+setTimeout(() => {
+    sidebar.style.display = "none";
+}, 300);
 
   sidebar.style.display = "none";
   if (from) localStorage.setItem("currentPage", from);
