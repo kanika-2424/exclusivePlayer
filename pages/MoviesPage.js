@@ -155,7 +155,6 @@ function showPasswordModal(movieId, movieName, onSuccess) {
               placeholder="Enter Password"
               autocomplete="off"
             />
-            <i class="fa fa-eye password-eye-icon" id="passwordEyeIcon"></i>
           </div>
         </div>
         <div class="password-modal-footer">
@@ -174,27 +173,12 @@ function showPasswordModal(movieId, movieName, onSuccess) {
   
   const overlay = document.getElementById('passwordModalOverlay');
   const input = document.getElementById('passwordModalInput');
-  const eyeIcon = document.getElementById('passwordEyeIcon');
   const submitBtn = document.getElementById('passwordSubmitBtn');
   const cancelBtn = document.getElementById('passwordCancelBtn');
   
   let focusIndex = 0;
   
   setTimeout(() => input.focus(), 100);
-  
-  function togglePasswordVisibility() {
-    if (input.type === 'password') {
-      input.type = 'text';
-      eyeIcon.classList.remove('fa-eye');
-      eyeIcon.classList.add('fa-eye-slash');
-    } else {
-      input.type = 'password';
-      eyeIcon.classList.remove('fa-eye-slash');
-      eyeIcon.classList.add('fa-eye');
-    }
-  }
-  
-  eyeIcon.addEventListener('click', togglePasswordVisibility);
   
   function updateModalFocus() {
     input.classList.remove('password-input-focused');
@@ -213,39 +197,57 @@ function showPasswordModal(movieId, movieName, onSuccess) {
     }
   }
   
-function verifyPassword() {
+  function verifyPassword() {
+    console.log("🔐 Verifying password...");
     const enteredPassword = input.value.trim();
     const correctPassword = getParentalPassword();
     
+    console.log("Password entered:", enteredPassword ? "Yes" : "No");
+    
     if (!enteredPassword) {
-      if (typeof Toaster !== 'undefined') {
-        Toaster.showToast("error", "Please enter password");
-      }
+      console.log("Empty password");
+      if (overlay) overlay.style.zIndex = '9998';
+      setTimeout(() => {
+        if (typeof Toaster !== 'undefined') {
+          Toaster.showToast("error", "Please enter password");
+        }
+        if (overlay) overlay.style.zIndex = '9999';
+      }, 50);
       return;
     }
     
     if (enteredPassword === correctPassword) {
-      // ✅ ADD THIS: Mark category as unlocked if viewing adult category
+      console.log("✅ Correct password");
       const currentCategory = categories.find(c => String(c.id) === String(selectedCategoryId));
       if (currentCategory && isMovieAdultCategory(currentCategory.name)) {
         unlockedMovieAdultCatIds.add(String(selectedCategoryId));
       }
       
+      if (overlay) overlay.style.zIndex = '9998';
       if (typeof Toaster !== 'undefined') {
         Toaster.showToast("success", "Access Granted");
       }
-      closeModal();
-      if (onSuccess) onSuccess();
+      
+      setTimeout(() => {
+        closeModal();
+        if (onSuccess) onSuccess();
+      }, 800);
     } else {
-      if (typeof Toaster !== 'undefined') {
-        Toaster.showToast("error", "Incorrect Password");
-      }
+      console.log("❌ Incorrect password");
+      if (overlay) overlay.style.zIndex = '9998';
+      setTimeout(() => {
+        if (typeof Toaster !== 'undefined') {
+          Toaster.showToast("error", "Incorrect Password");
+        }
+        if (overlay) overlay.style.zIndex = '9999';
+      }, 50);
       input.value = '';
-      input.focus();
+      setTimeout(() => input.focus(), 100);
     }
   }
   
   function closeModal() {
+    console.log("Closing modal");
     if (overlay) {
       overlay.remove();
     }
@@ -253,8 +255,29 @@ function verifyPassword() {
     localStorage.setItem("currentPage", "moviesPage");
   }
   
-  submitBtn.addEventListener('click', verifyPassword);
-  cancelBtn.addEventListener('click', closeModal);
+  // Click handlers
+  submitBtn.addEventListener('click', (e) => {
+    console.log("Submit button clicked");
+    e.preventDefault();
+    e.stopPropagation();
+    verifyPassword();
+  });
+  
+  cancelBtn.addEventListener('click', (e) => {
+    console.log("Cancel button clicked");
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+  
+  // Enter key on input
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      console.log("Enter pressed on input");
+      e.preventDefault();
+      verifyPassword();
+    }
+  });
   
   function handleModalKeydown(e) {
     if (e.key === 'ArrowDown') {
@@ -274,6 +297,7 @@ function verifyPassword() {
       updateModalFocus();
       e.preventDefault();
     } else if (e.key === 'Enter') {
+      console.log("Enter pressed, focusIndex:", focusIndex);
       if (focusIndex === 0 || focusIndex === 1) {
         verifyPassword();
       } else if (focusIndex === 2) {

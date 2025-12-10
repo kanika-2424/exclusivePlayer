@@ -51,7 +51,7 @@ function handleAddUserClick() {
     // Grab inputs **fresh** from DOM
     var nameInput     = document.querySelector('.login-card .input-group:nth-of-type(1) input[type="text"]');
     var usernameInput = document.querySelector('.login-card .input-group:nth-of-type(2) input[type="text"]');
-    var passwordInput = document.querySelector('.login-card .input-group:nth-of-type(3) input[type="password"]');
+    var passwordInput = document.querySelector('.login-card .input-group:nth-of-type(3) input');  // ← Remove [type="password"]
 
     var name = nameInput?.value.trim() || "";
     var username = usernameInput?.value.trim() || "";
@@ -393,18 +393,27 @@ if (cur && cur.tagName === "INPUT") {
         var icon = null;
         try { icon = passwordToggle.querySelector("i") || passwordToggle.querySelector("img"); } catch (e) {}
         var isHidden = (passwordInput.type === "password");
-        try { passwordInput.type = isHidden ? "text" : "password"; } catch (e) {}
-        if (icon && icon.classList) {
-          try {
-            if (isHidden) {
-              icon.classList.remove("fa-eye-slash");
-              icon.classList.add("fa-eye");
-            } else {
-              icon.classList.remove("fa-eye");
-              icon.classList.add("fa-eye-slash");
-            }
-          } catch (e) {}
-        }
+       // Store the current value before changing type
+var currentValue = passwordInput.value;
+
+try { 
+  passwordInput.type = isHidden ? "text" : "password";
+  // Restore value after type change (fixes browser issues)
+  passwordInput.value = currentValue;
+} catch (e) {}
+      if (icon && icon.classList) {
+  try {
+    if (isHidden) {
+      // Password will be shown, so show OPEN eye (fa-eye)
+      icon.classList.remove("fa-eye-slash");
+      icon.classList.add("fa-eye");
+    } else {
+      // Password will be hidden, so show CLOSED eye (fa-eye-slash)
+      icon.classList.remove("fa-eye");
+      icon.classList.add("fa-eye-slash");
+    }
+  } catch (e) {}
+}
         try { if (passwordToggle) passwordToggle.setAttribute("aria-pressed", String(isHidden)); } catch (e) {}
       }
 
@@ -464,7 +473,7 @@ if (cur && cur.tagName === "INPUT") {
         <input type="password" placeholder="Password" autocomplete="new-password">
 
         <div class="toggle-password">
-          <i class="fa-solid fa-eye"></i>
+  <i class="fa-solid fa-eye-slash"></i>
         </div>
       </div>
 

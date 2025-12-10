@@ -6,24 +6,28 @@
 
 .settings-content-wrapper {
     display: flex;
-    gap: 40px;
-    padding: 40px 60px;
+    padding: 40px 160px;
 }
 
 .settings-left-panel {
-    flex: 0 0 500px;
+    flex: 0 0 40%;
     display: flex;
     flex-direction: column;
     gap: 20px;
     background-color: rgba(217, 217, 217, 0.15);
     padding: 75px;
+    
 }
 
 .settings-right-panel {
+    flex: 0 0 60%;
+
     flex: 1;
     background: rgba(30, 40, 50, 0.5);
     border-radius: 20px;
     padding: 40px;
+      align-items: center;
+    justify-content: center;
 }
 
 .setting-card {
@@ -68,6 +72,8 @@
     flex-direction: column;
     justify-content: center;
     gap: 20px;
+    height: 100%; 
+    
 }
 
 .option-item {
@@ -79,8 +85,9 @@
     border: 3px solid rgba(255, 255, 255, 0.24);
     border-radius: 12px;
     color: white;
-    font-size: 20px;
+    font-size: 28px;
     cursor: pointer;
+    /* font-size: 34px; */
 }
 
 /* .option-selected {
@@ -197,7 +204,7 @@
 
 
 .option-item span {
-  font-size: 16px;
+  font-size: 24px;
   color: #fff;
 }
 

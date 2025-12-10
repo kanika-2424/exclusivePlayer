@@ -968,6 +968,7 @@
   background: #0284c7;
   transform: scale(1.05);
   box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+  border: white 2px solid;
 }
 
 .password-cancel-btn {
@@ -979,4 +980,6 @@
 .password-cancel-btn.password-btn-focused {
   background: #888;
   transform: scale(1.05);
+  border: #0ea5e9 2px solid;
+
 }

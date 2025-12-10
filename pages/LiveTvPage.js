@@ -66,9 +66,6 @@ function LiveTvPage() {
   const allStreams = window.allLiveStreams || [];
 
 
-  console.log('====================================');
-  console.log("allStreams" , allStreams);
-  console.log('====================================');
 
 // ===== HELPER: Get Filtered Categories =====
 const getFilteredCategories = () => {
@@ -263,7 +260,7 @@ const isAdultContent = (channelData) => {
   const categoryName = (channelData.category_name || "").toLowerCase();
   
   // Check for adult keywords in channel name or category
-  const adultKeywords = ['18+', 'xxx', 'adult', 'porn', 'sexy', 'hot', 'erotic', 'sex'];
+  const adultKeywords = ['18+', 'xxx', 'adult', 'porn', 'sexy', 'hot', 'erotic', 'sex' , "18 plus" , "18\s*plus" , "nsfw" , "mature" , "explicit" , "xxx videos" , "adult content" , 'xc+' ];
   
   return adultKeywords.some(keyword => 
     name.includes(keyword) || categoryName.includes(keyword)
