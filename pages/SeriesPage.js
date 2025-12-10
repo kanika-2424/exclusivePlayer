@@ -128,6 +128,8 @@ function getParentalPassword() {
   }
 }
 
+
+
 // Show password modal
 function showPasswordModal(seriesId, seriesName, onSuccess) {
   const modalHTML = `
@@ -1770,6 +1772,10 @@ if (scrollToTopBtn && scrollToTopHandler) {
     };
 }, 0);
 
+  const now = new Date();
+const time = formatTime(now);
+
+
   // Template (keeps identical markup so Movies CSS works)
   return `
 <div class="livetv-main-container">
@@ -1777,7 +1783,8 @@ if (scrollToTopBtn && scrollToTopHandler) {
       <div class="header-left">
           <img src="/assets/logo.png" class="app-logo" />
           <div>
-            <span class="current-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: true})}</span>
+           <span class="current-time">${time}</span>
+
             <span class="current-date">${new Date().toLocaleDateString([], {month:'long', day:'numeric', year:'numeric'})}</span>
           </div>
       </div>

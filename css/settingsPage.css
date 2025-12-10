@@ -208,3 +208,8 @@
   color: #fff;
 }
 
+.add-user-focused {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(231, 161, 1, 0.6);
+}
+

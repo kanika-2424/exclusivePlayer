@@ -213,6 +213,31 @@ Toaster(); // Initialize Toaster
 };
 
 
+function formatTime(date, format = null) {
+  // Get format from parameter, or from selectedPlaylist, or from localStorage, or default to 12hrs
+  const timeFormat = format || 
+                     JSON.parse(localStorage.getItem("selectedPlaylist"))?.timeFormat || 
+                     localStorage.getItem("selectedTimeFormat") || 
+                     "12hrs";
+  
+  if (timeFormat === "24hrs") {
+    // 24-hour format: HH:mm
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  } else {
+    // 12-hour format: hh:mm AM/PM
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  }
+}
+
+
 // ===================================
 // SPLASH PAGE FUNCTION (optional)
 // ===================================

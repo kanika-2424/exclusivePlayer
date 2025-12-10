@@ -271,6 +271,7 @@ if (playlistIndex !== -1) {
     }
 
     const settingsFocusableItems = [
+        document.querySelector(".playlist-add-user"),
       document.querySelector(".stream-card"),
       document.querySelector(".time-format-card"),
       document.querySelector(".parental-control-card"),
@@ -278,70 +279,92 @@ if (playlistIndex !== -1) {
       document.querySelector(".general-settings-card"),
     ].filter((el) => el !== null);
 
-    let settingsFocusIndex = 0;
+    let settingsFocusIndex = 1;
 
-    function settingsUpdateFocus() {
-      settingsFocusableItems.forEach((el) => {
-        // Remove background focus when in right panel
-        if (isRightPanelActive) {
-          el.classList.remove("setting-card-focused");
-          el.classList.add("setting-card-border-focused");
-        } else {
-          el.classList.remove("setting-card-focused");
-          el.classList.remove("setting-card-border-focused");
-        }
+   function settingsUpdateFocus() {
+  settingsFocusableItems.forEach((el) => {
+    // Handle Add User button
+    if (el.classList.contains('playlist-add-user')) {
+      el.classList.remove('playlist-card-focused');
+      return;
+    }
+    
+    // Remove background focus when in right panel
+    if (isRightPanelActive) {
+      el.classList.remove("setting-card-focused");
+      el.classList.add("setting-card-border-focused");
+    } else {
+      el.classList.remove("setting-card-focused");
+      el.classList.remove("setting-card-border-focused");
+    }
 
-        const normalIcon = el.querySelector(".setting-card-icon");
-        const filledIcon = el.querySelector(".setting-card-icon-filled");
-        if (normalIcon) normalIcon.style.display = "block";
-        if (filledIcon) filledIcon.style.display = "none";
+    const normalIcon = el.querySelector(".setting-card-icon");
+    const filledIcon = el.querySelector(".setting-card-icon-filled");
+    if (normalIcon) normalIcon.style.display = "block";
+    if (filledIcon) filledIcon.style.display = "none";
 
-        const generalSettingsIcon = el.querySelector(".general-setting-card-icon");
-        if (generalSettingsIcon) {
-          generalSettingsIcon.style.backgroundColor = "transparent";
-        }
-      });
+    const generalSettingsIcon = el.querySelector(".general-setting-card-icon");
+    if (generalSettingsIcon) {
+      generalSettingsIcon.style.backgroundColor = "transparent";
+    }
+  });
 
-      if (settingsFocusableItems[settingsFocusIndex]) {
-        const focusedEl = settingsFocusableItems[settingsFocusIndex];
-        
-        // Apply appropriate focus style based on panel
-        if (isRightPanelActive) {
-          focusedEl.classList.add("setting-card-border-focused");
-        } else {
-          focusedEl.classList.add("setting-card-focused");
-        }
+  if (settingsFocusableItems[settingsFocusIndex]) {
+    const focusedEl = settingsFocusableItems[settingsFocusIndex];
+    
+    // Add focus to Add User button
+    if (focusedEl.classList.contains('playlist-add-user')) {
+      focusedEl.classList.add('playlist-card-focused');
+      
+      // Show stream options on right panel when Add User button is focused
+      const streamOptions = document.getElementById('streamSettingsOptions');
+      const timeOptions = document.getElementById('timeSettingsOptions');
+      const parentalOptions = document.getElementById('parentalSettingsOptions');
+      
+      if (streamOptions) streamOptions.style.display = 'flex';
+      if (timeOptions) timeOptions.style.display = 'none';
+      if (parentalOptions) parentalOptions.style.display = 'none';
+      
+      return;
+    }
+    
+    // Apply appropriate focus style based on panel
+    if (isRightPanelActive) {
+      focusedEl.classList.add("setting-card-border-focused");
+    } else {
+      focusedEl.classList.add("setting-card-focused");
+    }
 
-        const normalIcon = focusedEl.querySelector(".setting-card-icon");
-        const filledIcon = focusedEl.querySelector(".setting-card-icon-filled");
-        if (normalIcon) normalIcon.style.display = "none";
-        if (filledIcon) filledIcon.style.display = "block";
+    const normalIcon = focusedEl.querySelector(".setting-card-icon");
+    const filledIcon = focusedEl.querySelector(".setting-card-icon-filled");
+    if (normalIcon) normalIcon.style.display = "none";
+    if (filledIcon) filledIcon.style.display = "block";
 
-        if (focusedEl.classList.contains("general-settings-card")) {
-          const generalSettingsIcon = focusedEl.querySelector(".general-setting-card-icon");
-          if (generalSettingsIcon) {
-            generalSettingsIcon.style.backgroundColor = "#E7A101";
-          }
-        }
-
-        // Show/hide appropriate options in right panel
-        const streamOptions = document.getElementById('streamSettingsOptions');
-        const timeOptions = document.getElementById('timeSettingsOptions');
-        const parentalOptions = document.getElementById('parentalSettingsOptions');
-        
-        if (streamOptions) streamOptions.style.display = 'none';
-        if (timeOptions) timeOptions.style.display = 'none';
-        if (parentalOptions) parentalOptions.style.display = 'none';
-        
-        if (focusedEl.classList.contains('stream-card') && streamOptions) {
-          streamOptions.style.display = 'flex';
-        } else if (focusedEl.classList.contains('time-format-card') && timeOptions) {
-          timeOptions.style.display = 'flex';
-        } else if (focusedEl.classList.contains('parental-control-card') && parentalOptions) {
-          parentalOptions.style.display = 'flex';
-        }
+    if (focusedEl.classList.contains("general-settings-card")) {
+      const generalSettingsIcon = focusedEl.querySelector(".general-setting-card-icon");
+      if (generalSettingsIcon) {
+        generalSettingsIcon.style.backgroundColor = "#E7A101";
       }
     }
+
+    // Show/hide appropriate options in right panel
+    const streamOptions = document.getElementById('streamSettingsOptions');
+    const timeOptions = document.getElementById('timeSettingsOptions');
+    const parentalOptions = document.getElementById('parentalSettingsOptions');
+    
+    if (streamOptions) streamOptions.style.display = 'none';
+    if (timeOptions) timeOptions.style.display = 'none';
+    if (parentalOptions) parentalOptions.style.display = 'none';
+    
+    if (focusedEl.classList.contains('stream-card') && streamOptions) {
+      streamOptions.style.display = 'flex';
+    } else if (focusedEl.classList.contains('time-format-card') && timeOptions) {
+      timeOptions.style.display = 'flex';
+    } else if (focusedEl.classList.contains('parental-control-card') && parentalOptions) {
+      parentalOptions.style.display = 'flex';
+    }
+  }
+}
 
     function settingsKeydownHandler(e) {
       if (localStorage.getItem("currentPage") !== "settingsPage") return;
@@ -454,11 +477,32 @@ if (playlistIndex !== -1) {
         }
       }
 
-      if (e.key === "Enter") {
-        if (settingsFocusableItems[settingsFocusIndex]) {
-          settingsFocusableItems[settingsFocusIndex].click();
-        }
+   if (e.key === "Enter") {
+  if (settingsFocusableItems[settingsFocusIndex]) {
+    const focusedEl = settingsFocusableItems[settingsFocusIndex];
+    
+    // If Add User button is focused, check playlists and navigate
+    if (focusedEl.classList.contains('playlist-add-user')) {
+      const playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
+      
+      if (playlistsData.length > 0) {
+        // If playlists exist, go to playlist page
+        localStorage.setItem("currentPage", "playlist");
+        if (SettingsPage.cleanup) SettingsPage.cleanup();
+        Router.showPage("playlist");
+      } else {
+        // If no playlists, go to login page
+        localStorage.removeItem("currentPage");
+        if (SettingsPage.cleanup) SettingsPage.cleanup();
+        Router.showPage("login");
       }
+      e.preventDefault();
+      return;
+    }
+    
+    settingsFocusableItems[settingsFocusIndex].click();
+  }
+}
 
       if (
         e.keyCode === 10009 ||
@@ -473,6 +517,27 @@ if (playlistIndex !== -1) {
         document.body.style.backgroundColor = "black";
       }
     }
+
+
+
+  const addPlaylistBtn = document.querySelector(".playlist-add-user");
+if (addPlaylistBtn) {
+  addPlaylistBtn.onclick = () => {
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
+    
+    if (playlistsData.length > 0) {
+      // If playlists exist, go to playlist page
+      localStorage.setItem("currentPage", "playlist");
+      if (SettingsPage.cleanup) SettingsPage.cleanup();
+      Router.showPage("playlist");
+    } else {
+      // If no playlists, go to login page
+      localStorage.removeItem("currentPage");
+      if (SettingsPage.cleanup) SettingsPage.cleanup();
+      Router.showPage("login");
+    }
+  };
+}
 
     function togglePasswordVisibility(input, eyeIcon) {
       if (input.type === "password") {

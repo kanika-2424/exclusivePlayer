@@ -2634,12 +2634,8 @@ if (isDown) {
   }, 0);
 
   // Header time
-  const now = new Date();
-  const time = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
+   const now = new Date();
+const time = formatTime(now);
   const date = now.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -2647,7 +2643,7 @@ if (isDown) {
   });
 
   // Channel data
- 
+
 
 return `
 <div class="livetv-main-container">
