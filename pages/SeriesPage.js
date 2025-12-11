@@ -383,6 +383,49 @@ categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategori
     }
   }
 
+
+  function applySortingToSeries(series) {
+  const sortValue = localStorage.getItem("seriesSortValue") || "default";
+  
+  if (sortValue === "default") {
+    return series; // Keep original order
+  }
+  
+  const sorted = [...series]; // Create a copy to avoid mutating original
+  
+  switch (sortValue) {
+    case "az":
+      return sorted.sort((a, b) => {
+        const nameA = (a.name || a.title || "").toLowerCase();
+        const nameB = (b.name || b.title || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
+    case "za":
+      return sorted.sort((a, b) => {
+        const nameA = (a.name || a.title || "").toLowerCase();
+        const nameB = (b.name || b.title || "").toLowerCase();
+        return nameB.localeCompare(nameA);
+      });
+      
+    case "recent":
+      return sorted.sort((a, b) => {
+        const dateA = new Date(a.added || a.date_added || 0);
+        const dateB = new Date(b.added || b.date_added || 0);
+        return dateB - dateA; // Most recent first
+      });
+      
+    case "top":
+      return sorted.sort((a, b) => {
+        const ratingA = parseFloat(a.rating_5based || a.rating || 0);
+        const ratingB = parseFloat(b.rating_5based || b.rating || 0);
+        return ratingB - ratingA; // Highest rated first
+      });
+      
+    default:
+      return series;
+  }
+}
   // Render sidebar categories (same markup as movies so CSS applies)
 function renderCategoriesUI() {
   const wrapper = qs(".movies-categories-list");
@@ -490,19 +533,24 @@ function renderCategoriesUI() {
   }
 
   // Render cards for selectedCategoryId up to visibleCount
-  function renderCards() {
-    const container = qs(".movies-grid");
-    if (!container) return;
-    const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
-    const items = (cat && Array.isArray(cat.movies)) ? cat.movies.slice(0, visibleCount) : [];
-    if (!items || items.length === 0) {
-      container.innerHTML = `<div class="movie-no-data"><p>No series found for this category.</p></div>`;
-      movieCards = [];
-      return;
-    }
-    container.innerHTML = items.map(buildMovieCardHTML).join("");
-    movieCards = Array.from(container.querySelectorAll(".movie-card"));
+ function renderCards() {
+  const container = qs(".movies-grid");
+  if (!container) return;
+  const cat = categories.find(c => String(c.id) === String(selectedCategoryId));
+  
+  // Apply sorting before slicing
+  const allSeries = cat && Array.isArray(cat.movies) ? cat.movies : [];
+  const sortedSeries = applySortingToSeries(allSeries);
+  const items = sortedSeries.slice(0, visibleCount);
+  
+  if (!items || items.length === 0) {
+    container.innerHTML = `<div class="movie-no-data"><p>No series found for this category.</p></div>`;
+    movieCards = [];
+    return;
   }
+  container.innerHTML = items.map(buildMovieCardHTML).join("");
+  movieCards = Array.from(container.querySelectorAll(".movie-card"));
+}
 
   // Load more: increase visibleCount then render
   function loadMore() {
@@ -1835,12 +1883,49 @@ if (scrollToTopBtn && scrollToTopHandler) {
 }
 
   document.removeEventListener('keydown', menuKeyHandler);
+    delete window.renderSeries;
+
 
     };
 }, 0);
 
   const now = new Date();
 const time = formatTime(now);
+
+// Expose render function for sidebar sorting
+window.renderSeries = () => {
+  console.log("🔄 Re-rendering series with new sort order");
+  
+  // Set flag to prevent enter key handling during re-render
+  enterState.isProcessingEnter = true;
+  
+  // Clear any pending enter timer
+  if (enterState.enterPressTimer) {
+    clearTimeout(enterState.enterPressTimer);
+    enterState.enterPressTimer = null;
+  }
+  enterState.isLongPressExecuted = false;
+  
+  // Re-render cards with new sort order
+  renderCards();
+  
+  // Reset focus to first card
+  if (movieCards.length > 0) {
+    currentSection = "series";
+    currentFocusIndex = 0;
+    setTimeout(() => {
+      setFocusOnCard(0);
+      console.log("✅ Focus restored after sorting");
+      
+      // Re-enable enter key after a safe delay
+      setTimeout(() => {
+        enterState.isProcessingEnter = false;
+      }, 300);
+    }, 100);
+  } else {
+    enterState.isProcessingEnter = false;
+  }
+};
 
 
   // Template (keeps identical markup so Movies CSS works)

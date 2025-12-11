@@ -2257,9 +2257,7 @@ document.removeEventListener('keydown', menuKeyHandler);
   const now = new Date();
 const time = formatTime(now);
 // Expose render function for sidebar sorting
-// Expose render function for sidebar sorting
-// Expose render function for sidebar sorting
-// Expose render function for sidebar sorting
+
 window.renderMovies = () => {
   console.log("🔄 Re-rendering movies with new sort order");
   

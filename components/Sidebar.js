@@ -1,4 +1,6 @@
 let movieSortValue = localStorage.getItem("movieSortValue") || "default";
+let seriesSortValue = localStorage.getItem("seriesSortValue") || "default"; // Add this line
+
 let sidebarLinks = [];
 let selectedIndex = 0;
 let globalOnRemoveItemFromContinueWatching = null;
@@ -129,9 +131,19 @@ function Sidebar({
 /* -------- Sorting Dialog -------- */
 function SortingDialog() {
   const showTopRated = localStorage.getItem("isLivePageOpen") == "true";
-  // Get the current sort value from localStorage or use the global variable
-  const currentSortValue =
-    localStorage.getItem("movieSortValue") || movieSortValue;
+  const currentPage = localStorage.getItem("currentPage");
+  
+  // Get the appropriate sort value based on current page
+    let currentSortValue = "default";
+  if (currentPage === "moviesPage") {
+    currentSortValue = localStorage.getItem("movieSortValue") || "default";
+  } else if (currentPage === "seriesPage") {
+    currentSortValue = localStorage.getItem("seriesSortValue") || "default";
+  } else if (currentPage === "liveTvPage") {
+    currentSortValue = localStorage.getItem("liveTvSortValue") || "default"; // ✅ Add this
+  } else {
+    currentSortValue = localStorage.getItem("movieSortValue") || "default";
+  }
 
   return `
     <div class="sorting-overlay-dialog sorting-overlay-dialog-hidden" id="sortingDialog">
@@ -153,7 +165,7 @@ function SortingDialog() {
               currentSortValue === "za" ? "checked" : ""
             }> Z - A
           </label>
-                <label class="sorting-option">
+          <label class="sorting-option">
             <input type="radio" name="sorting" value="recent" ${
               currentSortValue === "recent" ? "checked" : ""
             }> Recently Added
@@ -237,13 +249,24 @@ function applySorting() {
   const checked = document.querySelector(
     '.sorting-option input[type="radio"]:checked'
   );
+  
   if (checked) {
     const sortValue = checked.value;
-    console.log("Applied sorting:", sortValue);
-    localStorage.setItem("movieSortValue", sortValue);
+    const currentPage = localStorage.getItem("sidebarPage"); // Get the page that opened sidebar
+    
+    console.log("Applied sorting:", sortValue, "for page:", currentPage);
+    
+    // Save to appropriate localStorage key based on page
+    if (currentPage === "moviesPage") {
+      localStorage.setItem("movieSortValue", sortValue);
+    } else if (currentPage === "seriesPage") {
+      localStorage.setItem("seriesSortValue", sortValue);
+    } else if (currentPage === "liveTvPage") {
+      localStorage.setItem("movieSortValue", sortValue); // Live TV can use movie sort
+    }
   }
 
-  // close dialog
+  // Close dialog
   const dialog = document.getElementById("sortingDialog");
   if (dialog) {
     dialog.classList.add("sorting-overlay-dialog-hidden");
@@ -253,13 +276,14 @@ function applySorting() {
   const fromClosed = localStorage.getItem("sidebarPage");
   closeSidebar(fromClosed);
 
-  if (typeof window.renderMovies === "function") {
+  // ✅ Call appropriate render function based on page
+  const currentPage = localStorage.getItem("sidebarPage");
+  
+  if (currentPage === "moviesPage" && typeof window.renderMovies === "function") {
     window.renderMovies();
-  }
-  if (typeof window.renderSeries === "function") {
+  } else if (currentPage === "seriesPage" && typeof window.renderSeries === "function") {
     window.renderSeries();
-  }
-  if (typeof window.renderLiveTv === "function") {
+  } else if (currentPage === "liveTvPage" && typeof window.renderLiveTv === "function") {
     window.renderLiveTv();
   }
 }
@@ -333,13 +357,13 @@ function sidebarKeyHandler(event) {
       } else if (text === "series") {
         localStorage.setItem("isLivePageOpen", "false");
         localStorage.setItem("currentPage", "seriesPage");
-        localStorage.setItem("movieSortValue", "default");
+        // localStorage.setItem("movieSortValue", "default");
 
         Router.showPage("series");
       } else if (text === "movies") {
         localStorage.setItem("isLivePageOpen", "false");
         localStorage.setItem("currentPage", "moviesPage");
-        localStorage.setItem("movieSortValue", "default");
+        // localStorage.setItem("movieSortValue", "default");
 
         Router.showPage("movies");
       } else if (text.includes("live")) {
