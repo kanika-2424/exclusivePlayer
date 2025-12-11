@@ -303,6 +303,16 @@ seriesData.cast = [
       </div>
     </header>
 
+     <!-- ADD THESE LINES HERE (right after header): -->
+    <div class="sidebar-container-series-detail" style="display: none;">
+      ${Sidebar({ from: "seriesDetailPage" })}
+    </div>
+
+    <!-- Add Sorting Dialog -->
+    ${SortingDialog()}
+    <!-- END OF NEW ADDITIONS -->
+
+
     <div class="movie-detail-content">
       <!-- Left: Poster -->
       <div class="poster-section">
@@ -416,6 +426,15 @@ seriesData.cast = [
   </div>
   `;
 
+
+  const sortingContainer = document.createElement('div');
+sortingContainer.innerHTML = SortingDialog();
+document.body.appendChild(sortingContainer);
+
+// Attach sorting dialog events
+if (typeof attachSortingDialogEvents === "function") {
+  attachSortingDialogEvents();
+}
 
 function updatePlayButtonText() {
   const playBtn = container.querySelector(".play-button");
@@ -742,18 +761,37 @@ function resetSeriesResumeTime(seriesId, episodeId) {
     }
   }
 
-  function removeAllFocus() {
-    const focusedBtns = container.querySelectorAll(".action-button.focused");
-    focusedBtns.forEach(b => b.classList.remove("focused"));
-    const focusedCast = container.querySelectorAll(".cast-card.focused");
-    focusedCast.forEach(c => c.classList.remove("focused"));
-    const focusedEpisodes = container.querySelectorAll(".episode-card.focused");
-    focusedEpisodes.forEach(e => e.classList.remove("focused"));
-    const seasonDropdown = container.querySelector(".season-dropdown");
-    if (seasonDropdown) seasonDropdown.classList.remove("focused");
-    const headerSearchContainer = container.querySelector(".search-container");
-    if (headerSearchContainer) headerSearchContainer.classList.remove("search-focused");
+function removeAllFocus() {
+  const focusedBtns = container.querySelectorAll(".action-button.focused");
+  focusedBtns.forEach(b => b.classList.remove("focused"));
+  const focusedCast = container.querySelectorAll(".cast-card.focused");
+  focusedCast.forEach(c => c.classList.remove("focused"));
+  const focusedEpisodes = container.querySelectorAll(".episode-card.focused");
+  focusedEpisodes.forEach(e => e.classList.remove("focused"));
+  const seasonDropdown = container.querySelector(".season-dropdown");
+  if (seasonDropdown) seasonDropdown.classList.remove("focused");
+  const headerSearchContainer = container.querySelector(".search-container");
+  if (headerSearchContainer) headerSearchContainer.classList.remove("search-focused");
+  
+  // ADD THIS:
+  const menuDots = container.querySelector(".menu-dots");
+  if (menuDots) menuDots.classList.remove("menu-focused");
+}
+
+  function setFocusOnMenuDots() {
+  removeAllFocus();
+  currentSection = "menuDots";
+  const menuDots = container.querySelector(".menu-dots");
+  if (menuDots) {
+    menuDots.classList.add("menu-focused");
+    try { 
+      menuDots.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "center" 
+      }); 
+    } catch(e){}
   }
+}
 
   // initial focus: play button
   setTimeout(() => setFocusOnButton(0), 0);
@@ -1028,6 +1066,46 @@ if (castBtn) {
     });
   }
 
+  // Menu dots click handler (add after favHeartContainer listener)
+const menuDots = container.querySelector(".menu-dots");
+if (menuDots) {
+  // Remove any existing listeners
+  const newMenuDots = menuDots.cloneNode(true);
+  menuDots.parentNode.replaceChild(newMenuDots, menuDots);
+  
+  newMenuDots.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("🖱️ Menu dots clicked on series detail page!");
+    
+    if (typeof openSidebar === "function") {
+      openSidebar("seriesDetailPage");
+    } else {
+      console.error("❌ openSidebar function not found!");
+    }
+  });
+}
+
+// Menu key handler for series detail page
+function handleMenuKey(e) {
+  const currentPage = localStorage.getItem("currentPage");
+  if (currentPage !== "seriesDetailPage") return;
+  
+  // Handle Menu/ContextMenu key
+  if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2" || e.keyCode === 93) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (typeof openSidebar === "function") {
+      openSidebar("seriesDetailPage");
+    } else {
+      console.error("❌ openSidebar function not found!");
+    }
+  }
+}
+
+document.addEventListener("keydown", handleMenuKey);
+
   // cast card click
   const castCardsEls = container.querySelectorAll(".cast-card");
   castCardsEls.forEach((card, idx) => {
@@ -1275,6 +1353,15 @@ function handleRemoteNavigation(e) {
 
     case "ArrowDown":
       e.preventDefault();
+
+        if (currentSection === "menuDots") {
+    currentSection = "buttons";
+    currentFocusIndex = 0;
+    setFocusOnButton(0);
+    return;
+  }
+
+
       if (currentSection === "header") {
         currentSection = "buttons";
         currentFocusIndex = 0;
@@ -1371,15 +1458,27 @@ function handleRemoteNavigation(e) {
         setFocusOnButton(0);
         return;
       }
-      if (currentSection === "buttons") {
-        currentSection = "header";
-        setFocusOnHeaderSearch();
-        return;
-      }
+     if (currentSection === "buttons") {
+    setFocusOnMenuDots();
+    return;
+  }
+   if (currentSection === "menuDots") {
+    // Stay at top
+    return;
+  }
+
       break;
 
     case "Enter":
       e.preventDefault();
+
+       if (currentSection === "menuDots") {
+    if (typeof openSidebar === "function") {
+      openSidebar("seriesDetailPage");
+    }
+    return;
+  }
+
       if (currentSection === "buttons") {
         buttons[currentFocusIndex].click();
       } else if (currentSection === "seasons") {
@@ -1576,9 +1675,16 @@ SeriesDetailPage.cleanup = function () {
   // remove listeners
   document.removeEventListener("keydown", handleRemoteNavigation);
   document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+    document.removeEventListener("keydown", handleMenuKey);
+
 
    const backdrop = document.getElementById('cast-backdrop');
   if (backdrop) backdrop.remove();
+
+   const sortingDialog = document.querySelector('.sorting-dialog-container');
+  if (sortingDialog) {
+    sortingDialog.remove();
+  }
 
 
   SeriesDetailPage.initialized = false;  // ← CRUCIAL

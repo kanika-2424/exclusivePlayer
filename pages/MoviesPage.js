@@ -482,6 +482,50 @@ function showPasswordModal(movieId, movieName, onSuccess) {
     }
   }
 
+
+
+  function applySortingToMovies(movies) {
+  const sortValue = localStorage.getItem("movieSortValue") || "default";
+  
+  if (sortValue === "default") {
+    return movies; // Keep original order
+  }
+  
+  const sorted = [...movies]; // Create a copy to avoid mutating original
+  
+  switch (sortValue) {
+    case "az":
+      return sorted.sort((a, b) => {
+        const nameA = (a.name || a.title || "").toLowerCase();
+        const nameB = (b.name || b.title || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
+    case "za":
+      return sorted.sort((a, b) => {
+        const nameA = (a.name || a.title || "").toLowerCase();
+        const nameB = (b.name || b.title || "").toLowerCase();
+        return nameB.localeCompare(nameA);
+      });
+      
+    case "recent":
+      return sorted.sort((a, b) => {
+        const dateA = new Date(a.added || a.date_added || 0);
+        const dateB = new Date(b.added || b.date_added || 0);
+        return dateB - dateA; // Most recent first
+      });
+      
+    case "top":
+      return sorted.sort((a, b) => {
+        const ratingA = parseFloat(a.rating_5based || a.rating || 0);
+        const ratingB = parseFloat(b.rating_5based || b.rating || 0);
+        return ratingB - ratingA; // Highest rated first
+      });
+      
+    default:
+      return movies;
+  }
+}
   // Render sidebar categories
   function renderCategoriesUI() {
    const wrapper = qs(".movies-categories-list");
@@ -596,8 +640,12 @@ function buildMovieCardHTML(m) {
     const cat = categories.find(
       (c) => String(c.id) === String(selectedCategoryId)
     );
-    const movies =
-      cat && Array.isArray(cat.movies) ? cat.movies.slice(0, visibleCount) : [];
+
+
+      const allMovies = cat && Array.isArray(cat.movies) ? cat.movies : [];
+  const sortedMovies = applySortingToMovies(allMovies);
+     const movies = sortedMovies.slice(0, visibleCount);
+
 
     if (!movies || movies.length === 0) {
       container.innerHTML = `<div class="movie-no-data"><p>No movies found for this category.</p></div>`;
@@ -1942,12 +1990,26 @@ if (currentSection === "header") {
       localStorage.removeItem("moviesCardIndex");
     }
 
-      const menuDots = document.querySelector('.menu-dots');
-    if (menuDots) {
-        menuDots.addEventListener('click', () => {
-            openSidebar('moviesPage');
-        });
-    }
+     const menuDots = document.querySelector('.menu-dots');
+if (menuDots) {
+    menuDots.removeEventListener('click', menuDotsClickHandler); // Remove old listener
+    
+    const menuDotsClickHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🔘 Menu dots clicked, current page:", localStorage.getItem("currentPage"));
+        
+        // Ensure we're on the movies page
+        if (localStorage.getItem("currentPage") !== "moviesPage") {
+            console.log("⚠️ Not on movies page, setting it now");
+            localStorage.setItem("currentPage", "moviesPage");
+        }
+        
+        openSidebar('moviesPage');
+    };
+    
+    menuDots.addEventListener('click', menuDotsClickHandler);
+}
     
 
     const menuKeyHandler = (e) => {
@@ -2185,6 +2247,8 @@ document.addEventListener('keydown', menuKeyHandler);
       }
 
 document.removeEventListener('keydown', menuKeyHandler);
+  delete window.renderMovies;
+
       
     };
   }, 0);
@@ -2192,7 +2256,43 @@ document.removeEventListener('keydown', menuKeyHandler);
 
   const now = new Date();
 const time = formatTime(now);
-
+// Expose render function for sidebar sorting
+// Expose render function for sidebar sorting
+// Expose render function for sidebar sorting
+// Expose render function for sidebar sorting
+window.renderMovies = () => {
+  console.log("🔄 Re-rendering movies with new sort order");
+  
+  // Set flag to prevent enter key handling during re-render
+  enterState.isProcessingEnter = true;
+  
+  // Clear any pending enter timer
+  if (enterState.enterPressTimer) {
+    clearTimeout(enterState.enterPressTimer);
+    enterState.enterPressTimer = null;
+  }
+  enterState.isLongPressExecuted = false;
+  
+  // Re-render cards with new sort order
+  renderCards();
+  
+  // Reset focus to first card
+  if (movieCards.length > 0) {
+    currentSection = "movies";
+    currentFocusIndex = 0;
+    setTimeout(() => {
+      setFocusOnCard(0);
+      console.log("✅ Focus restored after sorting");
+      
+      // Re-enable enter key after a safe delay
+      setTimeout(() => {
+        enterState.isProcessingEnter = false;
+      }, 300);
+    }, 100);
+  } else {
+    enterState.isProcessingEnter = false;
+  }
+};
   // Template
   return `
 <div class="livetv-main-container">

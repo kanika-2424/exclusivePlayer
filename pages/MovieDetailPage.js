@@ -338,6 +338,13 @@ function formatReleaseDate(raw) {
       </div>
     </header>
 
+       <div class="sidebar-container-movie-detail" style="display: none;">
+      ${Sidebar({ from: "moviesDetailPage" })}
+    </div>
+
+    <!-- Add Sorting Dialog -->
+    ${SortingDialog()}
+
     <div class="movie-detail-content">
       <!-- Left: Poster -->
       <div class="poster-section">
@@ -406,6 +413,15 @@ function formatReleaseDate(raw) {
   </div>
   `;
 
+
+  const sortingContainer = document.createElement('div');
+sortingContainer.innerHTML = SortingDialog();
+document.body.appendChild(sortingContainer);
+
+// Attach sorting dialog events
+if (typeof attachSortingDialogEvents === "function") {
+  attachSortingDialogEvents();
+}
   // header time/date update
   (function updateTime() {
     const now = new Date();
@@ -416,7 +432,7 @@ function formatReleaseDate(raw) {
   })();
 
   // --- Remote navigation & interactions (keeps your simplified remote logic) ---
-  let currentSection = "buttons"; // header, buttons, cast
+  let currentSection = "buttons"; // menuDots, buttons, cast
   let currentFocusIndex = 0;
 
   // Prepare focusable elements arrays
@@ -467,6 +483,20 @@ function removeAllFocus() {
   if (menuDots) menuDots.classList.remove("menu-focused");
 }
 
+function setFocusOnMenuDots() {
+  removeAllFocus();
+  currentSection = "menuDots";
+  const menuDots = container.querySelector(".menu-dots");
+  if (menuDots) {
+    menuDots.classList.add("menu-focused");
+    try { 
+      menuDots.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "center" 
+      }); 
+    } catch(e){}
+  }
+}
 
   
   // initial focus: play button
@@ -695,6 +725,47 @@ if (fromStartBtn) {
     });
   });
 
+
+  // Menu dots click handler
+const menuDots = container.querySelector(".menu-dots");
+if (menuDots) {
+  // Remove any existing listeners
+  const newMenuDots = menuDots.cloneNode(true);
+  menuDots.parentNode.replaceChild(newMenuDots, menuDots);
+  
+  newMenuDots.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("🖱️ Menu dots clicked on detail page!");
+    
+    if (typeof openSidebar === "function") {
+      openSidebar("moviesDetailPage");
+    } else {
+      console.error("❌ openSidebar function not found!");
+    }
+  });
+}
+
+// Menu key handler for detail page
+function handleMenuKey(e) {
+  const currentPage = localStorage.getItem("currentPage");
+  if (currentPage !== "moviesDetailPage") return;
+  
+  // Handle Menu/ContextMenu key
+  if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2" || e.keyCode === 93) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (typeof openSidebar === "function") {
+      openSidebar("moviesDetailPage");
+    } else {
+      console.error("❌ openSidebar function not found!");
+    }
+  }
+}
+
+document.addEventListener("keydown", handleMenuKey);
+
 function handleRemoteNavigation(e) {
   if (localStorage.getItem("currentPage") !== "moviesDetailPage") return;
 
@@ -751,69 +822,78 @@ function handleRemoteNavigation(e) {
     // -------------------------------------------------
     // ↓ DOWN
     // -------------------------------------------------
-    case "ArrowDown":
-      e.preventDefault();
+   // -------------------------------------------------
+// ↓ DOWN
+// -------------------------------------------------
+case "ArrowDown":
+  e.preventDefault();
 
-
-        if (currentSection === "header") {
+  // MENU DOTS → BUTTONS
+  if (currentSection === "menuDots") {
     currentSection = "buttons";
     currentFocusIndex = 0;
     setFocusOnButton(0);
     return;
   }
 
+  // BUTTONS → CAST (always go to first cast card)
+  if (currentSection === "buttons") {
+    if (casts.length > 0) {
+      currentSection = "cast";
+      currentFocusIndex = 0;
+      setFocusOnCast(0);
+    }
+    return;
+  }
 
-      // BUTTONS → CAST (always go to first cast card)
-      if (currentSection === "buttons") {
-        if (casts.length > 0) {
-          currentSection = "cast";
-          currentFocusIndex = 0;
-          setFocusOnCast(0);
-        }
-        return;
-      }
-
-      // CAST → Stay in cast (no downward movement in horizontal list)
-      if (currentSection === "cast") {
-        // Do nothing, already at bottom section
-        return;
-      }
-      break;
+  // CAST → Stay in cast (no downward movement in horizontal list)
+  if (currentSection === "cast") {
+    return;
+  }
+  break;
 
     // -------------------------------------------------
     // ↑ UP
     // -------------------------------------------------
-    case "ArrowUp":
-      e.preventDefault();
+  case "ArrowUp":
+  e.preventDefault();
 
-      // CAST → BUTTONS (go back to play button)
-      if (currentSection === "cast") {
-        currentSection = "buttons";
-        currentFocusIndex = 0;
-        setFocusOnButton(0);
-        return;
-      }
-
-        // BUTTONS → HEADER MENU (three dots)
-  if (currentSection === "buttons") {
-    currentSection = "header";
-    setFocusOnHeaderMenu();
+  // CAST → BUTTONS (go back to play button)
+  if (currentSection === "cast") {
+    currentSection = "buttons";
+    currentFocusIndex = 0;
+    setFocusOnButton(0);
     return;
   }
 
+  // BUTTONS → MENU DOTS
+  if (currentSection === "buttons") {
+    setFocusOnMenuDots();
+    return;
+  }
 
-      // BUTTONS → Stay in buttons (no upward movement from buttons)
-      if (currentSection === "buttons") {
-        // Do nothing, already at top section
-        return;
-      }
-      break;
+  // MENU DOTS → Stay (already at top)
+  if (currentSection === "menuDots") {
+    return;
+  }
+  break;
 
     // -------------------------------------------------
     // ENTER
     // -------------------------------------------------
+// -------------------------------------------------
+// ENTER
+// -------------------------------------------------
 case "Enter":
   e.preventDefault();
+
+  // MENU DOTS → Open Sidebar
+  if (currentSection === "menuDots") {
+    if (typeof openSidebar === "function") {
+      openSidebar("moviesDetailPage");
+    }
+    return;
+  }
 
   if (currentSection === "buttons") {
     const buttons = Array.from(container.querySelectorAll(".action-button"));
@@ -826,16 +906,6 @@ case "Enter":
   if (currentSection === "cast") {
     if (casts && casts.length > 0 && casts[currentFocusIndex]) {
       casts[currentFocusIndex].click();
-    }
-    return;
-  }
-
-  if (currentSection === "header") {
-    // Handle menu dots click if needed
-    const menuDots = container.querySelector(".menu-dots");
-    if (menuDots) {
-      menuDots.click();
-      // Or open sidebar/menu functionality
     }
     return;
   }
@@ -854,6 +924,18 @@ case "Enter":
     document.removeEventListener("keydown", handleRemoteNavigation);
     document.removeEventListener("keydown", handleBackNavigationDuringLoading);
     // remove other listeners if necessary
+      document.removeEventListener("keydown", handleMenuKey);
+
+        if (detailBackHandler) {
+    document.removeEventListener("keydown", detailBackHandler);
+    detailBackHandler = null;
+  }
+  
+  // Remove sorting dialog if exists
+  const sortingDialog = document.querySelector('.sorting-dialog-container');
+  if (sortingDialog) {
+    sortingDialog.remove();
+  }
   };
 }
 
