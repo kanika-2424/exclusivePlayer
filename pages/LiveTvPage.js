@@ -1,29 +1,28 @@
-
 // Add this BEFORE or AFTER your LiveTvPage function
 window.addItemToHistory = (item, historyKey) => {
   const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
-  
+
   const currentPlaylist = playlistsData.find(
-    pl => pl.playlistName === selectedPlaylist.playlistName
+    (pl) => pl.playlistName === selectedPlaylist.playlistName
   );
-  
+
   if (!currentPlaylist) return;
-  
+
   // Initialize history array if it doesn't exist
   if (!currentPlaylist[historyKey]) {
     currentPlaylist[historyKey] = [];
   }
-  
+
   // Remove item if it already exists (to avoid duplicates)
   const existingIndex = currentPlaylist[historyKey].findIndex(
-    h => (typeof h === 'object' ? h.stream_id : h) === item.stream_id
+    (h) => (typeof h === "object" ? h.stream_id : h) === item.stream_id
   );
-  
+
   if (existingIndex > -1) {
     currentPlaylist[historyKey].splice(existingIndex, 1);
   }
-  
+
   // Add item to the beginning of the history array
   const historyItem = {
     stream_id: item.stream_id,
@@ -31,21 +30,21 @@ window.addItemToHistory = (item, historyKey) => {
     stream_icon: item.stream_icon,
     stream_type: item.stream_type,
     category_id: item.category_id,
-    addedAt: new Date().toISOString()
+    addedAt: new Date().toISOString(),
   };
-  
+
   currentPlaylist[historyKey].unshift(historyItem);
-  
+
   // Limit history to last 50 items
   if (currentPlaylist[historyKey].length > 50) {
     currentPlaylist[historyKey] = currentPlaylist[historyKey].slice(0, 50);
   }
-  
+
   // Save back to localStorage
   localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-  
+
   console.log("✅ Added to history:", item.name);
-  
+
   // **TRIGGER SIDEBAR UPDATE IF ON LIVE TV PAGE**
   if (localStorage.getItem("currentPage") === "liveTvPage") {
     // Find and call renderSidebarCategories if it exists
@@ -65,153 +64,187 @@ function LiveTvPage() {
   const categories = window.liveCategories || [];
   const allStreams = window.allLiveStreams || [];
 
+  // ===== HELPER: Get Filtered Categories =====
+  const getFilteredCategories = () => {
+    try {
+      const currentPlaylistName = JSON.parse(
+        localStorage.getItem("selectedPlaylist")
+      )?.playlistName;
 
-
-// ===== HELPER: Get Filtered Categories =====
-const getFilteredCategories = () => {
-  try {
-    const currentPlaylistName = JSON.parse(
-      localStorage.getItem("selectedPlaylist")
-    )?.playlistName;
-    
-    if (!currentPlaylistName) {
-      console.error("❌ No playlist name found");
-      return [];
-    }
-    
-    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    if (!playlistsData) {
-      console.error("❌ No playlists data found");
-      return [];
-    }
-    
-    const currentPlaylist = playlistsData.find((pl) => pl.playlistName === currentPlaylistName);
-    if (!currentPlaylist) {
-      console.error("❌ Current playlist not found");
-      return [];
-    }
-
-    const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
-    const channelHistory = currentPlaylist.ChannelListLive || [];
-    
-    // **CRITICAL: Get streams from multiple sources**
-    const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-    
-    console.log("🔍 Streams available:", streams.length);
-    
-    if (streams.length === 0) {
-      console.warn("⚠️ No streams available in getFilteredCategories");
-    }
-    
-    // **SAFE MAPPING**
-    const filteredCategories = (categories || window.liveCategories || []).map(c => {
-      let categoryChannels = [];
-      
-      try {
-        categoryChannels = streams.filter(s => s.category_id === c.category_id) || [];
-        
-        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-          categoryChannels = categoryChannels.filter(ch => 
-            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-      } catch (err) {
-        console.error("Error filtering category channels:", err);
+      if (!currentPlaylistName) {
+        console.error("❌ No playlist name found");
+        return [];
       }
-      
-      return {
-        ...c,
-        channels: categoryChannels
-      };
-    });
 
-    const allLiveStreams = searchQuery.trim() && selectedCategoryId === "All" 
-      ? streams.filter(ch => 
-          (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : streams;
-
-    console.log("🔍 Processing favorites:", updatedFavorites.length);
-    
-    // **SAFE FAVORITES MAPPING**
-    const favoritesChannels = (updatedFavorites || []).map(favItem => {
-      try {
-        if (typeof favItem === 'number') {
-          return streams.find(s => s.stream_id === favItem) || { stream_id: favItem, name: 'Unknown', stream_icon: '/assets/profile.png' };
-        }
-        if (!favItem.stream_icon) {
-          const fullData = streams.find(s => s.stream_id === favItem.stream_id);
-          return fullData || favItem;
-        }
-        return favItem;
-      } catch (err) {
-        console.error("Error mapping favorite:", err, favItem);
-        return favItem;
+      const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+      if (!playlistsData) {
+        console.error("❌ No playlists data found");
+        return [];
       }
-    }).filter(ch => {
-      if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
-      return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-    });
-    
-    console.log("🔍 Processing history:", channelHistory.length);
-    
-    // **SAFE HISTORY MAPPING**
-    const historyChannels = (channelHistory || []).map(histItem => {
-      try {
-        if (typeof histItem === 'number') {
-          return streams.find(s => s.stream_id === histItem) || { stream_id: histItem, name: 'Unknown', stream_icon: '/assets/profile.png' };
-        }
-        if (!histItem.stream_icon) {
-          const fullData = streams.find(s => s.stream_id === histItem.stream_id);
-          return fullData || histItem;
-        }
-        return histItem;
-      } catch (err) {
-        console.error("Error mapping history item:", err, histItem);
-        return histItem;
+
+      const currentPlaylist = playlistsData.find(
+        (pl) => pl.playlistName === currentPlaylistName
+      );
+      if (!currentPlaylist) {
+        console.error("❌ Current playlist not found");
+        return [];
       }
-    }).filter(ch => {
-      if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
-      return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-    });
 
-    const result = [
-      {
-        category_id: "All",
-        category_name: "All",
-        channels: allLiveStreams || []
-      },
-      {
-        category_id: "favorites",
-        category_name: "Favorites", 
-        channels: favoritesChannels || []
-      },
-      {
-        category_id: "channelHistory",
-        category_name: "Channel History",
-        channels: historyChannels || []
-      },
-      ...filteredCategories
-    ];
-    
-    console.log("✅ getFilteredCategories result:", result.length, "categories");
-    return result;
-    
-  } catch (error) {
-    console.error("❌ ERROR in getFilteredCategories:", error);
-    console.error("Stack:", error.stack);
-    return [
-      {
-        category_id: "All",
-        category_name: "All",
-        channels: []
+      const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
+      const channelHistory = currentPlaylist.ChannelListLive || [];
+
+      // **CRITICAL: Get streams from multiple sources**
+      const streams =
+        window.currentAllStreams || allStreams || window.allLiveStreams || [];
+
+      console.log("🔍 Streams available:", streams.length);
+
+      if (streams.length === 0) {
+        console.warn("⚠️ No streams available in getFilteredCategories");
       }
-    ];
-  }
-};
 
+      // **SAFE MAPPING**
+      const filteredCategories = (
+        categories ||
+        window.liveCategories ||
+        []
+      ).map((c) => {
+        let categoryChannels = [];
 
-  
+        try {
+          categoryChannels =
+            streams.filter((s) => s.category_id === c.category_id) || [];
+
+          if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+            categoryChannels = categoryChannels.filter((ch) =>
+              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+            );
+          }
+        } catch (err) {
+          console.error("Error filtering category channels:", err);
+        }
+
+        return {
+          ...c,
+          channels: categoryChannels,
+        };
+      });
+
+      const allLiveStreams =
+        searchQuery.trim() && selectedCategoryId === "All"
+          ? streams.filter((ch) =>
+              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          : streams;
+
+      console.log("🔍 Processing favorites:", updatedFavorites.length);
+
+      // **SAFE FAVORITES MAPPING**
+      const favoritesChannels = (updatedFavorites || [])
+        .map((favItem) => {
+          try {
+            if (typeof favItem === "number") {
+              return (
+                streams.find((s) => s.stream_id === favItem) || {
+                  stream_id: favItem,
+                  name: "Unknown",
+                  stream_icon: "/assets/profile.png",
+                }
+              );
+            }
+            if (!favItem.stream_icon) {
+              const fullData = streams.find(
+                (s) => s.stream_id === favItem.stream_id
+              );
+              return fullData || favItem;
+            }
+            return favItem;
+          } catch (err) {
+            console.error("Error mapping favorite:", err, favItem);
+            return favItem;
+          }
+        })
+        .filter((ch) => {
+          if (!searchQuery.trim() || selectedCategoryId !== "favorites")
+            return true;
+          return (ch.name || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+        });
+
+      console.log("🔍 Processing history:", channelHistory.length);
+
+      // **SAFE HISTORY MAPPING**
+      const historyChannels = (channelHistory || [])
+        .map((histItem) => {
+          try {
+            if (typeof histItem === "number") {
+              return (
+                streams.find((s) => s.stream_id === histItem) || {
+                  stream_id: histItem,
+                  name: "Unknown",
+                  stream_icon: "/assets/profile.png",
+                }
+              );
+            }
+            if (!histItem.stream_icon) {
+              const fullData = streams.find(
+                (s) => s.stream_id === histItem.stream_id
+              );
+              return fullData || histItem;
+            }
+            return histItem;
+          } catch (err) {
+            console.error("Error mapping history item:", err, histItem);
+            return histItem;
+          }
+        })
+        .filter((ch) => {
+          if (!searchQuery.trim() || selectedCategoryId !== "channelHistory")
+            return true;
+          return (ch.name || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+        });
+
+      const result = [
+        {
+          category_id: "All",
+          category_name: "All",
+          channels: allLiveStreams || [],
+        },
+        {
+          category_id: "favorites",
+          category_name: "Favorites",
+          channels: favoritesChannels || [],
+        },
+        {
+          category_id: "channelHistory",
+          category_name: "Channel History",
+          channels: historyChannels || [],
+        },
+        ...filteredCategories,
+      ];
+
+      console.log(
+        "✅ getFilteredCategories result:",
+        result.length,
+        "categories"
+      );
+      return result;
+    } catch (error) {
+      console.error("❌ ERROR in getFilteredCategories:", error);
+      console.error("Stack:", error.stack);
+      return [
+        {
+          category_id: "All",
+          category_name: "All",
+          channels: [],
+        },
+      ];
+    }
+  };
+
   const currentPlaylistName = JSON.parse(
     localStorage.getItem("selectedPlaylist")
   ).playlistName;
@@ -220,7 +253,7 @@ const getFilteredCategories = () => {
   ).filter((pl) => pl.playlistName === currentPlaylistName)[0];
 
   const allFavoritesLiveTV = currentPlaylist.favoritesLiveTV || [];
-  
+
   // ===== STATE VARIABLES =====
   let selectedCategoryId = "All"; // Currently selected category
   let focusedChannelIndex = 0;
@@ -228,7 +261,7 @@ const getFilteredCategories = () => {
   let currentChunk = 1; // For lazy loading channels
   const pageSize = 20; // Channels per load
   let searchQuery = ""; // Search text
-  
+
   let inChannelGrid = true;
   let inVideoPlayer = false;
   let inSidebar = false;
@@ -240,80 +273,96 @@ const getFilteredCategories = () => {
   let currentAspectRatio = "contain";
   let inAspectRatioBtn = false;
   let isHeaderSearchActive = false;
-let isSidebarSearchActive = false;
-let inFavoriteBtn = false; // ADD THIS LINE
-let inRemoveHistoryBtn = false; // ADD THIS
+  let isSidebarSearchActive = false;
+  let inFavoriteBtn = false; // ADD THIS LINE
+  let inRemoveHistoryBtn = false; // ADD THIS
+  let isMenuDotsActive = false; // Track if menu dots are focused
 
-
-let inPasswordModal = false;
-let pendingChannel = null; // Store channel data when password is required
-let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
+  let inPasswordModal = false;
+  let pendingChannel = null; // Store channel data when password is required
+  let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
 
   // ===== CHECK IF CONTENT IS 18+ =====
-// ===== CHECK IF CONTENT IS 18+ =====
-const isAdultContent = (channelData) => {
-  if (!channelData) return false;
-  
-  const name = (channelData.name || "").toLowerCase();
-  const categoryName = (channelData.category_name || "").toLowerCase();
-  
-  // Check for adult keywords in channel name or category
-  const adultKeywords = ['18+', 'xxx', 'adult', 'porn', 'sexy', 'hot', 'erotic', 'sex' , "18 plus" , "18\s*plus" , "nsfw" , "mature" , "explicit" , "xxx videos" , "adult content" , 'xc+' ];
-  
-  return adultKeywords.some(keyword => 
-    name.includes(keyword) || categoryName.includes(keyword)
-  );
-};
+  // ===== CHECK IF CONTENT IS 18+ =====
+  const isAdultContent = (channelData) => {
+    if (!channelData) return false;
 
+    const name = (channelData.name || "").toLowerCase();
+    const categoryName = (channelData.category_name || "").toLowerCase();
+
+    // Check for adult keywords in channel name or category
+    const adultKeywords = [
+      "18+",
+      "xxx",
+      "adult",
+      "porn",
+      "sexy",
+      "hot",
+      "erotic",
+      "sex",
+      "18 plus",
+      "18s*plus",
+      "nsfw",
+      "mature",
+      "explicit",
+      "xxx videos",
+      "adult content",
+      "xc+",
+    ];
+
+    return adultKeywords.some(
+      (keyword) => name.includes(keyword) || categoryName.includes(keyword)
+    );
+  };
 
   // ===== VIDEO ASPECT RATIO MANAGER =====
-// ===== VIDEO ASPECT RATIO MANAGER =====
-// ===== VIDEO ASPECT RATIO MANAGER =====
-window.VideoAspectRatio = {
-  ratios: ['16:9', '4:3', '2.35:1'],
-  classes: ['video-aspect-169', 'video-aspect-43', 'video-aspect-235'],
-  currentIndex: 0,
-  overlayTimeout: null,
-  
-  initialize(videoElement) {
-    this.currentIndex = 0; // Start with 16:9
-    this.apply(videoElement, 0);
-  },
-  
-  apply(videoElement, index) {
-    if (!videoElement) return;
-    
-    // Remove all aspect ratio classes
-    this.classes.forEach(cls => videoElement.classList.remove(cls));
-    
-    // Add the selected class
-    videoElement.classList.add(this.classes[index]);
-  },
-  
-  cycle(videoElement) {
-    this.currentIndex = (this.currentIndex + 1) % this.ratios.length;
-    this.apply(videoElement, this.currentIndex);
-    return this.ratios[this.currentIndex];
-  },
-  
-  getCurrentRatio() {
-    return this.ratios[this.currentIndex];
-  },
-  
-  showOverlay(message) {
-    // Remove existing overlay
-    const existingOverlay = document.querySelector('.aspect-ratio-overlay');
-    if (existingOverlay) {
-      existingOverlay.remove();
-    }
-    
-    // Create new overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'aspect-ratio-overlay';
-    overlay.textContent = message;
-    overlay.style.cssText = `
+  // ===== VIDEO ASPECT RATIO MANAGER =====
+  // ===== VIDEO ASPECT RATIO MANAGER =====
+  window.VideoAspectRatio = {
+    ratios: ["16:9", "4:3", "2.35:1"],
+    classes: ["video-aspect-169", "video-aspect-43", "video-aspect-235"],
+    currentIndex: 0,
+    overlayTimeout: null,
+
+    initialize(videoElement) {
+      this.currentIndex = 0; // Start with 16:9
+      this.apply(videoElement, 0);
+    },
+
+    apply(videoElement, index) {
+      if (!videoElement) return;
+
+      // Remove all aspect ratio classes
+      this.classes.forEach((cls) => videoElement.classList.remove(cls));
+
+      // Add the selected class
+      videoElement.classList.add(this.classes[index]);
+    },
+
+    cycle(videoElement) {
+      this.currentIndex = (this.currentIndex + 1) % this.ratios.length;
+      this.apply(videoElement, this.currentIndex);
+      return this.ratios[this.currentIndex];
+    },
+
+    getCurrentRatio() {
+      return this.ratios[this.currentIndex];
+    },
+
+    showOverlay(message) {
+      // Remove existing overlay
+      const existingOverlay = document.querySelector(".aspect-ratio-overlay");
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+
+      // Create new overlay
+      const overlay = document.createElement("div");
+      overlay.className = "aspect-ratio-overlay";
+      overlay.textContent = message;
+      overlay.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
@@ -329,24 +378,30 @@ window.VideoAspectRatio = {
       border: 4px solid #0ea5e9;
       box-shadow: 0 0 30px rgba(14, 165, 233, 0.5);
     `;
-    
-    document.body.appendChild(overlay);
-    
-    // Clear existing timeout
-    if (this.overlayTimeout) {
-      clearTimeout(this.overlayTimeout);
-    }
-    
-    // Auto-remove after 2 seconds
-    this.overlayTimeout = setTimeout(() => {
-      overlay.remove();
-    }, 2000);
-  }
-};
-// ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
-// Find this function and replace it:
-const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
-  return `
+
+      document.body.appendChild(overlay);
+
+      // Clear existing timeout
+      if (this.overlayTimeout) {
+        clearTimeout(this.overlayTimeout);
+      }
+
+      // Auto-remove after 2 seconds
+      this.overlayTimeout = setTimeout(() => {
+        overlay.remove();
+      }, 2000);
+    },
+  };
+  // ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
+  // Find this function and replace it:
+  const SimpleVideoPlayer = (
+    streamId,
+    streamUrl,
+    logo,
+    height,
+    channelName
+  ) => {
+    return `
     <div class="live-video-player-div" style="height: ${height}; position: relative; background: #000; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
       <video 
         id="live-video-player" 
@@ -383,77 +438,75 @@ const SimpleVideoPlayer = (streamId, streamUrl, logo, height, channelName) => {
       </div>
     </div>
   `;
-};
+  };
 
-const togglePlayPause = () => {
-  const videoEl = document.getElementById("live-video-player");
-  const playPauseBtn = document.querySelector(".play-pause-btn");
-  
-  if (!videoEl || !playPauseBtn) return;
-  
-  // SVG for Play icon
-  const playIconSVG = `
+  const togglePlayPause = () => {
+    const videoEl = document.getElementById("live-video-player");
+    const playPauseBtn = document.querySelector(".play-pause-btn");
+
+    if (!videoEl || !playPauseBtn) return;
+
+    // SVG for Play icon
+    const playIconSVG = `
     <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
       <path d="M8 5v14l11-7z"/>
     </svg>
   `;
-  
-  // SVG for Pause icon
-  const pauseIconSVG = `
+
+    // SVG for Pause icon
+    const pauseIconSVG = `
     <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
       <rect x="6" y="4" width="4" height="16" rx="1"/>
       <rect x="14" y="4" width="4" height="16" rx="1"/>
     </svg>
   `;
-  
-  if (videoEl.paused) {
-    videoEl.play();
-    playPauseBtn.innerHTML = pauseIconSVG;
-    playPauseBtn.style.opacity = "1";
-    
-    // Hide after 1.5 seconds
-    setTimeout(() => {
-      if (!videoEl.paused) {
-        playPauseBtn.style.opacity = "0";
-        setTimeout(() => {
-          playPauseBtn.style.display = "none";
-        }, 300);
-      }
-    }, 1500);
-  } else {
-    videoEl.pause();
-    playPauseBtn.style.display = "flex";
-    playPauseBtn.style.opacity = "1";
-    playPauseBtn.innerHTML = playIconSVG;
-  }
-};
 
+    if (videoEl.paused) {
+      videoEl.play();
+      playPauseBtn.innerHTML = pauseIconSVG;
+      playPauseBtn.style.opacity = "1";
 
-// Add this function after SimpleVideoPlayer:
-const toggleAspectRatio = () => {
-  const videoEl = document.getElementById("live-video-player");
-  const aspectBtn = document.querySelector(".aspect-ratio-btn");
-  const aspectLabel = aspectBtn?.querySelector(".aspect-label");
-  
-  if (!videoEl || !aspectBtn || !window.VideoAspectRatio) return;
-  
-  // Cycle to next aspect ratio
-  const newLabel = window.VideoAspectRatio.cycle(videoEl);
-  
-  // Update button label to show current selection
-  if (aspectLabel && newLabel) {
-    aspectLabel.textContent = newLabel;
-  }
-  
-  // Show large overlay notification in center of screen
-  window.VideoAspectRatio.showOverlay(newLabel);
-  
-  console.log("✅ Aspect ratio changed to:", newLabel);
-};
+      // Hide after 1.5 seconds
+      setTimeout(() => {
+        if (!videoEl.paused) {
+          playPauseBtn.style.opacity = "0";
+          setTimeout(() => {
+            playPauseBtn.style.display = "none";
+          }, 300);
+        }
+      }, 1500);
+    } else {
+      videoEl.pause();
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+      playPauseBtn.innerHTML = playIconSVG;
+    }
+  };
 
-// ===== HELPER: Get Filtered Categories =====
-// ===== HELPER: Get Filtered Categories =====
+  // Add this function after SimpleVideoPlayer:
+  const toggleAspectRatio = () => {
+    const videoEl = document.getElementById("live-video-player");
+    const aspectBtn = document.querySelector(".aspect-ratio-btn");
+    const aspectLabel = aspectBtn?.querySelector(".aspect-label");
 
+    if (!videoEl || !aspectBtn || !window.VideoAspectRatio) return;
+
+    // Cycle to next aspect ratio
+    const newLabel = window.VideoAspectRatio.cycle(videoEl);
+
+    // Update button label to show current selection
+    if (aspectLabel && newLabel) {
+      aspectLabel.textContent = newLabel;
+    }
+
+    // Show large overlay notification in center of screen
+    window.VideoAspectRatio.showOverlay(newLabel);
+
+    console.log("✅ Aspect ratio changed to:", newLabel);
+  };
+
+  // ===== HELPER: Get Filtered Categories =====
+  // ===== HELPER: Get Filtered Categories =====
 
   // ===== HELPER: Dispose Player =====
   const disposeLivePlayer = () => {
@@ -466,13 +519,14 @@ const toggleAspectRatio = () => {
       window.livePlayer = null;
     }
   };
- 
 
   const qsa = (s) => [...document.querySelectorAll(s)];
   const qs = (s) => document.querySelector(s);
 
   // Helper to set focus on channel cards
   const setFocus = (list, idx, cls) => {
+    removeAllFocus(); // ADD THIS LINE
+
     list.forEach((el) => el.classList.remove(cls));
     if (list[idx]) {
       list[idx].classList.add(cls);
@@ -482,6 +536,8 @@ const toggleAspectRatio = () => {
 
   // Helper to set focus on sidebar
   const setSidebarFocus = (idx) => {
+    removeAllFocus(); // ADD THIS LINE
+
     const list = qsa(".sidebar-item");
     list.forEach((el) => el.classList.remove("sidebar-focused"));
     if (list[idx]) {
@@ -492,6 +548,8 @@ const toggleAspectRatio = () => {
 
   // Helper to set focus on sidebar search box
   const setSidebarSearchFocus = (active) => {
+    removeAllFocus(); // ADD THIS LINE
+
     const searchBox = qs(".sidebar-search-box");
     const searchInput = qs(".sidebar-search-input");
     if (active) {
@@ -504,20 +562,24 @@ const toggleAspectRatio = () => {
   };
 
   // Helper to set focus on header search box
-const setHeaderSearchFocus = (active) => {
-  const searchBox = qs(".search-container");
-  const searchInput = qs(".search-input");
-  if (active) {
-    searchBox.classList.add("search-focused");
-    searchInput.blur(); // Keep blurred initially
-  } else {
-    searchBox.classList.remove("search-focused");
-    searchInput.blur();
-  }
-};
+  const setHeaderSearchFocus = (active) => {
+    removeAllFocus(); // ADD THIS LINE
+
+    const searchBox = qs(".search-container");
+    const searchInput = qs(".search-input");
+    if (active) {
+      searchBox.classList.add("search-focused");
+      searchInput.blur(); // Keep blurred initially
+    } else {
+      searchBox.classList.remove("search-focused");
+      searchInput.blur();
+    }
+  };
 
   // Helper to set focus on epg
   const setEPGFocus = (idx) => {
+    removeAllFocus(); // ADD THIS LINE
+
     const list = qsa(".epg-item");
     list.forEach((el) => el.classList.remove("epg-focused"));
     if (list[idx]) {
@@ -526,44 +588,115 @@ const setHeaderSearchFocus = (active) => {
     }
   };
 
-
   // Helper to set focus on favorite button
-const setFavoriteBtnFocus = (active) => {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  if (!card) return;
-  
-  const favBtn = card.querySelector(".favorite-btn");
-  if (active) {
-    favBtn.style.outline = "3px solid #0ea5e9";
-    favBtn.style.outlineOffset = "2px";
-    favBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
-  } else {
-    favBtn.style.outline = "none";
+  const setFavoriteBtnFocus = (active) => {
+    removeAllFocus(); // ADD THIS LINE
+
+    const channels = qsa(".channel-card");
+    const card = channels[focusedChannelIndex];
+    if (!card) return;
+
+    const favBtn = card.querySelector(".favorite-btn");
+    if (active) {
+      favBtn.style.outline = "3px solid #0ea5e9";
+      favBtn.style.outlineOffset = "2px";
+      favBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } else {
+      favBtn.style.outline = "none";
+    }
+  };
+
+  // Helper to set focus on remove history button
+  const setRemoveHistoryBtnFocus = (active) => {
+    removeAllFocus(); // ADD THIS LINE
+
+    const channels = qsa(".channel-card");
+    const card = channels[focusedChannelIndex];
+    if (!card) return;
+
+    const removeBtn = card.querySelector(".remove-history-btn");
+    if (active && removeBtn) {
+      removeBtn.style.outline = "3px solid #0ea5e9";
+      removeBtn.style.outlineOffset = "2px";
+      removeBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } else if (removeBtn) {
+      removeBtn.style.outline = "none";
+    }
+  };
+  // Add this function after setRemoveHistoryBtnFocus or other focus helpers
+  const removeAllFocus = () => {
+    // Remove focus from all channel cards
+    const channels = qsa(".channel-card");
+    channels.forEach((c) =>
+      c.classList.remove("channel-card-focused", "channel-card-selected")
+    );
+
+    // Remove focus from sidebar items
+    const sidebarItems = qsa(".sidebar-item");
+    sidebarItems.forEach((item) =>
+      item.classList.remove("sidebar-focused", "sidebar-active")
+    );
+
+    // Remove focus from EPG items
+    const epgItems = qsa(".epg-item");
+    epgItems.forEach((item) => item.classList.remove("epg-focused"));
+
+    // Remove focus from search boxes
+    const headerSearchBox = qs(".search-container");
+    if (headerSearchBox) headerSearchBox.classList.remove("search-focused");
+
+    const sidebarSearchBox = qs(".sidebar-search-box");
+    if (sidebarSearchBox) sidebarSearchBox.classList.remove("search-focused");
+
+    // Remove focus from video player
+    const videoDiv = qs(".live-video-player-div");
+    if (videoDiv) {
+      videoDiv.classList.remove("video-focused");
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
+    }
+
+    // Remove focus from aspect ratio button
+    const aspectBtn = qs(".aspect-ratio-btn");
+    if (aspectBtn) {
+      aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+      aspectBtn.style.border = "none";
+    }
+
+    // Remove focus from favorite buttons
+    const favBtns = qsa(".favorite-btn");
+    favBtns.forEach((btn) => (btn.style.outline = "none"));
+
+    // Remove focus from remove history buttons
+    const removeBtns = qsa(".remove-history-btn");
+    removeBtns.forEach((btn) => (btn.style.outline = "none"));
+
+    // Remove focus from menu dots
+    const menuDots = qs(".menu-dots");
+    if (menuDots) menuDots.classList.remove("focused");
+  };
+
+  // After setRemoveHistoryBtnFocus function
+  function setFocusOnMenuDots() {
+    removeAllFocus();
+    const menuDots = document.querySelector(".menu-dots");
+    if (menuDots) {
+      menuDots.classList.add("focused");
+    }
+    isMenuDotsActive = true;
+    inChannelGrid = false;
+    inHeaderSearch = false;
+    inSidebarSearch = false;
+    inSidebar = false;
+    inEPG = false;
+    inVideoPlayer = false;
+    inFavoriteBtn = false;
+    inRemoveHistoryBtn = false;
   }
-};
 
-
-// Helper to set focus on remove history button
-const setRemoveHistoryBtnFocus = (active) => {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  if (!card) return;
-  
-  const removeBtn = card.querySelector(".remove-history-btn");
-  if (active && removeBtn) {
-    removeBtn.style.outline = "3px solid #0ea5e9";
-    removeBtn.style.outlineOffset = "2px";
-    removeBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
-  } else if (removeBtn) {
-    removeBtn.style.outline = "none";
-  }
-};
-
-
-// ===== PASSWORD MODAL COMPONENT =====
-const PasswordModal = () => {
-  return `
+  // ===== PASSWORD MODAL COMPONENT =====
+  const PasswordModal = () => {
+    return `
     <div class="password-modal-overlay" id="passwordModalOverlay">
       <div class="password-modal">
         <div class="password-modal-header">
@@ -590,395 +723,443 @@ const PasswordModal = () => {
       </div>
     </div>
   `;
-};
+  };
 
-// ===== SHOW PASSWORD MODAL =====
-const showPasswordModal = (channelData) => {
-  pendingChannel = channelData;
-  inPasswordModal = true;
-  inChannelGrid = false;
-  passwordModalFocusIndex = 0;
-  
-  // Add modal to page
-  const modalContainer = document.createElement('div');
-  modalContainer.innerHTML = PasswordModal();
-  document.body.appendChild(modalContainer.firstElementChild);
-  
-  // Focus input
-  setTimeout(() => {
-    const input = document.getElementById('passwordModalInput');
-    if (input) {
-      input.focus();
-    }
-    updatePasswordModalFocus();
-  }, 100);
-  
-  // Add eye icon toggle
-  const eyeIcon = document.getElementById('passwordModalEye');
-  const input = document.getElementById('passwordModalInput');
-  
-  if (eyeIcon && input) {
-    eyeIcon.addEventListener('click', () => {
-      if (input.type === 'password') {
-        input.type = 'text';
-        eyeIcon.classList.remove('fa-eye');
-        eyeIcon.classList.add('fa-eye-slash');
-      } else {
-        input.type = 'password';
-        eyeIcon.classList.remove('fa-eye-slash');
-        eyeIcon.classList.add('fa-eye');
-      }
-    });
-  }
-};
+  // ===== SHOW PASSWORD MODAL =====
+  const showPasswordModal = (channelData) => {
+    pendingChannel = channelData;
+    inPasswordModal = true;
+    inChannelGrid = false;
+    passwordModalFocusIndex = 0;
 
-// ===== HIDE PASSWORD MODAL =====
-// ===== HIDE PASSWORD MODAL (UPDATED) =====
-const hidePasswordModal = (clearPending = true) => {
-  const modal = document.getElementById('passwordModalOverlay');
-  if (modal) {
-    modal.remove();
-  }
-  inPasswordModal = false;
-  
-  // Only clear pending channel if explicitly requested (for cancel)
-  if (clearPending) {
-    pendingChannel = null;
-  }
-  
-  passwordModalFocusIndex = 0;
-  
-  // Return focus to channel grid
-  inChannelGrid = true;
-  const channels = qsa(".channel-card");
-  if (channels.length > 0) {
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-  }
-};
+    // Add modal to page
+    const modalContainer = document.createElement("div");
+    modalContainer.innerHTML = PasswordModal();
+    document.body.appendChild(modalContainer.firstElementChild);
 
-// ===== UPDATE PASSWORD MODAL FOCUS =====
-const updatePasswordModalFocus = () => {
-  const input = document.getElementById('passwordModalInput');
-  const submitBtn = document.querySelector('.password-submit-btn');
-  const cancelBtn = document.querySelector('.password-cancel-btn');
-  
-  // Remove all focus
-  if (input) input.classList.remove('password-input-focused');
-  if (submitBtn) submitBtn.classList.remove('password-btn-focused');
-  if (cancelBtn) cancelBtn.classList.remove('password-btn-focused');
-  
-  // Add focus to current element
-  if (passwordModalFocusIndex === 0 && input) {
-    input.classList.add('password-input-focused');
-    input.focus();
-  } else if (passwordModalFocusIndex === 1 && submitBtn) {
-    submitBtn.classList.add('password-btn-focused');
-  } else if (passwordModalFocusIndex === 2 && cancelBtn) {
-    cancelBtn.classList.add('password-btn-focused');
-  }
-};
-
-// ===== VERIFY PASSWORD =====
-// ===== VERIFY PASSWORD (UPDATED) =====
-// ===== VERIFY PASSWORD (FINAL VERSION) =====
-// ===== VERIFY PASSWORD (FIXED) =====
-const verifyPassword = () => {
-  const input = document.getElementById('passwordModalInput');
-  const enteredPassword = input?.value.trim() || "";
-  
-  console.log("🔑 Verifying password...", { enteredPassword }); // Debug
-  
-  if (!enteredPassword) {
-    console.log("❌ No password entered");
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Please enter password");
-    } else {
-      alert("Please enter password");
-    }
-    return;
-  }
-  
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const savedPassword = selectedPlaylist.parentalPassword || "";
-  
-  console.log("🔑 Comparing passwords..."); // Debug
-  
-  if (!savedPassword) {
-    console.log("❌ No password set in settings");
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "No parental password set. Please set one in Settings.");
-    } else {
-      alert("No parental password set. Please set one in Settings.");
-    }
-    hidePasswordModal(true); // Clear pending
-    return;
-  }
-  
-  if (enteredPassword === savedPassword) {
-    console.log("✅ Password correct!");
-    
-    // Store the channel data BEFORE closing modal
-    const channelToPlay = { ...pendingChannel };
-    
-    console.log("📺 Channel to play:", channelToPlay); // Debug
-    
-    // Close modal WITHOUT clearing pendingChannel
-    hidePasswordModal(false);
-    
-    // Show success message
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("success", "Access granted");
-    }
-    
-    // Clear pendingChannel manually
-    pendingChannel = null;
-    
-    // Play channel after a small delay
+    // Focus input
     setTimeout(() => {
-      if (channelToPlay && channelToPlay.stream_id) {
-        console.log("🎬 Now playing:", channelToPlay.name);
-        
-        // Call playChannel again, but this time it will bypass password check
-        // because we're passing the actual channel play logic
-        const videoWrapper = qs(".livetv-video-wrapper");
-        if (!videoWrapper) {
-          console.error("❌ Video wrapper not found!");
-          return;
-        }
+      const input = document.getElementById("passwordModalInput");
+      if (input) {
+        input.focus();
+      }
+      updatePasswordModalFocus();
+    }, 100);
 
-        // Get playlist data for stream URL
-        const currentPlaylistData = JSON.parse(
-          localStorage.getItem("currentPlaylistData")
-        );
-        const playlistLiveExtension = JSON.parse(
-          localStorage.getItem("selectedPlaylist")
-        );
+    // Add eye icon toggle
+    const eyeIcon = document.getElementById("passwordModalEye");
+    const input = document.getElementById("passwordModalInput");
 
-        if (!currentPlaylistData || !playlistLiveExtension) {
-          console.error("❌ Playlist data not found!");
-          return;
-        }
-
-        // Build stream URL
-        const liveVideoUrl = `${
-          currentPlaylistData.server_info.server_protocol
-        }://${currentPlaylistData.server_info.url}:${
-          currentPlaylistData.server_info.port
-        }/live/${currentPlaylistData.user_info.username}/${
-          currentPlaylistData.user_info.password
-        }/${channelToPlay.stream_id}.${
-          playlistLiveExtension.streamFormat || "m3u8"
-        }`;
-
-        console.log("🔗 Stream URL:", liveVideoUrl);
-
-        // Clean up existing player
-        if (window.livePlayer) {
-          try {
-            window.livePlayer.dispose();
-          } catch (err) {
-            console.warn("Player disposal error:", err);
-          }
-          window.livePlayer = null;
-        }
-
-        // Create player HTML
-        const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
-        const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
-        
-        const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-        const currentPlaylist = playlistsData.find(pl => pl.playlistName === selectedPlaylist.playlistName);
-        
-        const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
-        
-        if (isTs && hasFlowPlayer) {
-          videoWrapper.innerHTML = FlowLivePlayerComponent(
-            channelToPlay.stream_id,
-            liveVideoUrl,
-            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
-            "400px",
-            channelToPlay.name || "Unknown Channel"
-          );
-        } else if (hasLiveVideoJs) {
-          videoWrapper.innerHTML = LiveVideoJsComponent(
-            channelToPlay.stream_id,
-            liveVideoUrl,
-            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
-            "400px",
-            channelToPlay.name || "Unknown Channel"
-          );
+    if (eyeIcon && input) {
+      eyeIcon.addEventListener("click", () => {
+        if (input.type === "password") {
+          input.type = "text";
+          eyeIcon.classList.remove("fa-eye");
+          eyeIcon.classList.add("fa-eye-slash");
         } else {
-          videoWrapper.innerHTML = SimpleVideoPlayer(
-            channelToPlay.stream_id,
-            liveVideoUrl,
-            channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
-            "400px",
-            channelToPlay.name || "Unknown Channel"
+          input.type = "password";
+          eyeIcon.classList.remove("fa-eye-slash");
+          eyeIcon.classList.add("fa-eye");
+        }
+      });
+    }
+  };
+
+  // ===== HIDE PASSWORD MODAL =====
+  // ===== HIDE PASSWORD MODAL (UPDATED) =====
+  const hidePasswordModal = (clearPending = true) => {
+    const modal = document.getElementById("passwordModalOverlay");
+    if (modal) {
+      modal.remove();
+    }
+    inPasswordModal = false;
+
+    // Only clear pending channel if explicitly requested (for cancel)
+    if (clearPending) {
+      pendingChannel = null;
+    }
+
+    passwordModalFocusIndex = 0;
+
+    // Return focus to channel grid
+    inChannelGrid = true;
+    const channels = qsa(".channel-card");
+    if (channels.length > 0) {
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    }
+  };
+
+  // ===== UPDATE PASSWORD MODAL FOCUS =====
+  const updatePasswordModalFocus = () => {
+    const input = document.getElementById("passwordModalInput");
+    const submitBtn = document.querySelector(".password-submit-btn");
+    const cancelBtn = document.querySelector(".password-cancel-btn");
+
+    // Remove all focus
+    if (input) input.classList.remove("password-input-focused");
+    if (submitBtn) submitBtn.classList.remove("password-btn-focused");
+    if (cancelBtn) cancelBtn.classList.remove("password-btn-focused");
+
+    // Add focus to current element
+    if (passwordModalFocusIndex === 0 && input) {
+      input.classList.add("password-input-focused");
+      input.focus();
+    } else if (passwordModalFocusIndex === 1 && submitBtn) {
+      submitBtn.classList.add("password-btn-focused");
+    } else if (passwordModalFocusIndex === 2 && cancelBtn) {
+      cancelBtn.classList.add("password-btn-focused");
+    }
+  };
+
+  // ===== VERIFY PASSWORD =====
+  // ===== VERIFY PASSWORD (UPDATED) =====
+  // ===== VERIFY PASSWORD (FINAL VERSION) =====
+  // ===== VERIFY PASSWORD (FIXED) =====
+  const verifyPassword = () => {
+    const input = document.getElementById("passwordModalInput");
+    const enteredPassword = input?.value.trim() || "";
+
+    console.log("🔑 Verifying password...", { enteredPassword }); // Debug
+
+    if (!enteredPassword) {
+      console.log("❌ No password entered");
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast("error", "Please enter password");
+      } else {
+        alert("Please enter password");
+      }
+      return;
+    }
+
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const savedPassword = selectedPlaylist.parentalPassword || "";
+
+    console.log("🔑 Comparing passwords..."); // Debug
+
+    if (!savedPassword) {
+      console.log("❌ No password set in settings");
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast(
+          "error",
+          "No parental password set. Please set one in Settings."
+        );
+      } else {
+        alert("No parental password set. Please set one in Settings.");
+      }
+      hidePasswordModal(true); // Clear pending
+      return;
+    }
+
+    if (enteredPassword === savedPassword) {
+      console.log("✅ Password correct!");
+
+      // Store the channel data BEFORE closing modal
+      const channelToPlay = { ...pendingChannel };
+
+      console.log("📺 Channel to play:", channelToPlay); // Debug
+
+      // Close modal WITHOUT clearing pendingChannel
+      hidePasswordModal(false);
+
+      // Show success message
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast("success", "Access granted");
+      }
+
+      // Clear pendingChannel manually
+      pendingChannel = null;
+
+      // Play channel after a small delay
+      setTimeout(() => {
+        if (channelToPlay && channelToPlay.stream_id) {
+          console.log("🎬 Now playing:", channelToPlay.name);
+
+          // Call playChannel again, but this time it will bypass password check
+          // because we're passing the actual channel play logic
+          const videoWrapper = qs(".livetv-video-wrapper");
+          if (!videoWrapper) {
+            console.error("❌ Video wrapper not found!");
+            return;
+          }
+
+          // Get playlist data for stream URL
+          const currentPlaylistData = JSON.parse(
+            localStorage.getItem("currentPlaylistData")
           );
-          
-          // Initialize Video.js
-          setTimeout(() => {
-            const videoEl = document.getElementById("live-video-player");
-            const playPauseBtn = document.querySelector(".play-pause-btn");
-            const aspectBtn = document.querySelector(".aspect-ratio-btn");
-            
-            if (videoEl && typeof videojs !== "undefined") {
-              window.livePlayer = videojs(videoEl, {
-                controls: true,
-                autoplay: true,
-                preload: "auto",
-                fluid: true
-              });
-              
-              if (window.VideoAspectRatio) {
-                window.VideoAspectRatio.initialize(videoEl);
-              }
-              
-              window.livePlayer.on("waiting", () => {
-                qs(".live-video-loader")?.classList.remove("hidden");
-              });
-              
-              window.livePlayer.on("playing", () => {
-                qs(".live-video-loader")?.classList.add("hidden");
-              });
-              
-              window.livePlayer.on("error", (e) => {
-                console.error("❌ Player error:", e);
-              });
-              
-              // Play/Pause button handlers
-              if (playPauseBtn) {
-                const playIconSVG = `
+          const playlistLiveExtension = JSON.parse(
+            localStorage.getItem("selectedPlaylist")
+          );
+
+          if (!currentPlaylistData || !playlistLiveExtension) {
+            console.error("❌ Playlist data not found!");
+            return;
+          }
+
+          // Build stream URL
+          const liveVideoUrl = `${
+            currentPlaylistData.server_info.server_protocol
+          }://${currentPlaylistData.server_info.url}:${
+            currentPlaylistData.server_info.port
+          }/live/${currentPlaylistData.user_info.username}/${
+            currentPlaylistData.user_info.password
+          }/${channelToPlay.stream_id}.${
+            playlistLiveExtension.streamFormat || "m3u8"
+          }`;
+
+          console.log("🔗 Stream URL:", liveVideoUrl);
+
+          // Clean up existing player
+          if (window.livePlayer) {
+            try {
+              window.livePlayer.dispose();
+            } catch (err) {
+              console.warn("Player disposal error:", err);
+            }
+            window.livePlayer = null;
+          }
+
+          // Create player HTML
+          const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
+          const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
+
+          const playlistsData = JSON.parse(
+            localStorage.getItem("playlistsData")
+          );
+          const currentPlaylist = playlistsData.find(
+            (pl) => pl.playlistName === selectedPlaylist.playlistName
+          );
+
+          const isTs =
+            (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
+
+          if (isTs && hasFlowPlayer) {
+            videoWrapper.innerHTML = FlowLivePlayerComponent(
+              channelToPlay.stream_id,
+              liveVideoUrl,
+              channelToPlay.stream_icon ||
+                channelToPlay.logo ||
+                "/assets/profile.png",
+              "400px",
+              channelToPlay.name || "Unknown Channel"
+            );
+          } else if (hasLiveVideoJs) {
+            videoWrapper.innerHTML = LiveVideoJsComponent(
+              channelToPlay.stream_id,
+              liveVideoUrl,
+              channelToPlay.stream_icon ||
+                channelToPlay.logo ||
+                "/assets/profile.png",
+              "400px",
+              channelToPlay.name || "Unknown Channel"
+            );
+          } else {
+            videoWrapper.innerHTML = SimpleVideoPlayer(
+              channelToPlay.stream_id,
+              liveVideoUrl,
+              channelToPlay.stream_icon ||
+                channelToPlay.logo ||
+                "/assets/profile.png",
+              "400px",
+              channelToPlay.name || "Unknown Channel"
+            );
+
+            // Initialize Video.js
+            setTimeout(() => {
+              const videoEl = document.getElementById("live-video-player");
+              const playPauseBtn = document.querySelector(".play-pause-btn");
+              const aspectBtn = document.querySelector(".aspect-ratio-btn");
+
+              if (videoEl && typeof videojs !== "undefined") {
+                window.livePlayer = videojs(videoEl, {
+                  controls: true,
+                  autoplay: true,
+                  preload: "auto",
+                  fluid: true,
+                });
+
+                if (window.VideoAspectRatio) {
+                  window.VideoAspectRatio.initialize(videoEl);
+                }
+
+                window.livePlayer.on("waiting", () => {
+                  qs(".live-video-loader")?.classList.remove("hidden");
+                });
+
+                window.livePlayer.on("playing", () => {
+                  qs(".live-video-loader")?.classList.add("hidden");
+                });
+
+                window.livePlayer.on("error", (e) => {
+                  console.error("❌ Player error:", e);
+                });
+
+                // Play/Pause button handlers
+                if (playPauseBtn) {
+                  const playIconSVG = `
                   <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 `;
-                
-                const pauseIconSVG = `
+
+                  const pauseIconSVG = `
                   <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
                     <rect x="6" y="4" width="4" height="16" rx="1"/>
                     <rect x="14" y="4" width="4" height="16" rx="1"/>
                   </svg>
                 `;
-                
-                playPauseBtn.style.display = "flex";
-                playPauseBtn.style.opacity = "1";
-                setTimeout(() => {
-                  playPauseBtn.style.opacity = "0";
-                  setTimeout(() => {
-                    playPauseBtn.style.display = "none";
-                  }, 300);
-                }, 2000);
-                
-                videoEl.addEventListener("pause", () => {
+
                   playPauseBtn.style.display = "flex";
                   playPauseBtn.style.opacity = "1";
-                  playPauseBtn.innerHTML = playIconSVG;
-                });
-                
-                videoEl.addEventListener("play", () => {
-                  playPauseBtn.style.display = "flex";
-                  playPauseBtn.style.opacity = "1";
-                  playPauseBtn.innerHTML = pauseIconSVG;
                   setTimeout(() => {
-                    if (!videoEl.paused) {
-                      playPauseBtn.style.opacity = "0";
-                      setTimeout(() => {
-                        playPauseBtn.style.display = "none";
-                      }, 300);
-                    }
-                  }, 1500);
-                });
-                
-                playPauseBtn.addEventListener("click", (e) => {
-                  e.stopPropagation();
-                  togglePlayPause();
-                });
-                
-                videoEl.addEventListener("click", (e) => {
-                  e.stopPropagation();
-                  playPauseBtn.style.display = "flex";
-                  togglePlayPause();
-                });
-              }
-              
-              if (aspectBtn) {
-                const aspectLabel = aspectBtn.querySelector(".aspect-label");
-                if (aspectLabel && window.VideoAspectRatio) {
-                  aspectLabel.textContent = window.VideoAspectRatio.getCurrentRatio();
+                    playPauseBtn.style.opacity = "0";
+                    setTimeout(() => {
+                      playPauseBtn.style.display = "none";
+                    }, 300);
+                  }, 2000);
+
+                  videoEl.addEventListener("pause", () => {
+                    playPauseBtn.style.display = "flex";
+                    playPauseBtn.style.opacity = "1";
+                    playPauseBtn.innerHTML = playIconSVG;
+                  });
+
+                  videoEl.addEventListener("play", () => {
+                    playPauseBtn.style.display = "flex";
+                    playPauseBtn.style.opacity = "1";
+                    playPauseBtn.innerHTML = pauseIconSVG;
+                    setTimeout(() => {
+                      if (!videoEl.paused) {
+                        playPauseBtn.style.opacity = "0";
+                        setTimeout(() => {
+                          playPauseBtn.style.display = "none";
+                        }, 300);
+                      }
+                    }, 1500);
+                  });
+
+                  playPauseBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    togglePlayPause();
+                  });
+
+                  videoEl.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    playPauseBtn.style.display = "flex";
+                    togglePlayPause();
+                  });
                 }
-                
-                aspectBtn.addEventListener("click", (e) => {
-                  e.stopPropagation();
-                  toggleAspectRatio();
-                });
+
+                if (aspectBtn) {
+                  const aspectLabel = aspectBtn.querySelector(".aspect-label");
+                  if (aspectLabel && window.VideoAspectRatio) {
+                    aspectLabel.textContent =
+                      window.VideoAspectRatio.getCurrentRatio();
+                  }
+
+                  aspectBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    toggleAspectRatio();
+                  });
+                }
               }
-            }
-          }, 100);
-        }
-
-        // Update visual states
-        qsa(".channel-card").forEach(c => {
-          c.classList.remove("channel-card-selected", "channel-card-focused", "channel-card-playing");
-        });
-
-        const selectedCard = qs(`.channel-card[data-stream-id="${channelToPlay.stream_id}"]`);
-        if (selectedCard) {
-          selectedCard.classList.add("channel-card-selected", "channel-card-focused", "channel-card-playing");
-          
-          const allCards = qsa(".channel-card");
-          const cardIndex = Array.from(allCards).indexOf(selectedCard);
-          if (cardIndex !== -1) {
-            focusedChannelIndex = cardIndex;
+            }, 100);
           }
-        }
 
-        // Update EPG
-        updateEPG(channelToPlay);
+          // Update visual states
+          qsa(".channel-card").forEach((c) => {
+            c.classList.remove(
+              "channel-card-selected",
+              "channel-card-focused",
+              "channel-card-playing"
+            );
+          });
 
-        // Add to history
-        if (selectedCategoryId !== "channelHistory") {
-          const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-          const selectedChannelItem = streams.find(
-            (item) => item.stream_id == channelToPlay.stream_id
+          const selectedCard = qs(
+            `.channel-card[data-stream-id="${channelToPlay.stream_id}"]`
           );
-          if (selectedChannelItem && typeof window.addItemToHistory === "function") {
-            window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+          if (selectedCard) {
+            selectedCard.classList.add(
+              "channel-card-selected",
+              "channel-card-focused",
+              "channel-card-playing"
+            );
+
+            const allCards = qsa(".channel-card");
+            const cardIndex = Array.from(allCards).indexOf(selectedCard);
+            if (cardIndex !== -1) {
+              focusedChannelIndex = cardIndex;
+            }
           }
+
+          // Update EPG
+          updateEPG(channelToPlay);
+
+          // Add to history
+          if (selectedCategoryId !== "channelHistory") {
+            const streams =
+              window.currentAllStreams ||
+              allStreams ||
+              window.allLiveStreams ||
+              [];
+            const selectedChannelItem = streams.find(
+              (item) => item.stream_id == channelToPlay.stream_id
+            );
+            if (
+              selectedChannelItem &&
+              typeof window.addItemToHistory === "function"
+            ) {
+              window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+            }
+          }
+
+          console.log("✅ Channel playback initiated");
         }
-        
-        console.log("✅ Channel playback initiated");
-      }
-    }, 300);
-  } else {
-    console.log("❌ Password incorrect");
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Incorrect Password");
+      }, 300);
     } else {
-      alert("Incorrect password");
+      console.log("❌ Password incorrect");
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast("error", "Incorrect Password");
+      } else {
+        alert("Incorrect password");
+      }
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
     }
-    if (input) {
-      input.value = "";
-      input.focus();
-    }
-  }
-};
+  };
 
   // Play channel function
-// ===== PLAY CHANNEL FUNCTION (UPDATED) =====
- // ===== PLAY CHANNEL FUNCTION (FIXED) =====
+  // ===== PLAY CHANNEL FUNCTION (UPDATED) =====
+  // ===== PLAY CHANNEL FUNCTION (FIXED) =====
   const playChannel = (channelData) => {
     console.log("🎬 Playing channel:", channelData); // Debug log
 
-    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-  
-  if (hasParentalPassword && isAdultContent(channelData)) {
-    console.log("🔒 Adult content detected - showing password prompt");
-    showPasswordModal(channelData);
-    return; // Stop here and wait for password verification
-  }
-    
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const hasParentalPassword =
+      selectedPlaylist.parentalPassword &&
+      selectedPlaylist.parentalPassword.length > 0;
+
+    if (hasParentalPassword && isAdultContent(channelData)) {
+      console.log("🔒 Adult content detected - showing password prompt");
+      showPasswordModal(channelData);
+      return; // Stop here and wait for password verification
+    }
+
     const videoWrapper = qs(".livetv-video-wrapper");
     if (!videoWrapper) {
       console.error("❌ Video wrapper not found!");
@@ -1005,9 +1186,7 @@ const verifyPassword = () => {
       currentPlaylistData.server_info.port
     }/live/${currentPlaylistData.user_info.username}/${
       currentPlaylistData.user_info.password
-    }/${channelData.stream_id}.${
-      playlistLiveExtension.streamFormat || "m3u8"
-    }`;
+    }/${channelData.stream_id}.${playlistLiveExtension.streamFormat || "m3u8"}`;
 
     console.log("🔗 Stream URL:", liveVideoUrl); // Debug log
 
@@ -1024,15 +1203,20 @@ const verifyPassword = () => {
     // Check if player components exist
     const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
     const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
-    
-    console.log("🎮 Player components available:", { hasLiveVideoJs, hasFlowPlayer });
+
+    console.log("🎮 Player components available:", {
+      hasLiveVideoJs,
+      hasFlowPlayer,
+    });
 
     // Get stream format
     const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    const currentPlaylist = playlistsData.find(pl => pl.playlistName === selectedPlaylist.playlistName);
-    
+    const currentPlaylist = playlistsData.find(
+      (pl) => pl.playlistName === selectedPlaylist.playlistName
+    );
+
     const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
-    
+
     // Create player HTML
     if (isTs && hasFlowPlayer) {
       videoWrapper.innerHTML = FlowLivePlayerComponent(
@@ -1059,137 +1243,152 @@ const verifyPassword = () => {
         "400px",
         channelData.name || "Unknown Channel"
       );
-      
-   if (selectedCategoryId !== "channelHistory") {
-  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-  const selectedChannelItem = streams.find(
-    (item) => item.stream_id == channelData.stream_id
-  );
-  if (selectedChannelItem && typeof window.addItemToHistory === "function") {
-    window.addItemToHistory(selectedChannelItem, "ChannelListLive");
-  }
-}
 
-    // Initialize Video.js if available
-// Find this section in playChannel function (around line 400)
-// REPLACE the entire setTimeout block with this:
+      if (selectedCategoryId !== "channelHistory") {
+        const streams =
+          window.currentAllStreams || allStreams || window.allLiveStreams || [];
+        const selectedChannelItem = streams.find(
+          (item) => item.stream_id == channelData.stream_id
+        );
+        if (
+          selectedChannelItem &&
+          typeof window.addItemToHistory === "function"
+        ) {
+          window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+        }
+      }
 
-setTimeout(() => {
-  const videoEl = document.getElementById("live-video-player");
-  const playPauseBtn = document.querySelector(".play-pause-btn");
-  const aspectBtn = document.querySelector(".aspect-ratio-btn");
-  
-  if (videoEl && typeof videojs !== "undefined") {
-    window.livePlayer = videojs(videoEl, {
-      controls: true,
-      autoplay: true,
-      preload: "auto",
-      fluid: true
-    });
-    
-    // Initialize aspect ratio to default (16:9)
-    if (window.VideoAspectRatio) {
-      window.VideoAspectRatio.initialize(videoEl);
-    }
-    
-    window.livePlayer.on("waiting", () => {
-      qs(".live-video-loader")?.classList.remove("hidden");
-    });
-    
-    window.livePlayer.on("playing", () => {
-      qs(".live-video-loader")?.classList.add("hidden");
-    });
-    
-    window.livePlayer.on("error", (e) => {
-      console.error("❌ Player error:", e);
-    });
-    
-    // Play/Pause button event listeners
-    if (playPauseBtn) {
-      // SVG icon definitions
-      const playIconSVG = `
+      // Initialize Video.js if available
+      // Find this section in playChannel function (around line 400)
+      // REPLACE the entire setTimeout block with this:
+
+      setTimeout(() => {
+        const videoEl = document.getElementById("live-video-player");
+        const playPauseBtn = document.querySelector(".play-pause-btn");
+        const aspectBtn = document.querySelector(".aspect-ratio-btn");
+
+        if (videoEl && typeof videojs !== "undefined") {
+          window.livePlayer = videojs(videoEl, {
+            controls: true,
+            autoplay: true,
+            preload: "auto",
+            fluid: true,
+          });
+
+          // Initialize aspect ratio to default (16:9)
+          if (window.VideoAspectRatio) {
+            window.VideoAspectRatio.initialize(videoEl);
+          }
+
+          window.livePlayer.on("waiting", () => {
+            qs(".live-video-loader")?.classList.remove("hidden");
+          });
+
+          window.livePlayer.on("playing", () => {
+            qs(".live-video-loader")?.classList.add("hidden");
+          });
+
+          window.livePlayer.on("error", (e) => {
+            console.error("❌ Player error:", e);
+          });
+
+          // Play/Pause button event listeners
+          if (playPauseBtn) {
+            // SVG icon definitions
+            const playIconSVG = `
         <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
           <path d="M8 5v14l11-7z"/>
         </svg>
       `;
-      
-      const pauseIconSVG = `
+
+            const pauseIconSVG = `
         <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
           <rect x="6" y="4" width="4" height="16" rx="1"/>
           <rect x="14" y="4" width="4" height="16" rx="1"/>
         </svg>
       `;
-      
-      // Show button initially then hide
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.opacity = "1";
-      setTimeout(() => {
-        playPauseBtn.style.opacity = "0";
-        setTimeout(() => {
-          playPauseBtn.style.display = "none";
-        }, 300);
-      }, 2000);
-      
-      videoEl.addEventListener("pause", () => {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        playPauseBtn.innerHTML = playIconSVG;
-      });
-      
-      videoEl.addEventListener("play", () => {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        playPauseBtn.innerHTML = pauseIconSVG;
-        setTimeout(() => {
-          if (!videoEl.paused) {
-            playPauseBtn.style.opacity = "0";
+
+            // Show button initially then hide
+            playPauseBtn.style.display = "flex";
+            playPauseBtn.style.opacity = "1";
             setTimeout(() => {
-              playPauseBtn.style.display = "none";
-            }, 300);
+              playPauseBtn.style.opacity = "0";
+              setTimeout(() => {
+                playPauseBtn.style.display = "none";
+              }, 300);
+            }, 2000);
+
+            videoEl.addEventListener("pause", () => {
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              playPauseBtn.innerHTML = playIconSVG;
+            });
+
+            videoEl.addEventListener("play", () => {
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              playPauseBtn.innerHTML = pauseIconSVG;
+              setTimeout(() => {
+                if (!videoEl.paused) {
+                  playPauseBtn.style.opacity = "0";
+                  setTimeout(() => {
+                    playPauseBtn.style.display = "none";
+                  }, 300);
+                }
+              }, 1500);
+            });
+
+            playPauseBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              togglePlayPause();
+            });
+
+            // Click on video to toggle play/pause and show button
+            videoEl.addEventListener("click", (e) => {
+              e.stopPropagation();
+              playPauseBtn.style.display = "flex";
+              togglePlayPause();
+            });
           }
-        }, 1500);
-      });
-      
-      playPauseBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePlayPause();
-      });
-      
-      // Click on video to toggle play/pause and show button
-      videoEl.addEventListener("click", (e) => {
-        e.stopPropagation();
-        playPauseBtn.style.display = "flex";
-        togglePlayPause();
-      });
-    }
-    
-    // Aspect ratio button event listener
-    if (aspectBtn) {
-      const aspectLabel = aspectBtn.querySelector(".aspect-label");
-      
-      // Set initial aspect ratio label
-      if (aspectLabel && window.VideoAspectRatio) {
-        aspectLabel.textContent = window.VideoAspectRatio.getCurrentRatio();
-      }
-      
-      aspectBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleAspectRatio();
-      });
-    }
-  }
-}, 100);
+
+          // Aspect ratio button event listener
+          if (aspectBtn) {
+            const aspectLabel = aspectBtn.querySelector(".aspect-label");
+
+            // Set initial aspect ratio label
+            if (aspectLabel && window.VideoAspectRatio) {
+              aspectLabel.textContent =
+                window.VideoAspectRatio.getCurrentRatio();
+            }
+
+            aspectBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              toggleAspectRatio();
+            });
+          }
+        }
+      }, 100);
     }
 
     // Update visual states
-    qsa(".channel-card").forEach(c => {
-      c.classList.remove("channel-card-selected", "channel-card-focused", "channel-card-playing");
+    qsa(".channel-card").forEach((c) => {
+      c.classList.remove(
+        "channel-card-selected",
+        "channel-card-focused",
+        "channel-card-playing"
+      );
     });
 
-    const selectedCard = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
+    const selectedCard = qs(
+      `.channel-card[data-stream-id="${channelData.stream_id}"]`
+    );
     if (selectedCard) {
-      selectedCard.classList.add("channel-card-selected", "channel-card-focused", "channel-card-playing");
-      
+      selectedCard.classList.add(
+        "channel-card-selected",
+        "channel-card-focused",
+        "channel-card-playing"
+      );
+
       const allCards = qsa(".channel-card");
       const cardIndex = Array.from(allCards).indexOf(selectedCard);
       if (cardIndex !== -1) {
@@ -1209,153 +1408,172 @@ setTimeout(() => {
         addItemToHistory(selectedChannelItem, "ChannelListLive");
       }
     }
-    
+
     console.log("✅ Channel playback initiated");
   };
 
-window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
-  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
-  
-  const currentPlaylist = playlistsData.find(
-    pl => pl.playlistName === selectedPlaylist.playlistName
-  );
-  
-  if (!currentPlaylist || !currentPlaylist[favoriteKey]) {
-    return false;
-  }
-  
-  // Check if stream_id exists (works for both objects and IDs)
-  return currentPlaylist[favoriteKey].some(fav => 
-    (typeof fav === 'object' ? fav.stream_id : fav) === item.stream_id
-  );
-};
+  window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    const selectedPlaylist = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    );
+
+    const currentPlaylist = playlistsData.find(
+      (pl) => pl.playlistName === selectedPlaylist.playlistName
+    );
+
+    if (!currentPlaylist || !currentPlaylist[favoriteKey]) {
+      return false;
+    }
+
+    // Check if stream_id exists (works for both objects and IDs)
+    return currentPlaylist[favoriteKey].some(
+      (fav) =>
+        (typeof fav === "object" ? fav.stream_id : fav) === item.stream_id
+    );
+  };
 
   // ===== UPDATE EPG (Program Guide) =====
-const updateEPG = (channelData) => {
-  const epgList = qs(".epg-list");
-  const epgChannelLogo = qs(".epg-channel-logo");
-  const epgFavoriteBtn = qs(".epg-favorite-btn");
-  
-  if (!epgList) return;
+  const updateEPG = (channelData) => {
+    const epgList = qs(".epg-list");
+    const epgChannelLogo = qs(".epg-channel-logo");
+    const epgFavoriteBtn = qs(".epg-favorite-btn");
 
-  // Update channel logo
-  if (epgChannelLogo) {
-    epgChannelLogo.src = channelData.stream_icon || channelData.logo || "/assets/channel.png";
-    epgChannelLogo.alt = channelData.name || "Channel";
-  }
+    if (!epgList) return;
 
-  // Update favorite button state
-  if (epgFavoriteBtn) {
-    const isFav = window.isItemFavoriteForPlaylist ? 
-      window.isItemFavoriteForPlaylist(channelData, "favoritesLiveTV") : false;
-    
-    const svg = epgFavoriteBtn.querySelector("svg path");
-    if (svg) {
-      svg.setAttribute("fill", isFav ? "red" : "none");
+    // Update channel logo
+    if (epgChannelLogo) {
+      epgChannelLogo.src =
+        channelData.stream_icon || channelData.logo || "/assets/channel.png";
+      epgChannelLogo.alt = channelData.name || "Channel";
     }
-    
-    // Add click handler for favorite button
-    epgFavoriteBtn.onclick = () => {
-      const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
+
+    // Update favorite button state
+    if (epgFavoriteBtn) {
+      const isFav = window.isItemFavoriteForPlaylist
+        ? window.isItemFavoriteForPlaylist(channelData, "favoritesLiveTV")
+        : false;
+
       const svg = epgFavoriteBtn.querySelector("svg path");
       if (svg) {
-        svg.setAttribute("fill", result.isFav ? "red" : "none");
+        svg.setAttribute("fill", isFav ? "red" : "none");
       }
-      
-      if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-        Toaster.showToast(
-          result.isFav ? "success" : "error",
-          `Channel ${result.isFav ? "added to" : "removed from"} favorites`
-        );
-      }
-    };
-  }
 
-  // Show loading state
-  epgList.innerHTML = `
+      // Add click handler for favorite button
+      epgFavoriteBtn.onclick = () => {
+        const result = window.toggleFavoriteItem(
+          channelData,
+          "favoritesLiveTV"
+        );
+        const svg = epgFavoriteBtn.querySelector("svg path");
+        if (svg) {
+          svg.setAttribute("fill", result.isFav ? "red" : "none");
+        }
+
+        if (
+          typeof Toaster !== "undefined" &&
+          typeof Toaster.showToast === "function"
+        ) {
+          Toaster.showToast(
+            result.isFav ? "success" : "error",
+            `Channel ${result.isFav ? "added to" : "removed from"} favorites`
+          );
+        }
+      };
+    }
+
+    // Show loading state
+    epgList.innerHTML = `
     <div class="epg-item">
       <span class="epg-title">Loading EPG...</span>
     </div>
   `;
 
-  // Fetch real EPG data from API
-  const streamId = channelData.stream_id;
-  
-  if (streamId && typeof getLiveStreamEpg === "function") {
-    getLiveStreamEpg(streamId).then((data) => {
-      const epgData = data.epg_listings || [];
-      
-      if (epgData.length > 0) {
-        renderEPGList(epgData);
-      } else {
-        epgList.innerHTML = `
+    // Fetch real EPG data from API
+    const streamId = channelData.stream_id;
+
+    if (streamId && typeof getLiveStreamEpg === "function") {
+      getLiveStreamEpg(streamId)
+        .then((data) => {
+          const epgData = data.epg_listings || [];
+
+          if (epgData.length > 0) {
+            renderEPGList(epgData);
+          } else {
+            epgList.innerHTML = `
           <div class="epg-item">
             <span class="epg-title">No EPG data available</span>
           </div>
         `;
-      }
-    }).catch(() => {
-      epgList.innerHTML = `
+          }
+        })
+        .catch(() => {
+          epgList.innerHTML = `
         <div class="epg-item">
           <span class="epg-title">Failed to load EPG</span>
         </div>
       `;
-    });
-  }
-};
+        });
+    }
+  };
 
   // ===== RENDER EPG LIST =====
-const renderEPGList = (epgData) => {
-  const epgList = qs(".epg-list");
-  if (!epgList) return;
+  const renderEPGList = (epgData) => {
+    const epgList = qs(".epg-list");
+    if (!epgList) return;
 
-  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
-  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(pl => pl.playlistName === currentPlaylistName);
-  const timeFormat = currentPlaylist.timeFormat || '12hrs';
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
+    const currentPlaylist = JSON.parse(
+      localStorage.getItem("playlistsData")
+    ).find((pl) => pl.playlistName === currentPlaylistName);
+    const timeFormat = currentPlaylist.timeFormat || "12hrs";
 
-  const epgHTML = epgData.map(program => {
-    const startTime = formatTime(program.start, timeFormat);
-    const endTime = formatTime(program.end, timeFormat);
-    const title = decodeBase64(program.title) || "Untitled";
-    
-    return `
+    const epgHTML = epgData
+      .map((program) => {
+        const startTime = formatTime(program.start, timeFormat);
+        const endTime = formatTime(program.end, timeFormat);
+        const title = decodeBase64(program.title) || "Untitled";
+
+        return `
       <div class="epg-item">
         <span class="epg-time">${startTime} - ${endTime}</span>
         <span class="epg-title">${title}</span>
       </div>
     `;
-  }).join("");
+      })
+      .join("");
 
-  epgList.innerHTML = epgHTML;
-};
+    epgList.innerHTML = epgHTML;
+  };
 
-// Helper functions (copy from LiveVideoJsComponent)
-// function formatTime(dateStr, format) {
-//   let date;
-//   if (!isNaN(dateStr)) {
-//     const ts = dateStr.toString().length === 10 ? dateStr * 1000 : dateStr;
-//     date = new Date(parseInt(ts));
-//   } else {
-//     date = new Date(dateStr);
-//   }
-//   if (isNaN(date)) return dateStr;
+  // Helper functions (copy from LiveVideoJsComponent)
+  // function formatTime(dateStr, format) {
+  //   let date;
+  //   if (!isNaN(dateStr)) {
+  //     const ts = dateStr.toString().length === 10 ? dateStr * 1000 : dateStr;
+  //     date = new Date(parseInt(ts));
+  //   } else {
+  //     date = new Date(dateStr);
+  //   }
+  //   if (isNaN(date)) return dateStr;
 
-//   const options = format === "12hrs"
-//     ? { hour: "numeric", minute: "2-digit", hour12: true }
-//     : { hour: "2-digit", minute: "2-digit", hour12: false };
+  //   const options = format === "12hrs"
+  //     ? { hour: "numeric", minute: "2-digit", hour12: true }
+  //     : { hour: "2-digit", minute: "2-digit", hour12: false };
 
-//   return new Intl.DateTimeFormat(undefined, options).format(date);
-// }
+  //   return new Intl.DateTimeFormat(undefined, options).format(date);
+  // }
 
-function decodeBase64(str) {
-  try {
-    if (!str) return "";
-    return decodeURIComponent(escape(window.atob(str)));
-  } catch (e) {
-    return str;
+  function decodeBase64(str) {
+    try {
+      if (!str) return "";
+      return decodeURIComponent(escape(window.atob(str)));
+    } catch (e) {
+      return str;
+    }
   }
-}
 
   // ===== RENDER DEFAULT EPG (No Data Available) =====
   const renderDefaultEPG = (channelName) => {
@@ -1364,132 +1582,143 @@ function decodeBase64(str) {
 
     const now = new Date();
     const programs = [];
-    
+
     // Generate fake schedule for demo
     for (let i = 0; i < 8; i++) {
-      const startTime = new Date(now.getTime() + (i * 60 * 60 * 1000));
-      const endTime = new Date(startTime.getTime() + (60 * 60 * 1000));
-      
+      const startTime = new Date(now.getTime() + i * 60 * 60 * 1000);
+      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
       programs.push({
         start: startTime.getTime() / 1000,
         end: endTime.getTime() / 1000,
-        title: `${channelName} Program ${i + 1}`
+        title: `${channelName} Program ${i + 1}`,
       });
     }
 
     renderEPGList(programs);
   };
 
-window.toggleFavoriteItem = (item, favoriteKey) => {
-  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
-  
-  const currentPlaylist = playlistsData.find(
-    pl => pl.playlistName === selectedPlaylist.playlistName
-  );
-  
-  if (!currentPlaylist[favoriteKey]) {
-    currentPlaylist[favoriteKey] = [];
-  }
-  
-  const index = currentPlaylist[favoriteKey].findIndex(
-    fav => (typeof fav === 'object' ? fav.stream_id : fav) === item.stream_id
-  );
-  
-  let isFav;
-  if (index > -1) {
-    currentPlaylist[favoriteKey].splice(index, 1);
-    isFav = false;
-  } else {
-    // Store the FULL item object with all properties
-    const fullItem = {
-      stream_id: item.stream_id,
-      name: item.name,
-      stream_icon: item.stream_icon,  // Make sure this is included
-      stream_type: item.stream_type,
-      category_id: item.category_id,
-      // Add any other properties you need
-    };
-    currentPlaylist[favoriteKey].push(fullItem);
-    isFav = true;
-  }
-  
-  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-  
-  return { isFav, item };
-};
+  window.toggleFavoriteItem = (item, favoriteKey) => {
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    const selectedPlaylist = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    );
+
+    const currentPlaylist = playlistsData.find(
+      (pl) => pl.playlistName === selectedPlaylist.playlistName
+    );
+
+    if (!currentPlaylist[favoriteKey]) {
+      currentPlaylist[favoriteKey] = [];
+    }
+
+    const index = currentPlaylist[favoriteKey].findIndex(
+      (fav) =>
+        (typeof fav === "object" ? fav.stream_id : fav) === item.stream_id
+    );
+
+    let isFav;
+    if (index > -1) {
+      currentPlaylist[favoriteKey].splice(index, 1);
+      isFav = false;
+    } else {
+      // Store the FULL item object with all properties
+      const fullItem = {
+        stream_id: item.stream_id,
+        name: item.name,
+        stream_icon: item.stream_icon, // Make sure this is included
+        stream_type: item.stream_type,
+        category_id: item.category_id,
+        // Add any other properties you need
+      };
+      currentPlaylist[favoriteKey].push(fullItem);
+      isFav = true;
+    }
+
+    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+
+    return { isFav, item };
+  };
 
   // ===== TOGGLE FAVORITE =====
- // ===== TOGGLE FAVORITE =====
-const toggleFavorite = (channelData) => {
-  console.log("toggleFavorite called with:", channelData);
+  // ===== TOGGLE FAVORITE =====
+  const toggleFavorite = (channelData) => {
+    console.log("toggleFavorite called with:", channelData);
 
-  const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
-  
-  // Update heart button UI
-  const card = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
-  if (card) {
-    const favBtn = card.querySelector(".favorite-btn");
-    if (favBtn) {
-      const svg = favBtn.querySelector("svg path");
-      if (svg) {
-        svg.setAttribute("fill", result.isFav ? "red" : "none");
+    const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
+
+    // Update heart button UI
+    const card = qs(`.channel-card[data-stream-id="${channelData.stream_id}"]`);
+    if (card) {
+      const favBtn = card.querySelector(".favorite-btn");
+      if (favBtn) {
+        const svg = favBtn.querySelector("svg path");
+        if (svg) {
+          svg.setAttribute("fill", result.isFav ? "red" : "none");
+        }
       }
     }
-  }
-  
-  // **UPDATE SIDEBAR COUNTS IMMEDIATELY**
-  renderSidebarCategories();
-  
-  // Show toast notification
-  if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-    Toaster.showToast(
-      result.isFav ? "success" : "error",
-      `Channel ${result.isFav ? "added to" : "removed from"} favorites`
-    );
-  }
-  
-  return result;
-};
 
-
-
-// Add this function after toggleFavorite
-const removeFromHistory = (channelData) => {
-  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
-  
-  const currentPlaylist = playlistsData.find(
-    pl => pl.playlistName === selectedPlaylist.playlistName
-  );
-  
-  if (!currentPlaylist || !currentPlaylist.ChannelListLive) return;
-  
-  const index = currentPlaylist.ChannelListLive.findIndex(
-    h => (typeof h === 'object' ? h.stream_id : h) === channelData.stream_id
-  );
-  
-  if (index > -1) {
-    currentPlaylist.ChannelListLive.splice(index, 1);
-    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-    
-    // Update UI
-    renderChannels();
+    // **UPDATE SIDEBAR COUNTS IMMEDIATELY**
     renderSidebarCategories();
-    
-    // Refocus
-    const channels = qsa(".channel-card");
-    if (channels.length > 0) {
-      focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    }
-    
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Channel removed from history");
-    }
-  }
-};
 
+    // Show toast notification
+    if (
+      typeof Toaster !== "undefined" &&
+      typeof Toaster.showToast === "function"
+    ) {
+      Toaster.showToast(
+        result.isFav ? "success" : "error",
+        `Channel ${result.isFav ? "added to" : "removed from"} favorites`
+      );
+    }
+
+    return result;
+  };
+
+  // Add this function after toggleFavorite
+  const removeFromHistory = (channelData) => {
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    const selectedPlaylist = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    );
+
+    const currentPlaylist = playlistsData.find(
+      (pl) => pl.playlistName === selectedPlaylist.playlistName
+    );
+
+    if (!currentPlaylist || !currentPlaylist.ChannelListLive) return;
+
+    const index = currentPlaylist.ChannelListLive.findIndex(
+      (h) => (typeof h === "object" ? h.stream_id : h) === channelData.stream_id
+    );
+
+    if (index > -1) {
+      currentPlaylist.ChannelListLive.splice(index, 1);
+      localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+
+      // Update UI
+      renderChannels();
+      renderSidebarCategories();
+
+      // Refocus
+      const channels = qsa(".channel-card");
+      if (channels.length > 0) {
+        focusedChannelIndex = Math.min(
+          focusedChannelIndex,
+          channels.length - 1
+        );
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      }
+
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast("error", "Channel removed from history");
+      }
+    }
+  };
 
   // ===== ADD TO HISTORY =====
   const addItemToHistory = (item, historyKey) => {
@@ -1498,57 +1727,64 @@ const removeFromHistory = (channelData) => {
     }
   };
 
+  // ===== RENDER CHANNELS =====
+  // ===== RENDER CHANNELS =====
+  // ===== RENDER CHANNELS =====
+  const renderChannels = () => {
+    const filtered = getFilteredCategories();
 
+    let selectedCat = filtered.find(
+      (c) => c.category_id === selectedCategoryId
+    );
+    if (!selectedCat) {
+      selectedCat = filtered[0];
+      selectedCategoryId = selectedCat.category_id;
+    }
 
-// ===== RENDER CHANNELS =====
-// ===== RENDER CHANNELS =====
-// ===== RENDER CHANNELS =====
-const renderChannels = () => {
-  const filtered = getFilteredCategories();
-  
-  let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-  if (!selectedCat) {
-    selectedCat = filtered[0];
-    selectedCategoryId = selectedCat.category_id;
-  }
+    const allChannels = selectedCat.channels || [];
+    const channelsToShow = allChannels;
 
-  const allChannels = selectedCat.channels || [];
-  const channelsToShow = allChannels
-  
-  const channelGrid = qs(".channel-grid");
-  if (!channelGrid) return;
+    const channelGrid = qs(".channel-grid");
+    if (!channelGrid) return;
 
-  if (channelsToShow.length === 0) {
-    channelGrid.innerHTML = `
+    if (channelsToShow.length === 0) {
+      channelGrid.innerHTML = `
       <div class="no-channels">
         <p>No channels found in this category</p>
       </div>`;
-    return;
-  }
+      return;
+    }
 
-  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
-  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
-    pl => pl.playlistName === currentPlaylistName
-  );
-  const favoritesList = currentPlaylist?.favoritesLiveTV || [];
-  
-  // Check if we're in history view
-  const isHistoryView = selectedCategoryId === "channelHistory";
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
+    const currentPlaylist = JSON.parse(
+      localStorage.getItem("playlistsData")
+    ).find((pl) => pl.playlistName === currentPlaylistName);
+    const favoritesList = currentPlaylist?.favoritesLiveTV || [];
 
-  // Get parental control settings
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+    // Check if we're in history view
+    const isHistoryView = selectedCategoryId === "channelHistory";
 
-  const channelCardsHTML = channelsToShow.map(ch => {
-    const isFav = favoritesList.some(fav => 
-      (typeof fav === 'object' ? fav.stream_id : fav) === ch.stream_id
-    );
-    
-    // Check if content should be blurred
-    const shouldBlur = hasParentalPassword && isAdultContent(ch);
-    
-    return `
-      <div class="channel-card ${shouldBlur ? 'channel-blurred' : ''}" 
+    // Get parental control settings
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const hasParentalPassword =
+      selectedPlaylist.parentalPassword &&
+      selectedPlaylist.parentalPassword.length > 0;
+
+    const channelCardsHTML = channelsToShow
+      .map((ch) => {
+        const isFav = favoritesList.some(
+          (fav) =>
+            (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
+        );
+
+        // Check if content should be blurred
+        const shouldBlur = hasParentalPassword && isAdultContent(ch);
+
+        return `
+      <div class="channel-card ${shouldBlur ? "channel-blurred" : ""}" 
            data-stream-id="${ch.stream_id}" 
            data-name="${ch.name}" 
            data-logo="${ch.stream_icon}">
@@ -1559,43 +1795,58 @@ const renderChannels = () => {
                onerror="this.src='/assets/profile.png'" />
           <div class="channel-actions">
             <button class="favorite-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'red' : 'none'}" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="${
+                isFav ? "red" : "none"
+              }" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            ${isHistoryView ? `
+            ${
+              isHistoryView
+                ? `
               <button class="remove-history-btn" title="Remove from history">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
-            ` : ''}
+            `
+                : ""
+            }
           </div>
         </div>
         <div class="channel-name">${ch.name}</div>
-        ${shouldBlur ? '<div class="blur-overlay"><i class="fa fa-lock"></i></div>' : ''}
+        ${
+          shouldBlur
+            ? '<div class="blur-overlay"><i class="fa fa-lock"></i></div>'
+            : ""
+        }
       </div>
     `;
-  }).join("");
+      })
+      .join("");
 
-  channelGrid.innerHTML = channelCardsHTML;
-};
+    channelGrid.innerHTML = channelCardsHTML;
+  };
 
   // ===== RENDER SIDEBAR CATEGORIES =====
   const renderSidebarCategories = () => {
     const filtered = getFilteredCategories();
-    
-    const categoriesHTML = filtered.map(c => {
-      const isActive = c.category_id === selectedCategoryId;
-      return `
-        <div class="sidebar-item ${isActive ? 'sidebar-active' : ''}" 
+
+    const categoriesHTML = filtered
+      .map((c) => {
+        const isActive = c.category_id === selectedCategoryId;
+        return `
+        <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" 
              data-category-id="${c.category_id}">
           <span class="sidebar-item-name">${c.category_name}</span>
-          <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+          <span class="sidebar-item-count">${
+            c.channels ? c.channels.length : 0
+          }</span>
         </div>
       `;
-    }).join("");
+      })
+      .join("");
 
     const sidebarArea = qs("#sidebar-area");
     if (sidebarArea) {
@@ -1613,105 +1864,112 @@ const renderChannels = () => {
     }
   };
 
-window.updateLiveTvSidebar = renderSidebarCategories;
-
-
-
-
+  window.updateLiveTvSidebar = renderSidebarCategories;
 
   // CLICK HANDLER
- // ===== CLICK HANDLER (UPDATED) =====
+  // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
     console.log("Click detected on:", e.target);
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
-  if (inPasswordModal) {
-    // Submit button
-    if (e.target.classList.contains('password-submit-btn')) {
-      verifyPassword();
+
+    const menuDots = e.target.closest(".menu-dots");
+    if (menuDots) {
+      e.stopPropagation();
+      openSidebar("liveTvPage");
       return;
     }
-    
-    // Cancel button
-    if (e.target.classList.contains('password-cancel-btn')) {
-      hidePasswordModal();
-      return;
+
+    if (inPasswordModal) {
+      // Submit button
+      if (e.target.classList.contains("password-submit-btn")) {
+        verifyPassword();
+        return;
+      }
+
+      // Cancel button
+      if (e.target.classList.contains("password-cancel-btn")) {
+        hidePasswordModal();
+        return;
+      }
+
+      // Click outside modal to close
+      if (e.target.id === "passwordModalOverlay") {
+        hidePasswordModal();
+        return;
+      }
+
+      return; // Block all other clicks when modal is open
     }
-    
-    // Click outside modal to close
-    if (e.target.id === 'passwordModalOverlay') {
-      hidePasswordModal();
-      return;
-    }
-    
-    return; // Block all other clicks when modal is open
-  }
 
     // Remove from history button click
-const removeHistoryBtn = e.target.closest(".remove-history-btn");
-if (removeHistoryBtn) {
-  e.stopPropagation();
-  
-  const card = removeHistoryBtn.closest(".channel-card");
-  if (!card) return;
-  
-  const streamId = card.dataset.streamId;
-  const channelData = allStreams.find(ch => ch.stream_id == streamId);
-  
-  if (channelData) {
-    removeFromHistory(channelData);
-  }
-  return;
-}
-       // Check if click is on favorite button OR its children (svg/path)
-const favBtn = e.target.closest(".favorite-btn");
-const isFavClick = favBtn || e.target.closest("svg")?.parentElement?.classList.contains("favorite-btn");
+    const removeHistoryBtn = e.target.closest(".remove-history-btn");
+    if (removeHistoryBtn) {
+      e.stopPropagation();
 
-if (favBtn || isFavClick) {
-  e.stopPropagation();
-  
-  const targetBtn = favBtn || e.target.closest("svg").parentElement;
-  const card = targetBtn.closest(".channel-card");
-  
-  if (!card) return;
-  
-  const streamId = card.dataset.streamId;
-  const channelData = allStreams.find(ch => ch.stream_id == streamId);
-  
-  if (channelData) {
-    toggleFavorite(channelData);
-    
-    if (selectedCategoryId === "favorites") {
-      setTimeout(() => {
-        renderChannels();
-        renderSidebarCategories();
-        const channels = qsa(".channel-card");
-        if (channels.length > 0) {
-          focusedChannelIndex = Math.min(focusedChannelIndex, channels.length - 1);
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        }
-      }, 100);
+      const card = removeHistoryBtn.closest(".channel-card");
+      if (!card) return;
+
+      const streamId = card.dataset.streamId;
+      const channelData = allStreams.find((ch) => ch.stream_id == streamId);
+
+      if (channelData) {
+        removeFromHistory(channelData);
+      }
+      return;
     }
-  }
-  return;
-}
+    // Check if click is on favorite button OR its children (svg/path)
+    const favBtn = e.target.closest(".favorite-btn");
+    const isFavClick =
+      favBtn ||
+      e.target
+        .closest("svg")
+        ?.parentElement?.classList.contains("favorite-btn");
 
+    if (favBtn || isFavClick) {
+      e.stopPropagation();
 
-      const playPauseBtn = e.target.closest(".play-pause-btn");
-  if (playPauseBtn) {
-    e.stopPropagation();
-    togglePlayPause();
-    return;
-  }
+      const targetBtn = favBtn || e.target.closest("svg").parentElement;
+      const card = targetBtn.closest(".channel-card");
 
+      if (!card) return;
+
+      const streamId = card.dataset.streamId;
+      const channelData = allStreams.find((ch) => ch.stream_id == streamId);
+
+      if (channelData) {
+        toggleFavorite(channelData);
+
+        if (selectedCategoryId === "favorites") {
+          setTimeout(() => {
+            renderChannels();
+            renderSidebarCategories();
+            const channels = qsa(".channel-card");
+            if (channels.length > 0) {
+              focusedChannelIndex = Math.min(
+                focusedChannelIndex,
+                channels.length - 1
+              );
+              setFocus(channels, focusedChannelIndex, "channel-card-focused");
+            }
+          }, 100);
+        }
+      }
+      return;
+    }
+
+    const playPauseBtn = e.target.closest(".play-pause-btn");
+    if (playPauseBtn) {
+      e.stopPropagation();
+      togglePlayPause();
+      return;
+    }
 
     const aspectBtn = e.target.closest(".aspect-ratio-btn");
-if (aspectBtn) {
-  e.stopPropagation();
-  toggleAspectRatio();
-  return;
-}
-
-
+    if (aspectBtn) {
+      e.stopPropagation();
+      toggleAspectRatio();
+      return;
+    }
 
     // Channel card click
     const card = e.target.closest(".channel-card");
@@ -1719,16 +1977,14 @@ if (aspectBtn) {
       const streamId = card.dataset.streamId;
       const channelName = card.dataset.name;
       const channelLogo = card.dataset.logo;
-      
-      const channelData = allStreams.find(ch => ch.stream_id == streamId);
-      
+
+      const channelData = allStreams.find((ch) => ch.stream_id == streamId);
+
       if (channelData) {
         playChannel(channelData);
       }
       return;
     }
-
-
 
     // Sidebar category click
     const sidebarItem = e.target.closest(".sidebar-item");
@@ -1737,10 +1993,10 @@ if (aspectBtn) {
       selectedCategoryId = catId;
       currentChunk = 1;
       focusedChannelIndex = 0;
-      
+
       renderChannels();
       renderSidebarCategories();
-      
+
       setTimeout(() => {
         const channels = qsa(".channel-card");
         if (channels.length > 0) {
@@ -1778,53 +2034,133 @@ if (aspectBtn) {
     const isEnter = e.key === "Enter" || e.keyCode === 13;
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
-      if (inPasswordModal) {
-    if (e.key === "ArrowDown") {
-      passwordModalFocusIndex++;
-      if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
-      updatePasswordModalFocus();
-      e.preventDefault();
-      return;
+    // In handleKeydown, after password modal checks, add:
+
+    // MENU DOTS NAVIGATION
+
+// MENU DOTS NAVIGATION
+if (isMenuDotsActive) {
+    // BACK/ESCAPE: Go back to dashboard
+    if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+        console.log("⬅️ Back pressed from menu dots - going to dashboard");
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Clean up menu dots focus
+        isMenuDotsActive = false;
+        const menuDots = qs('.menu-dots');
+        if (menuDots) menuDots.classList.remove('focused');
+        
+        // Dispose player
+        disposeLivePlayer();
+        
+        if (window.livePlayer) {
+            try {
+                window.livePlayer.dispose();
+            } catch {}
+            window.livePlayer = null;
+        }
+        
+        // Navigate back
+        localStorage.setItem("currentPage", "dashboard");
+        
+        if (typeof Router !== "undefined" && Router.showPage) {
+            Router.showPage("dashboard");
+        } else if (typeof navigateTo === "function") {
+            navigateTo("dashboard-page");
+        }
+        return;
     }
     
-    if (e.key === "ArrowUp") {
-      passwordModalFocusIndex--;
-      if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
-      updatePasswordModalFocus();
-      e.preventDefault();
-      return;
+    // DOWN: Open sidebar
+    if (isDown) {
+        openSidebar('liveTvPage');
+        e.preventDefault();
+        return;
     }
     
-    if (e.key === "Enter") {
-      if (passwordModalFocusIndex === 1) {
-        // Submit
-        verifyPassword();
-      } else if (passwordModalFocusIndex === 2) {
-        // Cancel
-        hidePasswordModal();
+    // LEFT: Go back to header search
+    if (isLeft) {
+        isMenuDotsActive = false;
+        inHeaderSearch = true;
+        const menuDots = qs('.menu-dots');
+        if (menuDots) menuDots.classList.remove('focused');
+        setHeaderSearchFocus(true);
+        e.preventDefault();
+        return;
+    }
+    
+    // RIGHT: Stay on menu dots (no action)
+    if (isRight) {
+        e.preventDefault();
+        return;
+    }
+    
+    // UP: Stay on menu dots (no action)
+    if (isUp) {
+        e.preventDefault();
+        return;
+    }
+    
+    // ENTER: Open sidebar
+    if (isEnter) {
+        openSidebar('liveTvPage');
+        e.preventDefault();
+        return;
+    }
+    
+    return; // Block other keys when menu dots focused
+}
+
+    if (inPasswordModal) {
+      if (e.key === "ArrowDown") {
+        passwordModalFocusIndex++;
+        if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
       }
-      e.preventDefault();
-      return;
+
+      if (e.key === "ArrowUp") {
+        passwordModalFocusIndex--;
+        if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        if (passwordModalFocusIndex === 1) {
+          // Submit
+          verifyPassword();
+        } else if (passwordModalFocusIndex === 2) {
+          // Cancel
+          hidePasswordModal();
+        }
+        e.preventDefault();
+        return;
+      }
+
+      // Back button closes modal
+      if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
+        hidePasswordModal();
+        e.preventDefault();
+        return;
+      }
+
+      return; // Block all other keys when modal is open
     }
-    
-    // Back button closes modal
-    if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
-      hidePasswordModal();
-      e.preventDefault();
-      return;
-    }
-    
-    return; // Block all other keys when modal is open
-  }
-  
+
     // Handle back button
- // Handle back button
+    // Handle back button
     if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
       // Check if in fullscreen first
-      if (document.fullscreenElement || 
-          document.webkitFullscreenElement || 
-          document.mozFullScreenElement ||
-          document.msFullscreenElement) {
+      if (
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      ) {
         if (document.exitFullscreen) {
           document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -1837,176 +2173,179 @@ if (aspectBtn) {
         e.preventDefault();
         return;
       }
-      
+
       // Dispose player and navigate back
       disposeLivePlayer();
-      
+
       if (window.livePlayer) {
         try {
           window.livePlayer.dispose();
         } catch {}
         window.livePlayer = null;
       }
-      
+
       localStorage.setItem("currentPage", "dashboard");
       Router.showPage("dashboard");
       return;
     }
 
     // If user is in video player area
-   // Find the "If user is in video player area" section and REPLACE it with:
+    // Find the "If user is in video player area" section and REPLACE it with:
 
-if (inVideoPlayer) {
-  const videoDiv = qs(".live-video-player-div");
-  const aspectBtn = qs(".aspect-ratio-btn");
-  
-  if (isUp) {
-    inVideoPlayer = false;
-    inChannelGrid = true;
-    if (videoDiv) {
-      videoDiv.classList.remove("video-focused");
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
+    if (inVideoPlayer) {
+      const videoDiv = qs(".live-video-player-div");
+      const aspectBtn = qs(".aspect-ratio-btn");
+
+      if (isUp) {
+        inVideoPlayer = false;
+        inChannelGrid = true;
+        if (videoDiv) {
+          videoDiv.classList.remove("video-focused");
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (aspectBtn) aspectBtn.style.border = "none";
+        focusedChannelIndex = 0;
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      if (isDown) {
+        // Go to aspect ratio button
+        inVideoPlayer = false;
+        inAspectRatioBtn = true;
+        const videoDiv = qs(".live-video-player-div");
+        const aspectBtn = qs("#videojs-aspect-ratio");
+        if (videoDiv) videoDiv.style.outline = "none";
+        if (aspectBtn) {
+          aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
+          aspectBtn.scrollIntoView({ block: "nearest" });
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isRight) {
+        // Go to EPG list
+        inVideoPlayer = false;
+        inEPG = true;
+        if (videoDiv) {
+          videoDiv.classList.remove("video-focused");
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (aspectBtn) aspectBtn.style.border = "none";
+        focusedEPGIndex = 0;
+        const epgItems = qsa(".epg-item");
+        if (epgItems.length) {
+          epgItems[0].classList.add("epg-focused");
+          epgItems[0].scrollIntoView({ block: "nearest" });
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        if (videoDiv) {
+          if (!document.fullscreenElement) {
+            videoDiv.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+
+      // SPACE or K key for play/pause
+      if (
+        e.key === " " ||
+        e.key === "Spacebar" ||
+        e.key === "k" ||
+        e.key === "K"
+      ) {
+        togglePlayPause();
+        e.preventDefault();
+        return;
+      }
+
+      return;
     }
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedChannelIndex = 0;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-  
-   if (isDown) {
-    // Go to aspect ratio button
-    inVideoPlayer = false;
-    inAspectRatioBtn = true;
-    const videoDiv = qs(".live-video-player-div");
-    const aspectBtn = qs("#videojs-aspect-ratio");
-    if (videoDiv) videoDiv.style.outline = "none";
-    if (aspectBtn) {
-      aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
-      aspectBtn.scrollIntoView({ block: "nearest" });
-    }
-    e.preventDefault();
-    return;
-  }
-  
-  
-  if (isRight) {
-    // Go to EPG list
-    inVideoPlayer = false;
-    inEPG = true;
-    if (videoDiv) {
-      videoDiv.classList.remove("video-focused");
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
-    }
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedEPGIndex = 0;
-    const epgItems = qsa(".epg-item");
-    if (epgItems.length) {
-      epgItems[0].classList.add("epg-focused");
-      epgItems[0].scrollIntoView({ block: "nearest" });
-    }
-    e.preventDefault();
-    return;
-  }
-  
-  if (isEnter) {
-    if (videoDiv) {
-      if (!document.fullscreenElement) {
-        videoDiv.requestFullscreen();
-      } else {
-        document.exitFullscreen();
+
+    // Add new navigation section for Aspect Ratio Button
+    // Aspect ratio button navigation
+    // Aspect ratio button navigation
+    if (inAspectRatioBtn) {
+      const aspectBtn = qs(".aspect-ratio-btn");
+
+      if (isUp) {
+        inAspectRatioBtn = false;
+        inVideoPlayer = true;
+        if (aspectBtn) aspectBtn.style.border = "none";
+        const videoDiv = qs(".live-video-player-div");
+        if (videoDiv) {
+          videoDiv.style.outline = "4px solid #0ea5e9";
+          videoDiv.style.outlineOffset = "-4px";
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isDown) {
+        inAspectRatioBtn = false;
+        inEPG = true;
+        if (aspectBtn) aspectBtn.style.border = "none";
+        focusedEPGIndex = 0;
+        const epgItems = qsa(".epg-item");
+        if (epgItems.length) {
+          epgItems[0].classList.add("epg-focused");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        toggleAspectRatio();
+        e.preventDefault();
+        return;
       }
     }
-    e.preventDefault();
-    return;
-  }
-  
-  // SPACE or K key for play/pause
-  if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'k' || e.key === 'K') {
-    togglePlayPause();
-    e.preventDefault();
-    return;
-  }
-  
-  return;
-}
-
-// Add new navigation section for Aspect Ratio Button
-// Aspect ratio button navigation
-// Aspect ratio button navigation
-if (inAspectRatioBtn) {
-  const aspectBtn = qs(".aspect-ratio-btn");
-  
-  if (isUp) {
-    inAspectRatioBtn = false;
-    inVideoPlayer = true;
-    if (aspectBtn) aspectBtn.style.border = "none";
-    const videoDiv = qs(".live-video-player-div");
-    if (videoDiv) {
-      videoDiv.style.outline = "4px solid #0ea5e9";
-      videoDiv.style.outlineOffset = "-4px";
-    }
-    e.preventDefault();
-    return;
-  }
-  
-  if (isDown) {
-    inAspectRatioBtn = false;
-    inEPG = true;
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedEPGIndex = 0;
-    const epgItems = qsa(".epg-item");
-    if (epgItems.length) {
-      epgItems[0].classList.add("epg-focused");
-    }
-    e.preventDefault();
-    return;
-  }
-  
-  if (isEnter) {
-    toggleAspectRatio();
-    e.preventDefault();
-    return;
-  }
-}
 
     // HEADER SEARCH BOX NAVIGATION
     if (inHeaderSearch) {
-
-       if (isEnter) {
-    isHeaderSearchActive = !isHeaderSearchActive;
-    const searchInput = qs(".search-input");
-    if (searchInput) {
-      if (isHeaderSearchActive) {
-        searchInput.focus();
-        const textLength = searchInput.value.length;
-        searchInput.setSelectionRange(textLength, textLength);
-      } else {
-        searchInput.blur();
+      if (isEnter) {
+        isHeaderSearchActive = !isHeaderSearchActive;
+        const searchInput = qs(".search-input");
+        if (searchInput) {
+          if (isHeaderSearchActive) {
+            searchInput.focus();
+            const textLength = searchInput.value.length;
+            searchInput.setSelectionRange(textLength, textLength);
+          } else {
+            searchInput.blur();
+          }
+        }
+        e.preventDefault();
+        return;
       }
-    }
-    e.preventDefault();
-    return;
-  }
       // DOWN: Move to channel grid
-     if (isDown) {
-    inHeaderSearch = false;
-    inSidebarSearch = true;
-    isHeaderSearchActive = false;
-    setHeaderSearchFocus(false);
-    setSidebarSearchFocus(true);
-    
-    const headerInput = qs(".search-input");
-    if (headerInput) {
-      headerInput.blur();
-      headerInput.selectionStart = headerInput.selectionEnd = 0;
-    }
-    
-    e.preventDefault();
-    return;
-  }
+      if (isDown) {
+        inHeaderSearch = false;
+        inSidebarSearch = true;
+        isHeaderSearchActive = false;
+        setHeaderSearchFocus(false);
+        setSidebarSearchFocus(true);
+
+        const headerInput = qs(".search-input");
+        if (headerInput) {
+          headerInput.blur();
+          headerInput.selectionStart = headerInput.selectionEnd = 0;
+        }
+
+        e.preventDefault();
+        return;
+      }
 
       // LEFT: Stay in header search
       if (isLeft) {
@@ -2014,8 +2353,19 @@ if (inAspectRatioBtn) {
         return;
       }
 
-      // RIGHT: Stay in header search
+      // RIGHT: Move to menu dots
       if (isRight) {
+        inHeaderSearch = false;
+        isHeaderSearchActive = false;
+        setHeaderSearchFocus(false);
+
+        const headerInput = qs(".search-input");
+        if (headerInput) {
+          headerInput.blur();
+          headerInput.selectionStart = headerInput.selectionEnd = 0;
+        }
+
+        setFocusOnMenuDots();
         e.preventDefault();
         return;
       }
@@ -2026,7 +2376,6 @@ if (inAspectRatioBtn) {
         return;
       }
 
-   
       // Allow typing in search box
       return;
     }
@@ -2035,85 +2384,84 @@ if (inAspectRatioBtn) {
     if (inSidebarSearch) {
       // UP: Move to header search
       // UP: Move to header search with cursor at end
-  if (isUp) {
-    inSidebarSearch = false;
-    inHeaderSearch = true;
-    isSidebarSearchActive = false;
-    setSidebarSearchFocus(false);
-    setHeaderSearchFocus(true);
-    
-    // Auto-enter edit mode with cursor at end
-    setTimeout(() => {
-      isHeaderSearchActive = true;
-      const input = qs(".search-input");
-      if (input) {
-        input.focus();
-        const textLength = input.value.length;
-        input.setSelectionRange(textLength, textLength);
+      if (isUp) {
+        inSidebarSearch = false;
+        inHeaderSearch = true;
+        isSidebarSearchActive = false;
+        setSidebarSearchFocus(false);
+        setHeaderSearchFocus(true);
+
+        // Auto-enter edit mode with cursor at end
+        setTimeout(() => {
+          isHeaderSearchActive = true;
+          const input = qs(".search-input");
+          if (input) {
+            input.focus();
+            const textLength = input.value.length;
+            input.setSelectionRange(textLength, textLength);
+          }
+        }, 0);
+
+        e.preventDefault();
+        return;
       }
-    }, 0);
-    
-    e.preventDefault();
-    return;
-  }
 
-  // DOWN: Move to first sidebar item
-  if (isDown) {
-    inSidebarSearch = false;
-    inSidebar = true;
-    isSidebarSearchActive = false;
-    setSidebarSearchFocus(false);
-    focusedSidebarIndex = 0;
-    setSidebarFocus(focusedSidebarIndex);
-    e.preventDefault();
-    return;
-  }
+      // DOWN: Move to first sidebar item
+      if (isDown) {
+        inSidebarSearch = false;
+        inSidebar = true;
+        isSidebarSearchActive = false;
+        setSidebarSearchFocus(false);
+        focusedSidebarIndex = 0;
+        setSidebarFocus(focusedSidebarIndex);
+        e.preventDefault();
+        return;
+      }
 
-  // RIGHT: Go to channel grid (remove cursor)
-  if (isRight) {
-    inSidebarSearch = false;
-    inChannelGrid = true;
-    isSidebarSearchActive = false;
-    setSidebarSearchFocus(false);
-    
-    const sidebarInput = qs(".sidebar-search-input");
-    if (sidebarInput) {
-      sidebarInput.blur();
-      sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
-    }
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
+      // RIGHT: Go to channel grid (remove cursor)
+      if (isRight) {
+        inSidebarSearch = false;
+        inChannelGrid = true;
+        isSidebarSearchActive = false;
+        setSidebarSearchFocus(false);
 
-  // If in edit mode, allow typing
-  if (isSidebarSearchActive) {
-    return; // Allow typing
-  }
+        const sidebarInput = qs(".sidebar-search-input");
+        if (sidebarInput) {
+          sidebarInput.blur();
+          sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
+        }
 
-  // LEFT: Stay in search box when not editing
-  if (isLeft) {
-    e.preventDefault();
-    return;
-  }
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
 
-        if (isEnter) {
-    isSidebarSearchActive = !isSidebarSearchActive;
-    const searchInput = qs(".sidebar-search-input");
-    if (searchInput) {
+      // If in edit mode, allow typing
       if (isSidebarSearchActive) {
-        searchInput.focus();
-        const textLength = searchInput.value.length;
-        searchInput.setSelectionRange(textLength, textLength);
-      } else {
-        searchInput.blur();
+        return; // Allow typing
       }
-    }
-    e.preventDefault();
-    return;
-  }
 
+      // LEFT: Stay in search box when not editing
+      if (isLeft) {
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        isSidebarSearchActive = !isSidebarSearchActive;
+        const searchInput = qs(".sidebar-search-input");
+        if (searchInput) {
+          if (isSidebarSearchActive) {
+            searchInput.focus();
+            const textLength = searchInput.value.length;
+            searchInput.setSelectionRange(textLength, textLength);
+          } else {
+            searchInput.blur();
+          }
+        }
+        e.preventDefault();
+        return;
+      }
 
       // Allow typing in search box - don't prevent default for regular keys
       return;
@@ -2130,7 +2478,7 @@ if (inAspectRatioBtn) {
           // Move to sidebar search box
           inSidebar = false;
           inSidebarSearch = true;
-          sidebarItems.forEach(i => i.classList.remove("sidebar-focused"));
+          sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
           setSidebarSearchFocus(true);
         }
         e.preventDefault();
@@ -2151,7 +2499,7 @@ if (inAspectRatioBtn) {
       if (isRight) {
         inSidebar = false;
         inChannelGrid = true;
-        sidebarItems.forEach(i => i.classList.remove("sidebar-focused"));
+        sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
         setFocus(channels, focusedChannelIndex, "channel-card-focused");
         e.preventDefault();
         return;
@@ -2176,25 +2524,25 @@ if (inAspectRatioBtn) {
     // EPG navigation
     if (inEPG) {
       if (isUp) {
-    if (focusedEPGIndex > 0) {
-      epgItems[focusedEPGIndex].classList.remove("epg-focused");
-      focusedEPGIndex--;
-      epgItems[focusedEPGIndex].classList.add("epg-focused");
-      epgItems[focusedEPGIndex].scrollIntoView({ block: "nearest" });
-    } else {
-      // Go to aspect ratio button
-      epgItems.forEach(item => item.classList.remove("epg-focused"));
-      inEPG = false;
-      inAspectRatioBtn = true;
-      const aspectBtn = qs(".aspect-ratio-btn");
-      if (aspectBtn) {
-        aspectBtn.style.border = "3px solid #0ea5e9";
-        aspectBtn.scrollIntoView({ block: "nearest" });
+        if (focusedEPGIndex > 0) {
+          epgItems[focusedEPGIndex].classList.remove("epg-focused");
+          focusedEPGIndex--;
+          epgItems[focusedEPGIndex].classList.add("epg-focused");
+          epgItems[focusedEPGIndex].scrollIntoView({ block: "nearest" });
+        } else {
+          // Go to aspect ratio button
+          epgItems.forEach((item) => item.classList.remove("epg-focused"));
+          inEPG = false;
+          inAspectRatioBtn = true;
+          const aspectBtn = qs(".aspect-ratio-btn");
+          if (aspectBtn) {
+            aspectBtn.style.border = "3px solid #0ea5e9";
+            aspectBtn.scrollIntoView({ block: "nearest" });
+          }
+        }
+        e.preventDefault();
+        return;
       }
-    }
-    e.preventDefault();
-    return;
-  }
 
       if (isDown) {
         if (focusedEPGIndex < epgItems.length - 1) {
@@ -2207,22 +2555,22 @@ if (inAspectRatioBtn) {
         return;
       }
 
-    if (isLeft) {
-  // Go to video player instead of channel grid
-  epgItems.forEach(item => item.classList.remove("epg-focused"));
-  inEPG = false;
-  inVideoPlayer = true;
-  const videoDiv = qs(".live-video-player-div");
-  if (videoDiv) {
-     videoDiv.classList.add("video-focused");
-  videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
-  videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
-  videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
-  videoDiv.style.outlineOffset = "-3px";
-  }
-  e.preventDefault();
-  return;
-}
+      if (isLeft) {
+        // Go to video player instead of channel grid
+        epgItems.forEach((item) => item.classList.remove("epg-focused"));
+        inEPG = false;
+        inVideoPlayer = true;
+        const videoDiv = qs(".live-video-player-div");
+        if (videoDiv) {
+          videoDiv.classList.add("video-focused");
+          videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
+          videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
+          videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
+          videoDiv.style.outlineOffset = "-3px";
+        }
+        e.preventDefault();
+        return;
+      }
 
       if (isEnter) {
         console.log("EPG selected:", epgItems[focusedEPGIndex].innerText);
@@ -2234,174 +2582,173 @@ if (inAspectRatioBtn) {
     }
 
     // FAVORITE BUTTON NAVIGATION
-if (inFavoriteBtn) {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  const favBtn = card?.querySelector(".favorite-btn");
-  const cols = 5;
+    if (inFavoriteBtn) {
+      const channels = qsa(".channel-card");
+      const card = channels[focusedChannelIndex];
+      const favBtn = card?.querySelector(".favorite-btn");
+      const cols = 5;
 
-  if (isLeft) {
-    // Go back to channel card
-    inFavoriteBtn = false;
-    inChannelGrid = true;
-    if (favBtn) favBtn.style.outline = "none";
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
- if (isRight) {
-  const card = channels[focusedChannelIndex];
-  const removeBtn = card?.querySelector(".remove-history-btn");
-  
-  // If remove button exists (in history view), go to it
-  if (removeBtn && selectedCategoryId === "channelHistory") {
-    inFavoriteBtn = false;
-    inRemoveHistoryBtn = true;
-    if (favBtn) favBtn.style.outline = "none";
-    setRemoveHistoryBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-  
-  // Otherwise, go to next channel card
-  inFavoriteBtn = false;
-  inChannelGrid = true;
-  if (favBtn) favBtn.style.outline = "none";
-  
-  if (focusedChannelIndex < channels.length - 1) {
-    focusedChannelIndex++;
-  }
-  setFocus(channels, focusedChannelIndex, "channel-card-focused");
-  e.preventDefault();
-  return;
-}
-
-  if (isEnter) {
-    // Click the favorite button
-    favBtn?.click();
-    e.preventDefault();
-    return;
-  }
-
-  // UP/DOWN: Navigate to adjacent rows while staying on favorite button
-  if (isUp && focusedChannelIndex >= cols) {
-    focusedChannelIndex -= cols;
-    if (favBtn) favBtn.style.outline = "none";
-    setFavoriteBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-
- if (isDown) {
-  inFavoriteBtn = false;
-  inChannelGrid = true;
-  if (favBtn) favBtn.style.outline = "none";
-  
-  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-  
-  if (focusedChannelIndex >= lastRowStart) {
-    // In last row - go to video player
-    channels.forEach(c => c.classList.remove("channel-card-focused"));
-    inVideoPlayer = true;
-    const videoDiv = qs(".live-video-player-div");
-    if (videoDiv) {
-      videoDiv.classList.add("video-focused");
-      videoDiv.style.border = "3px solid #0ea5e9";
-      videoDiv.style.boxSizing = "border-box";
-      videoDiv.style.outline = "3px solid #0ea5e9";
-      videoDiv.style.outlineOffset = "-3px";
-    }
-  } else {
-    // Move to card below (not its heart)
-    focusedChannelIndex += cols;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-  }
-  e.preventDefault();
-  return;
-}
-
-  return;
-}
-
-
-// REMOVE HISTORY BUTTON NAVIGATION
-if (inRemoveHistoryBtn) {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  const removeBtn = card?.querySelector(".remove-history-btn");
-  const cols = 5;
-
-  if (isLeft) {
-    // Go back to favorite button
-    inRemoveHistoryBtn = false;
-    inFavoriteBtn = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-    setFavoriteBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  if (isRight) {
-    // Go to next channel card
-    inRemoveHistoryBtn = false;
-    inChannelGrid = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-    
-    if (focusedChannelIndex < channels.length - 1) {
-      focusedChannelIndex++;
-    }
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    // Click the remove button
-    removeBtn?.click();
-    e.preventDefault();
-    return;
-  }
-
-  // UP/DOWN: Navigate to adjacent rows while staying on remove button
-  if (isUp && focusedChannelIndex >= cols) {
-    focusedChannelIndex -= cols;
-    if (removeBtn) removeBtn.style.outline = "none";
-    setRemoveHistoryBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  if (isDown) {
-    inRemoveHistoryBtn = false;
-    inChannelGrid = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-    
-    const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-    
-    if (focusedChannelIndex >= lastRowStart) {
-      // In last row - go to video player
-      channels.forEach(c => c.classList.remove("channel-card-focused"));
-      inVideoPlayer = true;
-      const videoDiv = qs(".live-video-player-div");
-      if (videoDiv) {
-        videoDiv.classList.add("video-focused");
-        videoDiv.style.border = "3px solid #0ea5e9";
-        videoDiv.style.boxSizing = "border-box";
-        videoDiv.style.outline = "3px solid #0ea5e9";
-        videoDiv.style.outlineOffset = "-3px";
+      if (isLeft) {
+        // Go back to channel card
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
       }
-    } else {
-      // Move to card below
-      focusedChannelIndex += cols;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    }
-    e.preventDefault();
-    return;
-  }
 
-  return;
-}
+      if (isRight) {
+        const card = channels[focusedChannelIndex];
+        const removeBtn = card?.querySelector(".remove-history-btn");
+
+        // If remove button exists (in history view), go to it
+        if (removeBtn && selectedCategoryId === "channelHistory") {
+          inFavoriteBtn = false;
+          inRemoveHistoryBtn = true;
+          if (favBtn) favBtn.style.outline = "none";
+          setRemoveHistoryBtnFocus(true);
+          e.preventDefault();
+          return;
+        }
+
+        // Otherwise, go to next channel card
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+
+        if (focusedChannelIndex < channels.length - 1) {
+          focusedChannelIndex++;
+        }
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        // Click the favorite button
+        favBtn?.click();
+        e.preventDefault();
+        return;
+      }
+
+      // UP/DOWN: Navigate to adjacent rows while staying on favorite button
+      if (isUp && focusedChannelIndex >= cols) {
+        focusedChannelIndex -= cols;
+        if (favBtn) favBtn.style.outline = "none";
+        setFavoriteBtnFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      if (isDown) {
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+
+        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+
+        if (focusedChannelIndex >= lastRowStart) {
+          // In last row - go to video player
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
+          inVideoPlayer = true;
+          const videoDiv = qs(".live-video-player-div");
+          if (videoDiv) {
+            videoDiv.classList.add("video-focused");
+            videoDiv.style.border = "3px solid #0ea5e9";
+            videoDiv.style.boxSizing = "border-box";
+            videoDiv.style.outline = "3px solid #0ea5e9";
+            videoDiv.style.outlineOffset = "-3px";
+          }
+        } else {
+          // Move to card below (not its heart)
+          focusedChannelIndex += cols;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      return;
+    }
+
+    // REMOVE HISTORY BUTTON NAVIGATION
+    if (inRemoveHistoryBtn) {
+      const channels = qsa(".channel-card");
+      const card = channels[focusedChannelIndex];
+      const removeBtn = card?.querySelector(".remove-history-btn");
+      const cols = 5;
+
+      if (isLeft) {
+        // Go back to favorite button
+        inRemoveHistoryBtn = false;
+        inFavoriteBtn = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+        setFavoriteBtnFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      if (isRight) {
+        // Go to next channel card
+        inRemoveHistoryBtn = false;
+        inChannelGrid = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+
+        if (focusedChannelIndex < channels.length - 1) {
+          focusedChannelIndex++;
+        }
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        // Click the remove button
+        removeBtn?.click();
+        e.preventDefault();
+        return;
+      }
+
+      // UP/DOWN: Navigate to adjacent rows while staying on remove button
+      if (isUp && focusedChannelIndex >= cols) {
+        focusedChannelIndex -= cols;
+        if (removeBtn) removeBtn.style.outline = "none";
+        setRemoveHistoryBtnFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      if (isDown) {
+        inRemoveHistoryBtn = false;
+        inChannelGrid = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+
+        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+
+        if (focusedChannelIndex >= lastRowStart) {
+          // In last row - go to video player
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
+          inVideoPlayer = true;
+          const videoDiv = qs(".live-video-player-div");
+          if (videoDiv) {
+            videoDiv.classList.add("video-focused");
+            videoDiv.style.border = "3px solid #0ea5e9";
+            videoDiv.style.boxSizing = "border-box";
+            videoDiv.style.outline = "3px solid #0ea5e9";
+            videoDiv.style.outlineOffset = "-3px";
+          }
+        } else {
+          // Move to card below
+          focusedChannelIndex += cols;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      return;
+    }
     // CHANNEL GRID NAVIGATION
     if (inChannelGrid) {
       const cols = 5;
@@ -2414,55 +2761,64 @@ if (inRemoveHistoryBtn) {
           // Move to header search if in first row
           inChannelGrid = false;
           inHeaderSearch = true;
-          channels.forEach(c => c.classList.remove("channel-card-focused"));
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
           setHeaderSearchFocus(true);
         }
         e.preventDefault();
         return;
       }
 
-   // Find this section in handleKeydown and REPLACE the isDown block in CHANNEL GRID NAVIGATION:
+      // Find this section in handleKeydown and REPLACE the isDown block in CHANNEL GRID NAVIGATION:
 
-if (isDown) {
-  const cols = 5;
-  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-  
-  if (focusedChannelIndex >= lastRowStart) {
-    // In last row - go to video player
-    inChannelGrid = false;
-    inVideoPlayer = true;
-    channels.forEach(c => c.classList.remove("channel-card-focused"));
-    const videoDiv = qs(".live-video-player-div");
-    if (videoDiv) {
-   videoDiv.classList.add("video-focused");
-  videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
-  videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
-  videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
-  videoDiv.style.outlineOffset = "-3px";
-    }
-  } else {
-    // Normal down navigation
-    const filtered = getFilteredCategories();
-    const selectedCat = filtered.find(c => c.category_id === selectedCategoryId);
-    
-    if (focusedChannelIndex + cols < channels.length) {
-      focusedChannelIndex += cols;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    } else if (selectedCat && currentChunk * pageSize < selectedCat.channels.length) {
-      currentChunk++;
-      renderChannels();
-      setTimeout(() => {
-        const updatedChannels = qsa(".channel-card");
-        if (focusedChannelIndex + cols < updatedChannels.length) {
-          focusedChannelIndex += cols;
-          setFocus(updatedChannels, focusedChannelIndex, "channel-card-focused");
+      if (isDown) {
+        const cols = 5;
+        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+
+        if (focusedChannelIndex >= lastRowStart) {
+          // In last row - go to video player
+          inChannelGrid = false;
+          inVideoPlayer = true;
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
+          const videoDiv = qs(".live-video-player-div");
+          if (videoDiv) {
+            videoDiv.classList.add("video-focused");
+            videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
+            videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
+            videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
+            videoDiv.style.outlineOffset = "-3px";
+          }
+        } else {
+          // Normal down navigation
+          const filtered = getFilteredCategories();
+          const selectedCat = filtered.find(
+            (c) => c.category_id === selectedCategoryId
+          );
+
+          if (focusedChannelIndex + cols < channels.length) {
+            focusedChannelIndex += cols;
+            setFocus(channels, focusedChannelIndex, "channel-card-focused");
+          } else if (
+            selectedCat &&
+            currentChunk * pageSize < selectedCat.channels.length
+          ) {
+            currentChunk++;
+            renderChannels();
+            setTimeout(() => {
+              const updatedChannels = qsa(".channel-card");
+              if (focusedChannelIndex + cols < updatedChannels.length) {
+                focusedChannelIndex += cols;
+                setFocus(
+                  updatedChannels,
+                  focusedChannelIndex,
+                  "channel-card-focused"
+                );
+              }
+            }, 100);
+          }
         }
-      }, 100);
-    }
-  }
-  e.preventDefault();
-  return;
-}
+        e.preventDefault();
+        return;
+      }
 
       if (isLeft) {
         if (focusedChannelIndex > 0) {
@@ -2472,22 +2828,22 @@ if (isDown) {
           // GO TO SIDEBAR SEARCH BOX
           inChannelGrid = false;
           inSidebarSearch = true;
-          channels.forEach(c => c.classList.remove("channel-card-focused"));
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
           setSidebarSearchFocus(true);
         }
         e.preventDefault();
         return;
       }
 
- if (isRight) {
-  // Go to favorite button of current card
-  inChannelGrid = false;
-  inFavoriteBtn = true;
-  channels.forEach(c => c.classList.remove("channel-card-focused"));
-  setFavoriteBtnFocus(true);
-  e.preventDefault();
-  return;
-}
+      if (isRight) {
+        // Go to favorite button of current card
+        inChannelGrid = false;
+        inFavoriteBtn = true;
+        channels.forEach((c) => c.classList.remove("channel-card-focused"));
+        setFavoriteBtnFocus(true);
+        e.preventDefault();
+        return;
+      }
 
       if (isEnter) {
         const selected = channels[focusedChannelIndex];
@@ -2497,8 +2853,6 @@ if (isDown) {
       }
     }
   }
-
- 
 
   // Setup event listeners
   setTimeout(() => {
@@ -2517,9 +2871,33 @@ if (isDown) {
     // ===== INITIALIZE PAGE =====
     // Render sidebar categories
     renderSidebarCategories();
-    
+
     // Render channels
     renderChannels();
+
+    // In setTimeout(() => { ... }, 0) block, after renderChannels():
+
+    // Menu key handler
+    const menuKeyHandler = (e) => {
+      const currentPage = localStorage.getItem("currentPage");
+      if (currentPage !== "liveTvPage") return;
+
+      // Handle Menu/ContextMenu key
+      if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2") {
+        openSidebar("liveTvPage");
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("keydown", menuKeyHandler);
+
+    // Menu dots click handler
+    const menuDots = document.querySelector(".menu-dots");
+    if (menuDots) {
+      menuDots.addEventListener("click", () => {
+        openSidebar("liveTvPage");
+      });
+    }
 
     // Set initial focus on first channel
     setTimeout(() => {
@@ -2533,10 +2911,8 @@ if (isDown) {
         inHeaderSearch = false;
         inEPG = false;
         inVideoPlayer = false;
-            inFavoriteBtn = false; // ADD THIS
-            inRemoveHistoryBtn = false; // ADD THIS
-
-
+        inFavoriteBtn = false; // ADD THIS
+        inRemoveHistoryBtn = false; // ADD THIS
       }
     }, 50);
 
@@ -2556,31 +2932,31 @@ if (isDown) {
       inVideoPlayer = false;
     }
 
- LiveTvPage.cleanup = function () {
+    LiveTvPage.cleanup = function () {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeydown);
-      
+      document.removeEventListener("keydown", menuKeyHandler); // ADD THIS LINE
 
-        const modal = document.getElementById('passwordModalOverlay');
-  if (modal) {
-    modal.remove();
-  }
-  
- 
-  
+      const modal = document.getElementById("passwordModalOverlay");
+      if (modal) {
+        modal.remove();
+      }
 
       // Dispose video player
       disposeLivePlayer();
-      
+
       // Call LiveVideoJsComponent cleanup if it exists
-      if (typeof LiveVideoJsComponent !== "undefined" && typeof LiveVideoJsComponent.cleanup === "function") {
+      if (
+        typeof LiveVideoJsComponent !== "undefined" &&
+        typeof LiveVideoJsComponent.cleanup === "function"
+      ) {
         try {
           LiveVideoJsComponent.cleanup();
         } catch (err) {
           console.warn("LiveVideoJsComponent cleanup error:", err);
         }
       }
-      
+
       // Fallback cleanup for window.livePlayer
       if (window.livePlayer) {
         try {
@@ -2589,16 +2965,14 @@ if (isDown) {
         window.livePlayer = null;
       }
     };
-// ===== SEARCH INPUT HANDLER =====
+    // ===== SEARCH INPUT HANDLER =====
     const headerSearchInput = qs(".search-input");
     if (headerSearchInput) {
       headerSearchInput.addEventListener("input", (e) => {
         searchQuery = e.target.value;
         currentChunk = 1;
-        
+
         renderChannels();
-        
-    
       });
     }
 
@@ -2607,45 +2981,44 @@ if (isDown) {
       sidebarSearchInput.addEventListener("input", (e) => {
         const query = e.target.value.toLowerCase();
         const filtered = getFilteredCategories();
-        
-        const matchingCategories = filtered.filter(c => 
+
+        const matchingCategories = filtered.filter((c) =>
           c.category_name.toLowerCase().includes(query)
         );
-        
+
         const sidebarItems = qs(".sidebar-items");
         if (sidebarItems) {
-          sidebarItems.innerHTML = matchingCategories.map(c => {
-            const isActive = c.category_id === selectedCategoryId;
-            return `
-              <div class="sidebar-item ${isActive ? 'sidebar-active' : ''}" 
+          sidebarItems.innerHTML = matchingCategories
+            .map((c) => {
+              const isActive = c.category_id === selectedCategoryId;
+              return `
+              <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" 
                    data-category-id="${c.category_id}">
                 <span class="sidebar-item-name">${c.category_name}</span>
-                <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+                <span class="sidebar-item-count">${
+                  c.channels ? c.channels.length : 0
+                }</span>
               </div>
             `;
-          }).join("");
+            })
+            .join("");
         }
       });
     }
-
-
-
-
   }, 0);
 
   // Header time
-   const now = new Date();
-const time = formatTime(now);
+  const now = new Date();
+  const time = formatTime(now);
   const date = now.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
-    year: "numeric"
+    year: "numeric",
   });
 
   // Channel data
 
-
-return `
+  return `
 <div class="livetv-main-container">
   <header class="livetv-header">
       <div class="header-left">
@@ -2656,10 +3029,10 @@ return `
       <div class="header-center">
           <span class="current-time">${time}</span>
            <span class="current-date">${new Date().toLocaleDateString([], {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}</span>
+             month: "long",
+             day: "numeric",
+             year: "numeric",
+           })}</span>
       </div>
 
       <div class="header-right">
@@ -2674,7 +3047,15 @@ return `
               <span class="dot"></span><span class="dot"></span><span class="dot"></span>
           </div>
       </div>
+
+    <div class="sidebar-container-live" style="display: none;">
+    ${Sidebar({ from: "liveTvPage" })}
+</div>
+${SortingDialog()}
+
   </header>
+
+    
 
   <div class="livetv-content-wrapper">
     <div id="sidebar-area"></div>
