@@ -207,24 +207,31 @@ function LiveTvPage() {
             .includes(searchQuery.toLowerCase());
         });
 
-      const result = [
-        {
-          category_id: "All",
-          category_name: "All",
-          channels: allLiveStreams || [],
-        },
-        {
-          category_id: "favorites",
-          category_name: "Favorites",
-          channels: favoritesChannels || [],
-        },
-        {
-          category_id: "channelHistory",
-          category_name: "Channel History",
-          channels: historyChannels || [],
-        },
-        ...filteredCategories,
-      ];
+    // Apply sorting to each category's channels
+const result = [
+  {
+    category_id: "All",
+    category_name: "All",
+    channels: applySortingToChannels(allLiveStreams || []),
+  },
+  {
+    category_id: "favorites",
+    category_name: "Favorites",
+    channels: applySortingToChannels(favoritesChannels || []),
+  },
+  {
+    category_id: "channelHistory",
+    category_name: "Channel History",
+    channels: applySortingToChannels(historyChannels || []),
+  },
+  ...filteredCategories.map(cat => ({
+    ...cat,
+    channels: applySortingToChannels(cat.channels || [])
+  })),
+];
+
+console.log("✅ getFilteredCategories result:", result.length, "categories");
+return result;
 
       console.log(
         "✅ getFilteredCategories result:",
@@ -245,6 +252,37 @@ function LiveTvPage() {
     }
   };
 
+  // ===== HELPER: Apply Sorting to Channels =====
+const applySortingToChannels = (channels) => {
+  if (!channels || channels.length === 0) return channels;
+
+  const sortValue = localStorage.getItem("liveTvSortValue") || "default";
+  const sortedChannels = [...channels]; // Create a copy
+
+  switch (sortValue) {
+    case "az":
+      return sortedChannels.sort((a, b) => 
+        (a.name || "").localeCompare(b.name || "")
+      );
+    
+    case "za":
+      return sortedChannels.sort((a, b) => 
+        (b.name || "").localeCompare(a.name || "")
+      );
+    
+    case "recent":
+      return sortedChannels.sort((a, b) => {
+        const dateA = a.addedAt ? new Date(a.addedAt) : new Date(0);
+        const dateB = b.addedAt ? new Date(b.addedAt) : new Date(0);
+        return dateB - dateA;
+      });
+    
+    case "default":
+    default:
+      return channels; // Return original order
+  }
+};
+
   const currentPlaylistName = JSON.parse(
     localStorage.getItem("selectedPlaylist")
   ).playlistName;
@@ -261,6 +299,8 @@ function LiveTvPage() {
   let currentChunk = 1; // For lazy loading channels
   const pageSize = 20; // Channels per load
   let searchQuery = ""; // Search text
+  let liveTvSortValue = localStorage.getItem("liveTvSortValue") || "default";
+
 
   let inChannelGrid = true;
   let inVideoPlayer = false;
@@ -1866,6 +1906,46 @@ function LiveTvPage() {
 
   window.updateLiveTvSidebar = renderSidebarCategories;
 
+  // ===== GLOBAL RENDER FUNCTION FOR SORTING =====
+// ===== GLOBAL RENDER FUNCTION FOR SORTING =====
+window.renderLiveTv = () => {
+  console.log("🔄 Refreshing Live TV page after sorting");
+  
+  // Reset navigation state
+  inChannelGrid = true;
+  inSidebar = false;
+  inSidebarSearch = false;
+  inHeaderSearch = false;
+  inEPG = false;
+  inVideoPlayer = false;
+  inFavoriteBtn = false;
+  inRemoveHistoryBtn = false;
+  inAspectRatioBtn = false;
+  isMenuDotsActive = false;
+  
+  // Reset focus index
+  focusedChannelIndex = 0;
+  
+  // Re-render channels with new sort order
+  renderChannels();
+  renderSidebarCategories();
+  
+  // Restore focus to first channel
+  setTimeout(() => {
+    const channels = qsa(".channel-card");
+    if (channels.length > 0) {
+      // Remove all existing focus
+      removeAllFocus();
+      
+      // Set focus on first channel
+      focusedChannelIndex = 0;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      
+      console.log("✅ Focus restored to channel grid");
+    }
+  }, 100);
+};
+
   // CLICK HANDLER
   // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
@@ -2770,55 +2850,50 @@ if (isMenuDotsActive) {
 
       // Find this section in handleKeydown and REPLACE the isDown block in CHANNEL GRID NAVIGATION:
 
-      if (isDown) {
-        const cols = 5;
-        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+    if (isDown) {
+  const cols = 5;
+  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
 
-        if (focusedChannelIndex >= lastRowStart) {
-          // In last row - go to video player
-          inChannelGrid = false;
-          inVideoPlayer = true;
-          channels.forEach((c) => c.classList.remove("channel-card-focused"));
-          const videoDiv = qs(".live-video-player-div");
-          if (videoDiv) {
-            videoDiv.classList.add("video-focused");
-            videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
-            videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
-            videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
-            videoDiv.style.outlineOffset = "-3px";
-          }
-        } else {
-          // Normal down navigation
-          const filtered = getFilteredCategories();
-          const selectedCat = filtered.find(
-            (c) => c.category_id === selectedCategoryId
-          );
-
-          if (focusedChannelIndex + cols < channels.length) {
-            focusedChannelIndex += cols;
-            setFocus(channels, focusedChannelIndex, "channel-card-focused");
-          } else if (
-            selectedCat &&
-            currentChunk * pageSize < selectedCat.channels.length
-          ) {
-            currentChunk++;
-            renderChannels();
-            setTimeout(() => {
-              const updatedChannels = qsa(".channel-card");
-              if (focusedChannelIndex + cols < updatedChannels.length) {
-                focusedChannelIndex += cols;
-                setFocus(
-                  updatedChannels,
-                  focusedChannelIndex,
-                  "channel-card-focused"
-                );
-              }
-            }, 100);
-          }
-        }
-        e.preventDefault();
-        return;
+  if (focusedChannelIndex >= lastRowStart) {
+    // In last row - go to video player
+    inChannelGrid = false;
+    inVideoPlayer = true;
+    channels.forEach((c) => c.classList.remove("channel-card-focused"));
+    const videoDiv = qs(".live-video-player-div");
+    if (videoDiv) {
+      videoDiv.classList.add("video-focused");
+      videoDiv.style.border = "3px solid #0ea5e9";
+      videoDiv.style.boxSizing = "border-box";
+      videoDiv.style.outline = "3px solid #0ea5e9";
+      videoDiv.style.outlineOffset = "-3px";
+    }
+  } else {
+    // Normal down navigation
+    const targetIndex = focusedChannelIndex + cols;
+    
+    // If target is beyond last card, go to last card in that column or last card overall
+    if (targetIndex >= channels.length) {
+      // Calculate which card in the last row aligns with current column
+      const currentColumn = focusedChannelIndex % cols;
+      const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
+      const targetInLastRow = lastRowStart + currentColumn;
+      
+      // If that position exists, go there; otherwise go to last card
+      if (targetInLastRow < channels.length) {
+        focusedChannelIndex = targetInLastRow;
+      } else {
+        focusedChannelIndex = channels.length - 1;
       }
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    } else {
+      // Normal move down
+      focusedChannelIndex = targetIndex;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    }
+  }
+  e.preventDefault();
+  return;
+}
 
       if (isLeft) {
         if (focusedChannelIndex > 0) {

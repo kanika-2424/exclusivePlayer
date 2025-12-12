@@ -150,19 +150,23 @@ Toaster(); // Initialize Toaster
 
             updateLoadingPercentage(100, "Ready!");
             
-         setTimeout(() => {
+        setTimeout(() => {
   if (loadingOverlay) {
     loadingOverlay.classList.add("hidden");
   }
   resetLoadingPercentage();
   
-  // ✅ Only navigate to dashboard if we're still on splash/loading
   const currentPage = localStorage.getItem("currentPage");
-  if (!currentPage || currentPage === "splash" || currentPage === "loading") {
+  
+  // ✅ ONLY navigate if no page is set OR still on splash/loading
+  // ✅ DO NOT navigate if already on dashboard (from login)
+  if ((!currentPage || currentPage === "splash" || currentPage === "loading") 
+      && currentPage !== "dashboard") {
     localStorage.setItem("currentPage", "dashboard");
     Router.showPage('dashboard');
+  } else {
+    console.log("✅ Page already set to:", currentPage, "- skipping navigation");
   }
-  // ✅ Otherwise, user already navigated somewhere - don't interrupt them
 
 }, 500);
             

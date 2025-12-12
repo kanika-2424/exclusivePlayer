@@ -66,6 +66,9 @@
 
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ✅ Set flag to indicate DOMContentLoaded has run
+  window._domContentLoaded = true;
+  
   const playlistsData = JSON.parse(localStorage.getItem('playlistsData') || '[]');
 
   if (playlistsData.length > 0) {

@@ -3,9 +3,13 @@
 
 const Router = {
   currentPage: null,
+  _isNavigating: false, // ✅ Add this property
+
+  
 
   async showPage(pageName) {
     console.log("🔄 Router.showPage called with:", pageName);
+    
     
     // Hide all pages
     const pages = document.querySelectorAll('.page');

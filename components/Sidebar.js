@@ -262,7 +262,7 @@ function applySorting() {
     } else if (currentPage === "seriesPage") {
       localStorage.setItem("seriesSortValue", sortValue);
     } else if (currentPage === "liveTvPage") {
-      localStorage.setItem("movieSortValue", sortValue); // Live TV can use movie sort
+      localStorage.setItem("liveTvSortValue", sortValue); // ✅ CORRECT
     }
   }
 
