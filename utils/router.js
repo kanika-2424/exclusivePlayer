@@ -193,6 +193,13 @@ case 'videoJsPlayer':
         localStorage.setItem('currentPage', 'settingsPage');
         break;
 
+      case 'account-page':
+        pageElement = document.getElementById('account-page');
+        pageElement.innerHTML = AccountPage();
+        this.currentPage = 'AccountPage';
+        localStorage.setItem('currentPage', 'accountPage');
+        break;
+
     }
 
     if (pageElement) {
@@ -223,6 +230,7 @@ async function navigateTo(pageName) {
     'series-detail-page': 'series-detail',
     'seriesDetailPage': 'series-detail',
     'video-player': 'video-player',
+    "account-page": "account-page"
 
   };
   
