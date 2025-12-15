@@ -1,4 +1,7 @@
 // Add this BEFORE or AFTER your LiveTvPage function
+
+
+
 window.addItemToHistory = (item, historyKey) => {
   const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
@@ -59,17 +62,59 @@ window.addItemToHistory = (item, historyKey) => {
   }
 };
 
+// ===== LOADING SCREEN COMPONENT =====
+const LiveTvLoadingScreen = () => {
+  return `
+    <div class="livetv-loading-overlay" id="liveTvLoadingOverlay">
+      <div class="loading-content">
+        <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Live TV</div>
+        <div class="loading-subtext">Please wait while we load your channels...</div>
+      </div>
+    </div>
+  `;
+};
+
 function LiveTvPage() {
   // ===== API DATA (NEW) =====
   const categories = window.liveCategories || [];
   const allStreams = window.allLiveStreams || [];
+
+
+    // ===== LOADING HELPERS =====
+  const showLoading = () => {
+    const existing = document.getElementById("liveTvLoadingOverlay");
+    if (existing) existing.remove();
+
+    const loadingDiv = document.createElement("div");
+    loadingDiv.innerHTML = LiveTvLoadingScreen();
+    document.body.appendChild(loadingDiv.firstElementChild);
+  };
+
+  const hideLoading = () => {
+    const overlay = document.getElementById("liveTvLoadingOverlay");
+    if (overlay) {
+      overlay.classList.add("fade-out");
+      setTimeout(() => {
+        overlay.remove();
+      }, 500);
+    }
+  };
+
+
+  showLoading();
+
+    setTimeout(() => {
+    hideLoading();
+  }, 3000);
 
   // ===== HELPER: Get Filtered Categories =====
   const getFilteredCategories = () => {
     try {
       const currentPlaylistName = JSON.parse(
         localStorage.getItem("selectedPlaylist")
-      )?.playlistName;
+      ).playlistName;
 
       if (!currentPlaylistName) {
         console.error("❌ No playlist name found");
@@ -527,7 +572,7 @@ const applySortingToChannels = (channels) => {
   const toggleAspectRatio = () => {
     const videoEl = document.getElementById("live-video-player");
     const aspectBtn = document.querySelector(".aspect-ratio-btn");
-    const aspectLabel = aspectBtn?.querySelector(".aspect-label");
+    const aspectLabel = aspectBtn.querySelector(".aspect-label");
 
     if (!videoEl || !aspectBtn || !window.VideoAspectRatio) return;
 
@@ -857,7 +902,7 @@ const applySortingToChannels = (channels) => {
   // ===== VERIFY PASSWORD (FIXED) =====
   const verifyPassword = () => {
     const input = document.getElementById("passwordModalInput");
-    const enteredPassword = input?.value.trim() || "";
+    const enteredPassword = input.value.trim() || "";
 
     console.log("🔑 Verifying password...", { enteredPassword }); // Debug
 
@@ -1032,11 +1077,11 @@ const applySortingToChannels = (channels) => {
                 }
 
                 window.livePlayer.on("waiting", () => {
-                  qs(".live-video-loader")?.classList.remove("hidden");
+                  qs(".live-video-loader").classList.remove("hidden");
                 });
 
                 window.livePlayer.on("playing", () => {
-                  qs(".live-video-loader")?.classList.add("hidden");
+                  qs(".live-video-loader").classList.add("hidden");
                 });
 
                 window.livePlayer.on("error", (e) => {
@@ -1321,11 +1366,11 @@ const applySortingToChannels = (channels) => {
           }
 
           window.livePlayer.on("waiting", () => {
-            qs(".live-video-loader")?.classList.remove("hidden");
+            qs(".live-video-loader").classList.remove("hidden");
           });
 
           window.livePlayer.on("playing", () => {
-            qs(".live-video-loader")?.classList.add("hidden");
+            qs(".live-video-loader").classList.add("hidden");
           });
 
           window.livePlayer.on("error", (e) => {
@@ -1801,7 +1846,7 @@ const applySortingToChannels = (channels) => {
     const currentPlaylist = JSON.parse(
       localStorage.getItem("playlistsData")
     ).find((pl) => pl.playlistName === currentPlaylistName);
-    const favoritesList = currentPlaylist?.favoritesLiveTV || [];
+    const favoritesList = currentPlaylist.favoritesLiveTV || [];
 
     // Check if we're in history view
     const isHistoryView = selectedCategoryId === "channelHistory";
@@ -1998,12 +2043,44 @@ window.renderLiveTv = () => {
       return;
     }
     // Check if click is on favorite button OR its children (svg/path)
-    const favBtn = e.target.closest(".favorite-btn");
-    const isFavClick =
-      favBtn ||
-      e.target
-        .closest("svg")
-        ?.parentElement?.classList.contains("favorite-btn");
+  // Check if click is on favorite button OR its children (svg/path)
+const favBtn = e.target.closest(".favorite-btn");
+const svg = e.target.closest("svg");
+const isFavClick = favBtn || (svg && svg.parentElement.classList.contains("favorite-btn"));
+
+if (favBtn || isFavClick) {
+  e.stopPropagation();
+
+  const targetBtn = favBtn || (svg ? svg.parentElement : null);
+  if (!targetBtn) return;
+  
+  const card = targetBtn.closest(".channel-card");
+  if (!card) return;
+
+  const streamId = card.dataset.streamId;
+  const channelData = allStreams.find((ch) => ch.stream_id == streamId);
+
+  if (channelData) {
+    toggleFavorite(channelData);
+
+    if (selectedCategoryId === "favorites") {
+      setTimeout(() => {
+        renderChannels();
+        renderSidebarCategories();
+        const channels = qsa(".channel-card");
+        if (channels.length > 0) {
+          focusedChannelIndex = Math.min(
+            focusedChannelIndex,
+            channels.length - 1
+          );
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        }
+      }, 100);
+    }
+  }
+  return;
+}
+  
 
     if (favBtn || isFavClick) {
       e.stopPropagation();
@@ -2665,7 +2742,7 @@ if (isMenuDotsActive) {
     if (inFavoriteBtn) {
       const channels = qsa(".channel-card");
       const card = channels[focusedChannelIndex];
-      const favBtn = card?.querySelector(".favorite-btn");
+      const favBtn = card.querySelector(".favorite-btn");
       const cols = 5;
 
       if (isLeft) {
@@ -2680,7 +2757,7 @@ if (isMenuDotsActive) {
 
       if (isRight) {
         const card = channels[focusedChannelIndex];
-        const removeBtn = card?.querySelector(".remove-history-btn");
+        const removeBtn = card.querySelector(".remove-history-btn");
 
         // If remove button exists (in history view), go to it
         if (removeBtn && selectedCategoryId === "channelHistory") {
@@ -2707,7 +2784,7 @@ if (isMenuDotsActive) {
 
       if (isEnter) {
         // Click the favorite button
-        favBtn?.click();
+        favBtn.click();
         e.preventDefault();
         return;
       }
@@ -2756,7 +2833,7 @@ if (isMenuDotsActive) {
     if (inRemoveHistoryBtn) {
       const channels = qsa(".channel-card");
       const card = channels[focusedChannelIndex];
-      const removeBtn = card?.querySelector(".remove-history-btn");
+      const removeBtn = card.querySelector(".remove-history-btn");
       const cols = 5;
 
       if (isLeft) {
@@ -2785,7 +2862,7 @@ if (isMenuDotsActive) {
 
       if (isEnter) {
         // Click the remove button
-        removeBtn?.click();
+        removeBtn.click();
         e.preventDefault();
         return;
       }
@@ -2989,7 +3066,10 @@ if (isMenuDotsActive) {
         inFavoriteBtn = false; // ADD THIS
         inRemoveHistoryBtn = false; // ADD THIS
       }
-    }, 50);
+
+            hideLoading();
+
+    }, 100);
 
     // document.querySelector("#sidebar-area").innerHTML =
     //   SidebarCategories(categoriesData);

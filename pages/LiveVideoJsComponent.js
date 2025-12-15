@@ -336,7 +336,7 @@ function showVolumeDisplay(volume) {
     updateAspectRatioButtonVisibility();
 
     if (isTsStream && typeof flowplayer !== "undefined") {
-      const hlsUrl = srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`);
+      const hlsUrl = srcUrl.replace(/\.ts(\.*)?$/i, (m, q) => `.m3u8${q || ""}`);
       const fpContainer = document.getElementById("flowplayer-live");
       if (fpContainer) {
         const wrapperEl = fpContainer.closest('.live-video-player-div');
@@ -757,7 +757,7 @@ return `
     ${isTsStream
       ? `<div id="flowplayer-live" style="height:100%; width:100%;">
            <video>
-             <source type="application/x-mpegURL" src="${srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`)}">
+             <source type="application/x-mpegURL" src="${srcUrl.replace(/\.ts(\.*)?$/i, (m, q) => `.m3u8${q || ""}`)}">
            </video>
          </div>`
       : `<video id="${id}" class="video-js vjs-big-play-centered" playsinline webkit-playsinline style="height:100%; width:100%;"></video>`

@@ -164,8 +164,8 @@ if (playlistIndex !== -1) {
           const input1 = document.getElementById('parentalPassword1');
           const input2 = document.getElementById('parentalPassword2');
           
-          const pass1 = input1?.value.trim() || "";
-          const pass2 = input2?.value.trim() || "";
+          const pass1 = input1.value.trim() || "";
+          const pass2 = input2.value.trim() || "";
 
           if (!pass1 || !pass2) {
             Toaster.showToast("error", "Please fill both password fields!");
@@ -372,9 +372,9 @@ if (playlistIndex !== -1) {
       // ArrowRight - Move to right panel
       if (e.key === "ArrowRight") {
         const focusedCard = settingsFocusableItems[settingsFocusIndex];
-        if (focusedCard?.classList.contains('stream-card') || 
-            focusedCard?.classList.contains('time-format-card') ||
-            focusedCard?.classList.contains('parental-control-card')) {
+        if (focusedCard.classList.contains('stream-card') || 
+            focusedCard.classList.contains('time-format-card') ||
+            focusedCard.classList.contains('parental-control-card')) {
           isRightPanelActive = true;
           rightPanelFocusIndex = 0;
           

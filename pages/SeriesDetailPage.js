@@ -196,7 +196,7 @@ var isContinueWatchingSeries = continueWatchingSeriesIds.includes(seriesData.id.
 
 // Get current episode details for "Start from Beginning" button
 let currentEpisodeInfo = '';
-if (isContinueWatchingSeries && currentPlaylist?.continueWatchingSeries) {
+if (isContinueWatchingSeries && currentPlaylist.continueWatchingSeries) {
   const continueItem = currentPlaylist.continueWatchingSeries.find(
     item => item.itemId === seriesData.id.toString()
   );
@@ -454,7 +454,7 @@ function updatePlayButtonText() {
     let playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]");
     const currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
     
-    if (!currentPlaylist?.continueWatchingSeries) {
+    if (!currentPlaylist.continueWatchingSeries) {
       playBtn.querySelector("span:last-child").textContent = "Play S1.E1";
       return;
     }
@@ -529,7 +529,7 @@ setTimeout(updatePlayButtonText, 100);
     currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
   }
 
-const continueWatchingData = currentPlaylist?.continueWatchingSeries || [];
+const continueWatchingData = currentPlaylist.continueWatchingSeries || [];
 
   episodesGrid.innerHTML = episodes.map((ep, index) => {
     const episodeTitle = ep.title || `Episode ${ep.episode_num}`;
@@ -847,7 +847,7 @@ if (playBtn) {
         let playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]");
         const currentPlaylist = playlistsData.find(pl => pl.playlistName === currentPlaylistName);
         
-        if (currentPlaylist?.continueWatchingSeries) {
+        if (currentPlaylist.continueWatchingSeries) {
           const continueWatchingItem = currentPlaylist.continueWatchingSeries.find(
             item => item.itemId === seriesData.id.toString()
           );

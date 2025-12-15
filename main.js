@@ -220,7 +220,7 @@ Toaster(); // Initialize Toaster
 function formatTime(date, format = null) {
   // Get format from parameter, or from selectedPlaylist, or from localStorage, or default to 12hrs
   const timeFormat = format || 
-                     JSON.parse(localStorage.getItem("selectedPlaylist"))?.timeFormat || 
+                     JSON.parse(localStorage.getItem("selectedPlaylist")).timeFormat || 
                      localStorage.getItem("selectedTimeFormat") || 
                      "12hrs";
   

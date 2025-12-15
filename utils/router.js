@@ -19,9 +19,12 @@ const Router = {
     });
 
     // Cleanup previous page if exists
-    if (this.currentPage && window[this.currentPage + 'Page']?.cleanup) {
-      console.log("🧹 Cleaning up:", this.currentPage);
-      window[this.currentPage + 'Page'].cleanup();
+    if (this.currentPage) {
+      const pageModule = window[this.currentPage + 'Page'];
+      if (pageModule && typeof pageModule.cleanup === "function") {
+        console.log("🧹 Cleaning up:", this.currentPage);
+        pageModule.cleanup();
+      }
     }
 
     // Show and render the requested page
@@ -88,7 +91,7 @@ case 'videoJsPlayer':
     pageElement = document.createElement('div');
     pageElement.id = 'video-player';
     pageElement.className = 'page';
-    document.getElementById('app')?.appendChild(pageElement);
+    document.getElementById('app').appendChild(pageElement);
   }
   
   // Generate video player HTML

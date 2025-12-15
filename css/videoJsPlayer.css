@@ -507,3 +507,52 @@ margin-right: 5px;
   border: 2px solid var(--gold); 
   background: var(--gold) !important;
 }
+
+
+
+/* Aspect Ratio Classes */
+.video-aspect-169 {
+  aspect-ratio: 16/9 !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.video-aspect-43 {
+  aspect-ratio: 4/3 !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.video-aspect-235 {
+  aspect-ratio: 2.35/1 !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Aspect Ratio Overlay */
+.aspect-ratio-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.aspect-ratio-overlay.show {
+  opacity: 1;
+}
+
+.videojs-aspect-ratio-btn-focused {
+  border: 3px solid #0ea5e9 !important;
+  outline: 3px solid #0ea5e9 !important;
+  outline-offset: 2px;
+}

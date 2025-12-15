@@ -846,7 +846,7 @@ function onCategoryClick(e) {
   if (!cat) return;
   
   const catId = String(cat.dataset.id);
-  const catName = cat.dataset.categoryName || categories.find(c => String(c.id) === catId)?.name;
+  const catName = cat.dataset.categoryName || categories.find(c => String(c.id) === catId).name;
   const isAdultCat = isMovieAdultCategory(catName);
   const isUnlocked = unlockedMovieAdultCatIds.has(catId);
   
@@ -1992,7 +1992,6 @@ if (currentSection === "header") {
 
      const menuDots = document.querySelector('.menu-dots');
 if (menuDots) {
-    menuDots.removeEventListener('click', menuDotsClickHandler); // Remove old listener
     
     const menuDotsClickHandler = (e) => {
         e.preventDefault();
@@ -2007,6 +2006,7 @@ if (menuDots) {
         
         openSidebar('moviesPage');
     };
+    menuDots.removeEventListener('click', menuDotsClickHandler); // Remove old listener
     
     menuDots.addEventListener('click', menuDotsClickHandler);
 }

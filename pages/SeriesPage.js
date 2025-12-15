@@ -684,7 +684,7 @@ if (scrollBtn) scrollBtn.classList.remove("focused");
   if (!cat) return;
   
   const catId = String(cat.dataset.id);
-  const catName = cat.dataset.categoryName || categories.find(c => String(c.id) === catId)?.name;
+  const catName = cat.dataset.categoryName || categories.find(c => String(c.id) === catId).name;
   const isAdultCat = isSeriesAdultCategory(catName);
   const isUnlocked = unlockedSeriesAdultCatIds.has(catId);
   

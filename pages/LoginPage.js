@@ -53,9 +53,9 @@ function handleAddUserClick() {
     var usernameInput = document.querySelector('.login-card .input-group:nth-of-type(2) input[type="text"]');
     var passwordInput = document.querySelector('.login-card .input-group:nth-of-type(3) input');  // ← Remove [type="password"]
 
-    var name = nameInput?.value.trim() || "";
-    var username = usernameInput?.value.trim() || "";
-    var password = passwordInput?.value.trim() || "";
+    var name = nameInput.value.trim() || "";
+    var username = usernameInput.value.trim() || "";
+    var password = passwordInput.value.trim() || "";
 
     console.log("READ VALUES:", {name, username, password}); // DEBUG
 
@@ -104,9 +104,9 @@ var inputs = [nameInput, usernameInput, passwordInput];
         listUsersBtn    // List users
       ];
 console.log("READ VALUES:", {
-    name: inputs[0]?.value,
-    username: inputs[1]?.value,
-    password: inputs[2]?.value
+    name: inputs[0].value,
+    username: inputs[1].value,
+    password: inputs[2].value
 });
       // normalize focusable array (remove nulls but keep indices stable)
       // We'll keep nulls so indexes match your earlier logic; checks will ignore nulls.
@@ -210,11 +210,11 @@ console.log("READ VALUES:", {
             var playlistsData = [];
             try { playlistsData = JSON.parse(localStorage.getItem("playlistsData") || "[]"); } catch (e) {}
             if (playlistsData.length === 0) {
-                Toaster?.showToast("error", "No Playlists Available!");
+                Toaster.showToast("error", "No Playlists Available!");
                 return;
             }
             localStorage.setItem("currentPage", "playlist");
-            LoginPage.cleanup?.();
+            LoginPage.cleanup();
             Router.showPage("playlist");
             return;
         }
@@ -232,7 +232,7 @@ console.log("READ VALUES:", {
         }
 
     } catch (outer) {
-        console.warn("handleClick error", outer?.message);
+        console.warn("handleClick error", outer.message);
     }
 }
 
