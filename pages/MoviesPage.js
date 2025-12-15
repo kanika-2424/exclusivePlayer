@@ -712,11 +712,19 @@ function buildMovieCardHTML(m) {
 
     movieCards[index].classList.add("focused");
     movieCards[index].scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "center",
+      block: "nearest",
+      inline: "nearest",
     });
     currentSection = "movies";
+
+
+    //   if (index === 0) {
+    //   const container = qs(".movies-grid-container");
+    //   if (container) {
+    //     container.scrollTo({ top: 0, behavior: "smooth" });
+    //     console.log("🔝 Scrolled to top (first card focused)");
+    //   }
+    // }
 
     const movieId = movieCards[index].dataset.movieId;
     console.log(
@@ -1198,7 +1206,10 @@ function openMovieDetail(movieId) {
 
         if (currentSection === "menuDots") {
     // Open sidebar on down
-    openSidebar('moviesPage');
+    // openSidebar('moviesPage');
+           setFocusOnSearch();
+
+
     e.preventDefault();
     return;
   }

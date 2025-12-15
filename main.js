@@ -87,112 +87,156 @@ Toaster(); // Initialize Toaster
     // LOGIN FLOW DECISION TREE
     // -------------------------
 
-    if (isLogin && selectedPlaylist) {
-      // User already logged in with playlist
-      console.log("✅ User is logged in, loading dashboard...");
+  // -------------------------
+// LOGIN FLOW DECISION TREE
+// -------------------------
 
+if (isLogin && selectedPlaylist) {
+  // User already logged in with playlist
+  console.log("✅ User is logged in, loading dashboard...");
 
-        const allPlaylists = JSON.parse(localStorage.getItem('playlistsData')) || [];
+  // Restore full playlist data including parentalPassword
+  const allPlaylists = JSON.parse(localStorage.getItem('playlistsData')) || [];
   const fullPlaylistData = allPlaylists.find(p => p.playlistName === selectedPlaylist.playlistName);
   
   if (fullPlaylistData) {
-    // ✅ Merge the full data back into selectedPlaylist to restore parentalPassword, etc.
     const restoredPlaylist = {
       ...fullPlaylistData,
       playlistUrl: selectedPlaylist.playlistUrl || fullPlaylistData.playlistUrl,
       playlistUsername: selectedPlaylist.playlistUsername || fullPlaylistData.playlistUsername
     };
     localStorage.setItem('selectedPlaylist', JSON.stringify(restoredPlaylist));
-    selectedPlaylist = restoredPlaylist; // Update the variable too
+    selectedPlaylist = restoredPlaylist;
   }
-      
-      // Check if we already have data in localStorage
-      if (currentPlaylistDataRaw) {
-        try {
-          const playlistData = JSON.parse(currentPlaylistDataRaw);
-          
-          // Load data from localStorage or re-fetch
-          const loadingOverlay = document.getElementById("loading-overlay");
-          if (loadingOverlay) {
-            loadingOverlay.classList.remove("hidden");
-          }
-          
-          resetLoadingPercentage();
-          updateLoadingPercentage(20, "Loading saved data...");
-
-          // Try to load cached data first
-          try {
-            updateLoadingPercentage(30, "Loading movies...");
-            const vodMovies = await getAllVodMovies();
-            
-            updateLoadingPercentage(45, "Loading movie categories...");
-            const moviesCategories = await getMoviesCategories();
-            
-            updateLoadingPercentage(60, "Loading series...");
-            const vodSeries = await getAllVodSeries();
-            
-            updateLoadingPercentage(70, "Loading series categories...");
-            const seriesCategories = await getSeriesCategories();
-            
-            updateLoadingPercentage(80, "Loading live streams...");
-            const vodAllLiveStreams = await getAllLiveStreams();
-            
-            updateLoadingPercentage(90, "Loading live categories...");
-            const liveCategories = await getLiveCategories();
-
-            // Set global variables
-            window.allMoviesStreams = vodMovies || [];
-            window.moviesCategories = moviesCategories || [];
-            window.allSeriesStreams = vodSeries || [];
-            window.allseriesCategories = seriesCategories || [];
-            window.allLiveStreams = vodAllLiveStreams || [];
-            window.liveCategories = liveCategories || [];
-
-            updateLoadingPercentage(100, "Ready!");
-            
-        setTimeout(() => {
+  
+  // Show loading overlay
+  const loadingOverlay = document.getElementById("loading-overlay");
   if (loadingOverlay) {
-    loadingOverlay.classList.add("hidden");
+    loadingOverlay.classList.remove("hidden");
   }
+  
   resetLoadingPercentage();
-  
-  const currentPage = localStorage.getItem("currentPage");
-  
-  // ✅ ONLY navigate if no page is set OR still on splash/loading
-  // ✅ DO NOT navigate if already on dashboard (from login)
-  if ((!currentPage || currentPage === "splash" || currentPage === "loading") 
-      && currentPage !== "dashboard") {
-    localStorage.setItem("currentPage", "dashboard");
-    Router.showPage('dashboard');
-  } else {
-    console.log("✅ Page already set to:", currentPage, "- skipping navigation");
-  }
+  updateLoadingPercentage(10, "Restoring session...");
 
-}, 500);
-            
-          } catch (error) {
-            console.error("❌ Failed to load data on refresh:", error);
-            // If loading fails, log them out
-            localStorage.removeItem("isLogin");
-            localStorage.removeItem("currentPlaylistData");
-            if (loadingOverlay) {
-              loadingOverlay.classList.add("hidden");
-            }
-            Router.showPage("login");
+  // Check if we already have cached data
+  if (currentPlaylistDataRaw) {
+    try {
+      const playlistData = JSON.parse(currentPlaylistDataRaw);
+      
+      updateLoadingPercentage(20, "Loading saved data...");
+
+      // Load all cached data
+      try {
+        updateLoadingPercentage(30, "Loading movies...");
+        const vodMovies = await getAllVodMovies();
+        
+        updateLoadingPercentage(45, "Loading movie categories...");
+        const moviesCategories = await getMoviesCategories();
+        
+        updateLoadingPercentage(60, "Loading series...");
+        const vodSeries = await getAllVodSeries();
+        
+        updateLoadingPercentage(70, "Loading series categories...");
+        const seriesCategories = await getSeriesCategories();
+        
+        updateLoadingPercentage(80, "Loading live streams...");
+        const vodAllLiveStreams = await getAllLiveStreams();
+        
+        updateLoadingPercentage(90, "Loading live categories...");
+        const liveCategories = await getLiveCategories();
+
+        // Set global variables
+        window.allMoviesStreams = vodMovies || [];
+        window.moviesCategories = moviesCategories || [];
+        window.allSeriesStreams = vodSeries || [];
+        window.allseriesCategories = seriesCategories || [];
+        window.allLiveStreams = vodAllLiveStreams || [];
+        window.liveCategories = liveCategories || [];
+
+        updateLoadingPercentage(100, "Ready!");
+        
+        setTimeout(() => {
+          if (loadingOverlay) {
+            loadingOverlay.classList.add("hidden");
           }
+          resetLoadingPercentage();
           
-        } catch (e) {
-          console.error("❌ Failed to parse playlist data:", e);
+          // Set current page and navigate to dashboard
+          localStorage.setItem("currentPage", "dashboard");
+          Router.showPage('dashboard');
+          
+          console.log("✅ Auto-login successful - Dashboard loaded");
+        }, 500);
+        
+      } catch (error) {
+        console.error("❌ Failed to load cached data on refresh:", error);
+        
+        // Try to re-fetch data instead of logging out
+        updateLoadingPercentage(50, "Refreshing data...");
+        
+        try {
+          // Re-fetch all data from API
+          const fetchedData = await fetchPlaylistData(selectedPlaylist);
+          
+          if (fetchedData) {
+            localStorage.setItem("currentPlaylistData", JSON.stringify(fetchedData));
+            
+            // Reload the page to start fresh with new data
+            window.location.reload();
+          } else {
+            throw new Error("Failed to fetch playlist data");
+          }
+        } catch (refetchError) {
+          console.error("❌ Failed to re-fetch data:", refetchError);
+          
+          // Only log out as last resort
+          localStorage.removeItem("isLogin");
+          localStorage.removeItem("currentPlaylistData");
+          if (loadingOverlay) {
+            loadingOverlay.classList.add("hidden");
+          }
+          resetLoadingPercentage();
           Router.showPage("login");
         }
-      } else {
-        // No cached data, go to login
-        console.log("⚠️ No cached data found, redirecting to login");
-        localStorage.removeItem("isLogin");
-        Router.showPage("login");
       }
-      return;
+      
+    } catch (e) {
+      console.error("❌ Failed to parse playlist data:", e);
+      localStorage.removeItem("isLogin");
+      localStorage.removeItem("currentPlaylistData");
+      if (loadingOverlay) {
+        loadingOverlay.classList.add("hidden");
+      }
+      Router.showPage("login");
     }
+  } else {
+    // No cached data, try to fetch it
+    console.log("⚠️ No cached data found, fetching fresh data...");
+    
+    try {
+      updateLoadingPercentage(30, "Fetching playlist data...");
+      const fetchedData = await fetchPlaylistData(selectedPlaylist);
+      
+      if (fetchedData) {
+        localStorage.setItem("currentPlaylistData", JSON.stringify(fetchedData));
+        
+        // Reload to process the newly fetched data
+        window.location.reload();
+      } else {
+        throw new Error("No data returned from API");
+      }
+    } catch (fetchError) {
+      console.error("❌ Failed to fetch data:", fetchError);
+      localStorage.removeItem("isLogin");
+      if (loadingOverlay) {
+        loadingOverlay.classList.add("hidden");
+      }
+      resetLoadingPercentage();
+      Router.showPage("login");
+    }
+  }
+  return;
+}
 
     if (!isLogin && selectedPlaylist) {
       // Playlist exists but not logged in → go to playlist page

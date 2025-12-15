@@ -18,6 +18,8 @@ function AccountPage() {
     }
   }
 
+  console.log("currentPlaylistData" , currentPlaylistData);
+  
   function closeModal() {
     if (AccountPage.cleanup) AccountPage.cleanup();
 
@@ -70,14 +72,14 @@ function AccountPage() {
           accountPageClick(buttons[focusIndex]);
           break;
 
-        case "Escape":
-        case "Back":
-        case "BrowserBack":
-        case "XF86Back":
-        case "SoftLeft":
-          // return;
-          // closeModal();
-          break;
+     case "Escape":
+case "Back":
+case "BrowserBack":
+case "XF86Back":
+case "SoftLeft":
+  closeModal();
+  e.preventDefault();
+  break;
       }
     }
 
@@ -85,66 +87,80 @@ function AccountPage() {
     modalContainer.addEventListener("click", accountPageClick);
     document.addEventListener("keydown", accountPageKeydownHandler);
 
-    NoCacheModal.cleanup = function () {
-      modalContainer.removeEventListener("click", accountPageClick);
-      document.removeEventListener("keydown", accountPageKeydownHandler);
-    };
+    // NoCacheModal.cleanup = function () {
+    //   modalContainer.removeEventListener("click", accountPageClick);
+    //   document.removeEventListener("keydown", accountPageKeydownHandler);
+    // };
 
     setFocus(focusIndex);
   }, 0);
+
+  const playlistData = JSON.parse(localStorage.getItem("currentPlaylistData")) || {};
+
+
+let expDate;
+
+if (
+  playlistData &&
+  playlistData.userInfo &&
+  playlistData.userInfo.exp_date
+) {
+  expDate = playlistData.userInfo.exp_date;
+} else {
+  expDate = null;
+}
+
 
   return `
     <div class="account-page-container">
 
        <div class="playlistpage-header">
         <img src="/assets/logo.png" class="playlistpage-logo" />
-        <div class="playlistpage-title">Account</div>
 
-        <div class="playlistpage-add-btn playlist-add-user">
-            <div class="add-icon">
-                <img src="/assets/add.png" />
-            </div>
-        </div>
+       
     </div>
 
       <div class="settings-header">
         <div class="setting-login-header">
         </div>
-   ${DateTimeComponent()}
       </div>
 
       <div class="clear-wrap">
-        <div class="clear-panel" role="dialog" aria-labelledby="dialogTitle">
-          <h1 class="clear-title" id="dialogTitle">Account Page</h1>
-          <div>
+    
+<div class="account-page-content">
+        <div class="playlistpage-title">Account Page</div>
+  
+  <div class="account-details-box">
+    <div class="account-item">
+      <p class="account-label">Username</p>
+      <p class="account-value">${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.username || "N/A"}</p>
+    </div>
 
-        <div class="account-page-content">
-  <div class="account-item">
-    <p>Username</p>
-    <p>${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.username || "N/A"}</p>
+    <div class="account-item">
+      <p class="account-label">Account Status</p>
+      <p class="account-status">${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.status || "N/A"}</p>
+    </div>
+
+    <div class="account-item">
+      <p class="account-label">Expiry Date</p>
+<p class="account-value">
+  ${formatUnixDate(expDate) || "N/A"}
+</p>   </div>
+
+    <div class="account-item">
+      <p class="account-label">Active Connections</p>
+      <p class="account-value">${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.active_cons || "N/A"}</p>
+    </div>
   </div>
 
-  <div class="account-item">
-    <p>Account Status</p>
-    <p class="account-status">${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.status || "N/A"}</p>
-  </div>
-
-  <div class="account-item">
-    <p>Expiry Date</p>
-    <p>${formatUnixDate((JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.exp_date  || "N/A")}</p>
-  </div>
-
-  <div class="account-item">
-    <p>Active Connections</p>
-    <p>${(JSON.parse(localStorage.getItem("currentPlaylistData")) || {}).user_info.active_cons  || "N/A"}</p>
+  <div class="account-back-btn-wrapper">
+    <button class="account-back-btn" id="accountBackBtn">Back</button>
   </div>
 </div>
 
       
         </div>
-            <div class="clear-actions">
-            <button class="btn back" id="accountBackBtn">Back</button>
-          </div>
+           
       </div>
     </div>
   `;

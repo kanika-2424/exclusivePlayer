@@ -13,10 +13,17 @@
     flex: 0 0 40%;
     display: flex;
     flex-direction: column;
-    gap: 20px;
     background-color: rgba(217, 217, 217, 0.15);
     padding: 75px;
     
+}
+
+.settings-left-panel > * {
+    margin-bottom: 20px;
+}
+
+.settings-left-panel > *:last-child {
+    margin-bottom: 0;
 }
 
 .settings-right-panel {
@@ -24,7 +31,6 @@
 
     flex: 1;
     background: rgba(30, 40, 50, 0.5);
-    border-radius: 20px;
     padding: 40px;
       align-items: center;
     justify-content: center;
@@ -41,7 +47,14 @@
 .setting-card-content {
     display: flex;
     align-items: center;
-    gap: 20px;
+}
+
+.setting-card-content > * {
+    margin-right: 20px;
+}
+
+.setting-card-content > *:last-child {
+    margin-right: 0;
 }
 
 .setting-card-icon-wrapper img{
@@ -71,15 +84,21 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 20px;
     height: 100%; 
     
+}
+
+.settings-options-container > * {
+    margin-bottom: 20px;
+}
+
+.settings-options-container > *:last-child {
+    margin-bottom: 0;
 }
 
 .option-item {
     display: flex;
     align-items: center;
-    gap: 15px;
     padding: 20px;
     background: rgba(0, 0, 0, 0.3);
     border: 3px solid rgba(255, 255, 255, 0.24);
@@ -88,6 +107,14 @@
     font-size: 28px;
     cursor: pointer;
     /* font-size: 34px; */
+}
+
+.option-item > * {
+    margin-right: 15px;
+}
+
+.option-item > *:last-child {
+    margin-right: 0;
 }
 
 /* .option-selected {
@@ -212,4 +239,3 @@
   transform: scale(1.1);
   box-shadow: 0 0 15px rgba(231, 161, 1, 0.6);
 }
-

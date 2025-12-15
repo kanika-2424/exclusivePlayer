@@ -599,7 +599,7 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     index = Math.max(0, Math.min(index, movieCards.length - 1));
     currentFocusIndex = index;
     movieCards[index].classList.add("focused");
-    movieCards[index].scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
+    movieCards[index].scrollIntoView({ block: "nearest", inline: "nearest"});
     currentSection = "series";
   }
 
@@ -1011,7 +1011,9 @@ else if (currentSection === "categories") {
 
         if (currentSection === "menuDots") {
     // Open sidebar on down
-    openSidebar('seriesPage');
+    // openSidebar('seriesPage');
+            setFocusOnSearch();
+
     e.preventDefault();
     return;
   }

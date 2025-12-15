@@ -306,7 +306,22 @@ const time = formatTime(now);
 
   const playlistData = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
   const playlistName = playlistData.playlistName || "Any Name";
-  const expirationDate = playlistData.expirationDate || "Dec 23, 2025";
+
+let expDate;
+
+if (
+  playlistData &&
+  playlistData.userInfo &&
+  playlistData.userInfo.exp_date
+) {
+  expDate = playlistData.userInfo.exp_date;
+} else {
+  expDate = null;
+}
+
+
+
+
 
   return `
 <div class="dashboard-main-container">
@@ -393,7 +408,7 @@ const time = formatTime(now);
     </div>
 
     <footer class="footer-dashboard">
-        <div class="footer-left">Expiration : ${expirationDate}</div>
+        <div class="footer-left">Expiration :    ${formatUnixDate(expDate) || 'N/A'}</div>
         <div class="footer-right">Logged in : ${playlistName}</div>
     </footer>
 </div>

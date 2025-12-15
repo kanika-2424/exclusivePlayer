@@ -632,19 +632,21 @@ const applySortingToChannels = (channels) => {
   };
 
   // Helper to set focus on sidebar search box
-  const setSidebarSearchFocus = (active) => {
-    removeAllFocus(); // ADD THIS LINE
+// Helper to set focus on sidebar search box
+const setSidebarSearchFocus = (active) => {
+  removeAllFocus(); // ADD THIS LINE
 
-    const searchBox = qs(".sidebar-search-box");
-    const searchInput = qs(".sidebar-search-input");
-    if (active) {
-      searchBox.classList.add("search-focused");
-      searchInput.focus();
-    } else {
-      searchBox.classList.remove("search-focused");
-      searchInput.blur();
-    }
-  };
+  const searchBox = qs(".sidebar-search-box");
+  const searchInput = qs(".sidebar-search-input");
+  if (active) {
+    searchBox.classList.add("search-focused");
+    // DON'T focus the input - just add visual focus
+    // searchInput.focus(); // REMOVE THIS LINE
+  } else {
+    searchBox.classList.remove("search-focused");
+    searchInput.blur();
+  }
+};
 
   // Helper to set focus on header search box
   const setHeaderSearchFocus = (active) => {
@@ -654,7 +656,7 @@ const applySortingToChannels = (channels) => {
     const searchInput = qs(".search-input");
     if (active) {
       searchBox.classList.add("search-focused");
-      searchInput.blur(); // Keep blurred initially
+      // searchInput.blur(); // Keep blurred initially
     } else {
       searchBox.classList.remove("search-focused");
       searchInput.blur();
@@ -2229,12 +2231,30 @@ if (isMenuDotsActive) {
         return;
     }
     
-    // DOWN: Open sidebar
-    if (isDown) {
-        openSidebar('liveTvPage');
+
+     if (isDown) {
+        isMenuDotsActive = false;
+        inSidebarSearch = true;
+        // isHeaderSearchActive = false;
+        setHeaderSearchFocus(false);
+        setSidebarSearchFocus(true);
+
+        const headerInput = qs(".search-input");
+        if (headerInput) {
+          headerInput.blur();
+          headerInput.selectionStart = headerInput.selectionEnd = 0;
+        }
+
         e.preventDefault();
         return;
-    }
+      }
+
+    // DOWN: Open sidebar
+    // if (isDown) {
+    //     openSidebar('liveTvPage');
+    //     e.preventDefault();
+    //     return;
+    // }
     
     // LEFT: Go back to header search
     if (isLeft) {
@@ -2481,6 +2501,8 @@ if (isMenuDotsActive) {
             searchInput.setSelectionRange(textLength, textLength);
           } else {
             searchInput.blur();
+                    searchInput.selectionStart = searchInput.selectionEnd = 0;
+
           }
         }
         e.preventDefault();
@@ -2490,7 +2512,7 @@ if (isMenuDotsActive) {
       if (isDown) {
         inHeaderSearch = false;
         inSidebarSearch = true;
-        isHeaderSearchActive = false;
+        // isHeaderSearchActive = false;
         setHeaderSearchFocus(false);
         setSidebarSearchFocus(true);
 
@@ -2513,7 +2535,7 @@ if (isMenuDotsActive) {
       // RIGHT: Move to menu dots
       if (isRight) {
         inHeaderSearch = false;
-        isHeaderSearchActive = false;
+        // isHeaderSearchActive = false;
         setHeaderSearchFocus(false);
 
         const headerInput = qs(".search-input");
@@ -2544,7 +2566,7 @@ if (isMenuDotsActive) {
       if (isUp) {
         inSidebarSearch = false;
         inHeaderSearch = true;
-        isSidebarSearchActive = false;
+        // isSidebarSearchActive = false;
         setSidebarSearchFocus(false);
         setHeaderSearchFocus(true);
 
@@ -2579,7 +2601,7 @@ if (isMenuDotsActive) {
       if (isRight) {
         inSidebarSearch = false;
         inChannelGrid = true;
-        isSidebarSearchActive = false;
+        // isSidebarSearchActive = false;
         setSidebarSearchFocus(false);
 
         const sidebarInput = qs(".sidebar-search-input");
@@ -2604,24 +2626,38 @@ if (isMenuDotsActive) {
         return;
       }
 
-      if (isEnter) {
-        isSidebarSearchActive = !isSidebarSearchActive;
-        const searchInput = qs(".sidebar-search-input");
-        if (searchInput) {
-          if (isSidebarSearchActive) {
-            searchInput.focus();
-            const textLength = searchInput.value.length;
-            searchInput.setSelectionRange(textLength, textLength);
-          } else {
-            searchInput.blur();
-          }
-        }
-        e.preventDefault();
-        return;
+       if (isEnter) {
+    isSidebarSearchActive = !isSidebarSearchActive;
+    const searchInput = qs(".sidebar-search-input");
+    if (searchInput) {
+      if (isSidebarSearchActive) {
+        // Open keyboard - focus input
+        searchInput.focus();
+        const textLength = searchInput.value.length;
+        searchInput.setSelectionRange(textLength, textLength);
+      } else {
+        // Close keyboard - blur input
+        searchInput.blur();
+        searchInput.selectionStart = searchInput.selectionEnd = 0;
       }
+    }
+    e.preventDefault();
+    return;
+  }
 
-      // Allow typing in search box - don't prevent default for regular keys
-      return;
+
+// If in edit mode, allow typing - don't prevent default
+if (isSidebarSearchActive) {
+  return; // Allow normal keyboard input
+}
+
+// Block navigation keys when not in edit mode
+if (isUp || isDown || isLeft || isRight) {
+  e.preventDefault();
+  return;
+}
+
+return; // Allow other keys
     }
 
     // Sidebar navigation

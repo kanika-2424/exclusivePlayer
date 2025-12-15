@@ -420,8 +420,8 @@ function ListPlaylistPage() {
             <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: white;">Remove Playlist?</div>
             <div style="font-size: 20px; margin-bottom: 30px; color: #ccc;">Are you sure you want to remove this playlist?</div>
             <div style="display: flex; gap: 15px; justify-content: center;">
-                <button class="playlist-remove-btn" style="padding: 10px 30px; background: #d32f2f; color: white; 
-                        border: none; border-radius: 5px; cursor: pointer; font-size: 20px;">Remove</button>
+                <button class="playlist-remove-btn" style="padding: 10px 30px; background: #555; color: white; 
+                        border: none; border-radius: 5px; cursor: pointer; font-size: 20px; margin-right: 10px;">Remove</button>
                 <button class="playlist-cancel-btn" style="padding: 10px 30px; background: #555; color: white; 
                         border: none; border-radius: 5px; cursor: pointer; font-size: 20px;">Cancel</button>
             </div>

@@ -1,52 +1,128 @@
-.account-page-container{
-       background-size: cover;
+.account-page-container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background-size: cover;
   background-repeat: no-repeat;
   overflow: hidden;
   background-position: center;
-  padding-right: 40px;
+  padding: 40px;
   color: white;
-  padding-left: 40px;
-  background-image: url("../assets/bg-gradient.png");
   height: 100vh;
   animation: fadeInOut 1s ease-in-out;
 }
 
-.account-page-content{
-    width: 100%;
-    display: flex;
-    zoom: 1.1;
-    flex-direction: column;
+.account-page-content {
+  width: 100%;
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .account-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 6px;
-  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
-.account-item p{
-    font-size: 24px;
+.account-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
 }
 
-.account-status{
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  background-color: green;
-  color: white !important;
-  border-radius: 8px;
+.account-item p {
+  font-size: 20px;
+  margin: 0;
 }
 
 .account-item p:first-child {
-  font-weight: 500;
-  color: var(--gold)
-
+  font-weight: 600;
+  color: #0ea5e9;
+  text-transform: uppercase;
+  font-size: 20px;
+  letter-spacing: 0.5px;
 }
 
 .account-item p:last-child {
-  /* color: var(--gold) */
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.account-status {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white !important;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Add this if you want a title above the box */
+.clear-title {
+  text-align: center;
+  color: #0ea5e9;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.account-back-btn {
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b9dd8 0%, #2980b9 100%);
+  color: black;
+  font-size: 26px;
+  font-weight: 700;
+  padding: 18px 80px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(59, 157, 216, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.account-back-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(59, 157, 216, 0.6);
+  background: linear-gradient(135deg, #4ab3f4 0%, #3b9dd8 100%);
+}
+
+.account-back-btn:active {
+  transform: translateY(0);
+}
+
+.account-back-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
+}
+
+
+.playlistpage-title{
+  color: white;
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin: 10px;
+  padding-bottom: 20px;
+}
+
+
+.account-label{
+  font-size: 24px;
 }
