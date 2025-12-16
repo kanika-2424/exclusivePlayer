@@ -798,7 +798,7 @@
     position: fixed !important;
     top: 0;
     right: 0;
-    width: 400px;
+    width: 470px;
     max-width: 90vw;
     height: 100vh;
     z-index: 9999;
@@ -863,4 +863,107 @@
 .menu-dots:hover,
 .menu-dots.focused {
     background: rgba(255, 255, 255, 0.15);
+}
+
+/* Loading Screen Styles */
+.movies-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.3s ease-out;
+}
+
+.movies-loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.movies-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.movies-loading-logo {
+  width: 150px;
+  height: auto;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.movies-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.movies-loading-text {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+}
+
+
+/* Centered No Data Message */
+.movie-no-data-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.movie-no-data-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.movie-no-data-content p {
+  color: #fff;
+  font-size: 24px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.movie-no-data-content i {
+  color: #fff;
+}
+
+/* Remove old inline no-data style if exists */
+.movie-no-data {
+  display: none !important;
 }

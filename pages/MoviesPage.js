@@ -647,11 +647,34 @@ function buildMovieCardHTML(m) {
      const movies = sortedMovies.slice(0, visibleCount);
 
 
-    if (!movies || movies.length === 0) {
-      container.innerHTML = `<div class="movie-no-data"><p>No movies found for this category.</p></div>`;
-      movieCards = [];
-      return;
-    }
+   if (!movies || movies.length === 0) {
+  container.innerHTML = ''; // Clear the grid
+  movieCards = [];
+  
+  // Show centered message outside grid
+  const gridContainer = qs(".movies-grid-container");
+  let noDataDiv = qs(".movie-no-data-overlay");
+  
+  if (!noDataDiv) {
+    noDataDiv = document.createElement('div');
+    noDataDiv.className = 'movie-no-data-overlay';
+    gridContainer.appendChild(noDataDiv);
+  }
+  
+  noDataDiv.innerHTML = `
+    <div class="movie-no-data-content">
+      <p>No movies found for this category.</p>
+    </div>
+  `;
+  noDataDiv.style.display = 'flex';
+  return;
+}
+
+// Remove no-data overlay if it exists (when movies are present)
+const noDataDiv = qs(".movie-no-data-overlay");
+if (noDataDiv) {
+  noDataDiv.style.display = 'none';
+}
     container.innerHTML = movies.map(buildMovieCardHTML).join("");
     movieCards = Array.from(container.querySelectorAll(".movie-card"));
   }
@@ -858,7 +881,7 @@ function onCategoryClick(e) {
   const isAdultCat = isMovieAdultCategory(catName);
   const isUnlocked = unlockedMovieAdultCatIds.has(catId);
   
-  // ✅ ADD THIS: Check if locked adult category
+  // Check if locked adult category
   if (isAdultCat && !!getParentalPassword() && !isUnlocked) {
     showPasswordModal(null, catName, () => {
       unlockedMovieAdultCatIds.add(catId);
@@ -867,7 +890,16 @@ function onCategoryClick(e) {
       qsa(".movies-category-item").forEach((i) => i.classList.remove("active"));
       cat.classList.add("active");
       renderCards();
-      setTimeout(() => setFocusOnCard(0), 50);
+      
+      // ⭐ Check if category has movies
+      const selectedCat = categories.find(c => String(c.id) === catId);
+      if (selectedCat && selectedCat.movies && selectedCat.movies.length > 0) {
+        setTimeout(() => setFocusOnCard(0), 50);
+      } else {
+        // No movies - stay on category
+        const catIdx = cat.dataset.idx;
+        setTimeout(() => setFocusOnCategory(Number(catIdx)), 50);
+      }
     });
     return;
   }
@@ -878,7 +910,16 @@ function onCategoryClick(e) {
   qsa(".movies-category-item").forEach((i) => i.classList.remove("active"));
   cat.classList.add("active");
   renderCards();
-  setTimeout(() => setFocusOnCard(0), 50);
+  
+  // ⭐ Check if category has movies
+  const selectedCat = categories.find(c => String(c.id) === catId);
+  if (selectedCat && selectedCat.movies && selectedCat.movies.length > 0) {
+    setTimeout(() => setFocusOnCard(0), 50);
+  } else {
+    // No movies - stay on category
+    const catIdx = cat.dataset.idx;
+    setTimeout(() => setFocusOnCategory(Number(catIdx)), 50);
+  }
 }
 
   // Card click handler (delegated)
@@ -1168,24 +1209,47 @@ function openMovieDetail(movieId) {
         // Normal UP movement (not top row)
         setFocusOnCard(currentFocusIndex - cardsPerRow);
         return;
-      } else if (currentSection === "categories") {
-        const perRow = computeCategoriesPerRow();
-        const prev = currentCategoryIndex - perRow;
+      }if (currentSection === "categories") {
+  const perRow = computeCategoriesPerRow();
+  const next = currentCategoryIndex + perRow;
 
-        // If collapsed and trying to go up from categories -> go to header search
-        if (!isExpanded) {
-          setFocusOnHeaderSearch();
-          e.preventDefault();
-          return;
-        }
+  // Collapsed → check if cards exist before moving
+  if (!isExpanded) {
+    if (cards.length > 0) {
+      setFocusOnCard(0);
+    }
+    // Stay on category if no cards
+    e.preventDefault();
+    return;
+  }
 
-        if (prev >= 0) {
-          setFocusOnCategory(prev);
-        } else {
-          // at top row -> focus category search (sidebar search)
-          setFocusOnSearch();
-        }
-      } else if (currentSection === "expand") {
+  // EXPANDED: check if we're in the last row
+  const totalCategories = categoriesEls.length;
+  const lastRowStartIndex =
+    Math.floor((totalCategories - 1) / perRow) * perRow;
+  const isInLastRow = currentCategoryIndex >= lastRowStartIndex;
+
+  if (isInLastRow) {
+    // From last row → go to movies only if cards exist
+    if (cards.length > 0) {
+      currentSection = "movies";
+      const col = currentCategoryIndex % perRow;
+      currentFocusIndex = Math.min(col, cards.length - 1);
+      setFocusOnCard(currentFocusIndex);
+    }
+    // Stay on category if no cards
+  } else if (next < categoriesEls.length) {
+    // Not in last row, move down normally
+    setFocusOnCategory(next);
+  } else {
+    // 2nd-to-last row with no category below → go to last category in bottom row
+    const lastCategoryIndex = totalCategories - 1;
+    setFocusOnCategory(lastCategoryIndex);
+  }
+
+  e.preventDefault();
+  return;
+}else if (currentSection === "expand") {
         // from expand: if expanded go to category search, else go to header search
         if (isExpanded) {
           setFocusOnSearch();
@@ -1633,15 +1697,25 @@ if (currentSection === "header") {
         }
         return;
       }
-
-      if (currentSection === "categories") {
-        // Select category
-        const items = qsa(".movies-category-item");
-        if (items[currentCategoryIndex]) {
-          items[currentCategoryIndex].click();
-        }
-        return;
-      }
+if (currentSection === "categories") {
+  // Select category
+  const items = qsa(".movies-category-item");
+  if (items[currentCategoryIndex]) {
+    const catId = items[currentCategoryIndex].dataset.id;
+    const selectedCat = categories.find(c => String(c.id) === String(catId));
+    
+    items[currentCategoryIndex].click();
+    
+    // ⭐ If no movies in category, keep focus on category
+    if (!selectedCat || !selectedCat.movies || selectedCat.movies.length === 0) {
+      setTimeout(() => {
+        setFocusOnCategory(currentCategoryIndex);
+      }, 100);
+    }
+  }
+  e.preventDefault();
+  return;
+}
 
       if (currentSection === "expand") {
         // Toggle expand
@@ -1825,6 +1899,18 @@ if (currentSection === "header") {
     return gridColumns || 7;
   }
 
+
+  function hideLoadingScreen() {
+  const loadingScreen = qs("#moviesLoadingScreen");
+  if (loadingScreen) {
+    loadingScreen.classList.add("fade-out");
+    setTimeout(() => {
+      loadingScreen.style.display = "none";
+    }, 300);
+  }
+}
+
+
   // compute categories per row (7 / 8 toggle)
   function computeCategoriesPerRow() {
     return isExpanded ? 8 : 7;
@@ -1881,14 +1967,30 @@ if (currentSection === "header") {
     visibleCount = Math.min(PAGE_SIZE, searchResults.length);
     renderCards();
 
-    if (searchResults.length === 0) {
-      const container = qs(".movies-grid");
-      if (container) {
-        container.innerHTML = `<div class="movie-no-data"><p>No movies found for "${escapeHtml(
-          query
-        )}" in this category</p></div>`;
-      }
-    }
+  if (searchResults.length === 0) {
+  const container = qs(".movies-grid");
+  if (container) {
+    container.innerHTML = ''; // Clear grid
+  }
+  
+  // Show centered message
+  const gridContainer = qs(".movies-grid-container");
+  let noDataDiv = qs(".movie-no-data-overlay");
+  
+  if (!noDataDiv) {
+    noDataDiv = document.createElement('div');
+    noDataDiv.className = 'movie-no-data-overlay';
+    gridContainer.appendChild(noDataDiv);
+  }
+  
+  noDataDiv.innerHTML = `
+    <div class="movie-no-data-content">
+      <p>No movies found for "${escapeHtml(query)}"</p>
+      <p style="font-size: 14px; opacity: 0.7; margin-top: 10px;">Try a different search term</p>
+    </div>
+  `;
+  noDataDiv.style.display = 'flex';
+}
   }
 
   // Initialize & event registration
@@ -1908,6 +2010,11 @@ if (currentSection === "header") {
     renderCategoriesUI();
     visibleCount = PAGE_SIZE;
     renderCards();
+
+    setTimeout(() => {
+  hideLoadingScreen();
+}, 100);
+
 
     if (categoryClickHandler) {
       document.removeEventListener("click", categoryClickHandler);
@@ -1988,6 +2095,8 @@ if (currentSection === "header") {
         : PAGE_SIZE;
       renderCategoriesUI();
       renderCards();
+      hideLoadingScreen();
+
       setTimeout(() => {
         if (savedCardIndex) {
           console.log("🎯 Restoring focus to card:", savedCardIndex);
@@ -2393,6 +2502,16 @@ ${SortingDialog()}
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+
+<!-- Loading Screen -->
+<div id="moviesLoadingScreen" class="movies-loading-screen">
+  <div class="movies-loading-content">
+    <img src="/assets/logo.png" class="movies-loading-logo" alt="Loading" />
+    <div class="movies-loading-spinner"></div>
+    <p class="movies-loading-text">Loading Movies...</p>
+  </div>
+</div>
 </style>
 `;
 }

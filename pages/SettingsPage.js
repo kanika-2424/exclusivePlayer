@@ -409,6 +409,11 @@ if (playlistIndex !== -1) {
       // Handle navigation in right panel
       if (isRightPanelActive) {
         if (e.key === "ArrowDown") {
+          // Before changing rightPanelFocusIndex
+if (document.activeElement && document.activeElement.tagName === "INPUT") {
+  document.activeElement.blur();
+}
+
           rightPanelFocusIndex++;
           if (rightPanelFocusIndex >= rightPanelItems.length) {
             rightPanelFocusIndex = rightPanelItems.length - 1;
@@ -419,6 +424,11 @@ if (playlistIndex !== -1) {
         }
 
         if (e.key === "ArrowUp") {
+          // Before changing rightPanelFocusIndex
+if (document.activeElement && document.activeElement.tagName === "INPUT") {
+  document.activeElement.blur();
+}
+
           rightPanelFocusIndex--;
           if (rightPanelFocusIndex < 0) {
             rightPanelFocusIndex = 0;
@@ -428,7 +438,7 @@ if (playlistIndex !== -1) {
           return;
         }
 
-        if (e.key === "Enter") {
+       if (e.key === "Enter") {
           const focusedEl = rightPanelItems[rightPanelFocusIndex];
           
           if (focusedEl) {
@@ -438,9 +448,24 @@ if (playlistIndex !== -1) {
             else if (focusedEl.classList.contains('eye-icon')) {
               focusedEl.click();
             }
-            else if (focusedEl.classList.contains('parental-input')) {
-              focusedEl.focus();
-            }
+           else if (focusedEl.classList.contains('parental-input')) {
+  const input = focusedEl;
+
+  // 🔥 Critical for Tizen: force previous input to release IME
+  document.activeElement && document.activeElement.blur();
+
+  setTimeout(() => {
+    input.focus();
+
+    // Move cursor to end (IME-safe)
+    try {
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    } catch (e) {}
+
+  }, 200); // 200ms is safer for older TVs
+}
+
             else {
               focusedEl.click();
             }
