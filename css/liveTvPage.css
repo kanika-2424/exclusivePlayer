@@ -507,7 +507,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 100;
+    z-index: 10000;
+    background-color: #000;
 }
 
 .live-video-loader.hidden {
@@ -707,12 +708,61 @@
 }
 
 /* Play/Pause Button - Center */
-.play-pause-btn {
+.play-pause-btn,
+#live-play-pause-btn {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 9999 !important;
+  /* Keep behind loader/spinner */
+  z-index: 900 !important;
+  background: rgba(0,0,0,0.85) !important;
+  color: white !important;
+  border: none !important;
+  width: 90px !important;
+  height: 90px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  /* box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important; */
+}
+
+.play-pause-btn:focus,
+.play-pause-btn.focused,
+#live-play-pause-btn:focus,
+#live-play-pause-btn.focused {
+  border: 2px solid #0ea5e9 !important;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
+
+  /* z-index: 100000 !important; */
+}
+
+.play-pause-btn i,
+#live-play-pause-btn i {
+  font-size: 30px !important;
+}
+
+/* Play/Pause Icon (legacy support) */
+.play-pause-icon {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 99999 !important;
+  background: rgba(0,0,0,0.85) !important;
+  color: white !important;
+  width: 90px !important;
+  height: 90px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
 }
 
 .video-aspect-235{

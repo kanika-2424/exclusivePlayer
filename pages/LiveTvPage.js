@@ -357,6 +357,7 @@ const applySortingToChannels = (channels) => {
   let focusedEPGIndex = 0;
   let currentAspectRatio = "contain";
   let inAspectRatioBtn = false;
+  let inPlayPauseBtn = false;
   let isHeaderSearchActive = false;
   let isSidebarSearchActive = false;
   let inFavoriteBtn = false; // ADD THIS LINE
@@ -510,12 +511,9 @@ const applySortingToChannels = (channels) => {
         <span style="margin-right: 8px;">⛶</span><span class="aspect-label">16:9</span>
       </button>
 
-      <!-- PLAY/PAUSE BUTTON with SVG Icons -->
-      <button class="play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; border: 4px solid #0ea5e9; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);">
-        <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white" style="display: block;">
-          <rect x="6" y="4" width="4" height="16" rx="1"/>
-          <rect x="14" y="4" width="4" height="16" rx="1"/>
-        </svg>
+      <!-- PLAY/PAUSE BUTTON with Font Awesome Icons -->
+      <button class="play-pause-btn" id="live-play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);">
+        <i class="fa-solid fa-pause" style="font-size: 30px;"></i>
       </button>
 
       <div class="live-video-loader hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 998;">
@@ -532,23 +530,11 @@ const applySortingToChannels = (channels) => {
     if (!videoEl || !playPauseBtn) return;
 
     // SVG for Play icon
-    const playIconSVG = `
-    <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-      <path d="M8 5v14l11-7z"/>
-    </svg>
-  `;
-
-    // SVG for Pause icon
-    const pauseIconSVG = `
-    <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-      <rect x="6" y="4" width="4" height="16" rx="1"/>
-      <rect x="14" y="4" width="4" height="16" rx="1"/>
-    </svg>
-  `;
-
+    const playIcon = playPauseBtn.querySelector("i");
+    
     if (videoEl.paused) {
       videoEl.play();
-      playPauseBtn.innerHTML = pauseIconSVG;
+      if (playIcon) playIcon.className = "fa-solid fa-pause";
       playPauseBtn.style.opacity = "1";
 
       // Hide after 1.5 seconds
@@ -564,24 +550,45 @@ const applySortingToChannels = (channels) => {
       videoEl.pause();
       playPauseBtn.style.display = "flex";
       playPauseBtn.style.opacity = "1";
-      playPauseBtn.innerHTML = playIconSVG;
+      if (playIcon) playIcon.className = "fa-solid fa-play";
     }
   };
 
   // Add this function after SimpleVideoPlayer:
   const toggleAspectRatio = () => {
-    const videoEl = document.getElementById("live-video-player");
-    const aspectBtn = document.querySelector(".aspect-ratio-btn");
-    const aspectLabel = aspectBtn.querySelector(".aspect-label");
+    // Try to find video element from different player types
+    let videoEl = document.getElementById("live-video-player") || // SimpleVideoPlayer
+                  document.querySelector("#live-videojs-player_html5_api") || // LiveVideoJsComponent
+                  document.querySelector("#flowplayer-live video") || // FlowLivePlayerComponent
+                  document.querySelector(".flowplayer .fp-engine"); // Flowplayer engine
+    
+    // If still not found, try to get from window.livePlayer
+    if (!videoEl && window.livePlayer) {
+      if (window.livePlayer._fp) {
+        // Flowplayer
+        videoEl = document.querySelector(".flowplayer .fp-engine");
+      } else {
+        // Video.js
+        videoEl = window.livePlayer.el().querySelector("video");
+      }
+    }
 
-    if (!videoEl || !aspectBtn || !window.VideoAspectRatio) return;
+    if (!videoEl || !window.VideoAspectRatio) {
+      console.warn("Video element or VideoAspectRatio not found");
+      return;
+    }
 
     // Cycle to next aspect ratio
     const newLabel = window.VideoAspectRatio.cycle(videoEl);
 
-    // Update button label to show current selection
-    if (aspectLabel && newLabel) {
-      aspectLabel.textContent = newLabel;
+    // Update button label if it exists
+    const aspectBtn = document.querySelector(".aspect-ratio-btn") || 
+                      document.querySelector("#videojs-aspect-ratio");
+    if (aspectBtn) {
+      const aspectLabel = aspectBtn.querySelector(".aspect-label");
+      if (aspectLabel && newLabel) {
+        aspectLabel.textContent = newLabel;
+      }
     }
 
     // Show large overlay notification in center of screen
@@ -1046,7 +1053,7 @@ const setSidebarSearchFocus = (active) => {
               channelToPlay.stream_icon ||
                 channelToPlay.logo ||
                 "/assets/profile.png",
-              "400px",
+              "100vh",
               channelToPlay.name || "Unknown Channel"
             );
           } else {
@@ -1056,7 +1063,7 @@ const setSidebarSearchFocus = (active) => {
               channelToPlay.stream_icon ||
                 channelToPlay.logo ||
                 "/assets/profile.png",
-              "400px",
+              "100vh",
               channelToPlay.name || "Unknown Channel"
             );
 
@@ -1092,19 +1099,8 @@ const setSidebarSearchFocus = (active) => {
 
                 // Play/Pause button handlers
                 if (playPauseBtn) {
-                  const playIconSVG = `
-                  <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                `;
-
-                  const pauseIconSVG = `
-                  <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-                    <rect x="6" y="4" width="4" height="16" rx="1"/>
-                    <rect x="14" y="4" width="4" height="16" rx="1"/>
-                  </svg>
-                `;
-
+                  const playIcon = playPauseBtn.querySelector("i");
+                  
                   playPauseBtn.style.display = "flex";
                   playPauseBtn.style.opacity = "1";
                   setTimeout(() => {
@@ -1117,13 +1113,13 @@ const setSidebarSearchFocus = (active) => {
                   videoEl.addEventListener("pause", () => {
                     playPauseBtn.style.display = "flex";
                     playPauseBtn.style.opacity = "1";
-                    playPauseBtn.innerHTML = playIconSVG;
+                    if (playIcon) playIcon.className = "fa-solid fa-play";
                   });
 
                   videoEl.addEventListener("play", () => {
                     playPauseBtn.style.display = "flex";
                     playPauseBtn.style.opacity = "1";
-                    playPauseBtn.innerHTML = pauseIconSVG;
+                    if (playIcon) playIcon.className = "fa-solid fa-pause";
                     setTimeout(() => {
                       if (!videoEl.paused) {
                         playPauseBtn.style.opacity = "0";
@@ -1138,6 +1134,21 @@ const setSidebarSearchFocus = (active) => {
                     e.stopPropagation();
                     togglePlayPause();
                   });
+
+                  // Click on video container to enter fullscreen
+                  const videoContainer = qs(".live-video-player-div");
+                  if (videoContainer) {
+                    videoContainer.addEventListener("click", (e) => {
+                      // Only trigger fullscreen if clicking directly on container, not on buttons
+                      if (e.target === videoContainer || e.target === videoEl) {
+                        if (!document.fullscreenElement) {
+                          videoContainer.requestFullscreen().catch(err => {
+                            console.warn("Fullscreen request failed:", err);
+                          });
+                        }
+                      }
+                    });
+                  }
 
                   videoEl.addEventListener("click", (e) => {
                     e.stopPropagation();
@@ -1310,7 +1321,7 @@ const setSidebarSearchFocus = (active) => {
         channelData.stream_id,
         liveVideoUrl,
         channelData.stream_icon || channelData.logo || "/assets/profile.png",
-        "400px",
+        "100vh",
         channelData.name || "Unknown Channel"
       );
     } else if (hasLiveVideoJs) {
@@ -1318,7 +1329,7 @@ const setSidebarSearchFocus = (active) => {
         channelData.stream_id,
         liveVideoUrl,
         channelData.stream_icon || channelData.logo || "/assets/profile.png",
-        "400px",
+        "100vh",
         channelData.name || "Unknown Channel"
       );
     } else {
@@ -1327,7 +1338,7 @@ const setSidebarSearchFocus = (active) => {
         channelData.stream_id,
         liveVideoUrl,
         channelData.stream_icon || channelData.logo || "/assets/profile.png",
-        "400px",
+        "100vh",
         channelData.name || "Unknown Channel"
       );
 
@@ -1381,20 +1392,8 @@ const setSidebarSearchFocus = (active) => {
 
           // Play/Pause button event listeners
           if (playPauseBtn) {
-            // SVG icon definitions
-            const playIconSVG = `
-        <svg class="play-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
-      `;
-
-            const pauseIconSVG = `
-        <svg class="pause-icon" width="45" height="45" viewBox="0 0 24 24" fill="white">
-          <rect x="6" y="4" width="4" height="16" rx="1"/>
-          <rect x="14" y="4" width="4" height="16" rx="1"/>
-        </svg>
-      `;
-
+            const playIcon = playPauseBtn.querySelector("i");
+            
             // Show button initially then hide
             playPauseBtn.style.display = "flex";
             playPauseBtn.style.opacity = "1";
@@ -1408,13 +1407,13 @@ const setSidebarSearchFocus = (active) => {
             videoEl.addEventListener("pause", () => {
               playPauseBtn.style.display = "flex";
               playPauseBtn.style.opacity = "1";
-              playPauseBtn.innerHTML = playIconSVG;
+              if (playIcon) playIcon.className = "fa-solid fa-play";
             });
 
             videoEl.addEventListener("play", () => {
               playPauseBtn.style.display = "flex";
               playPauseBtn.style.opacity = "1";
-              playPauseBtn.innerHTML = pauseIconSVG;
+              if (playIcon) playIcon.className = "fa-solid fa-pause";
               setTimeout(() => {
                 if (!videoEl.paused) {
                   playPauseBtn.style.opacity = "0";
@@ -1429,6 +1428,21 @@ const setSidebarSearchFocus = (active) => {
               e.stopPropagation();
               togglePlayPause();
             });
+
+            // Click on video container to enter fullscreen
+            const videoContainer = qs(".live-video-player-div");
+            if (videoContainer) {
+              videoContainer.addEventListener("click", (e) => {
+                // Only trigger fullscreen if clicking directly on container, not on buttons
+                if (e.target === videoContainer || e.target === videoEl) {
+                  if (!document.fullscreenElement) {
+                    videoContainer.requestFullscreen().catch(err => {
+                      console.warn("Fullscreen request failed:", err);
+                    });
+                  }
+                }
+              });
+            }
 
             // Click on video to toggle play/pause and show button
             videoEl.addEventListener("click", (e) => {
@@ -2367,11 +2381,10 @@ if (isMenuDotsActive) {
     }
 
     // If user is in video player area
-    // Find the "If user is in video player area" section and REPLACE it with:
-
     if (inVideoPlayer) {
       const videoDiv = qs(".live-video-player-div");
-      const aspectBtn = qs(".aspect-ratio-btn");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
 
       if (isUp) {
         inVideoPlayer = false;
@@ -2381,6 +2394,7 @@ if (isMenuDotsActive) {
           videoDiv.style.outline = "none";
           videoDiv.style.border = "none";
         }
+        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
         if (aspectBtn) aspectBtn.style.border = "none";
         focusedChannelIndex = 0;
         setFocus(channels, focusedChannelIndex, "channel-card-focused");
@@ -2389,15 +2403,32 @@ if (isMenuDotsActive) {
       }
 
       if (isDown) {
-        // Go to aspect ratio button
+        // Go to play/pause button
         inVideoPlayer = false;
-        inAspectRatioBtn = true;
-        const videoDiv = qs(".live-video-player-div");
-        const aspectBtn = qs("#videojs-aspect-ratio");
-        if (videoDiv) videoDiv.style.outline = "none";
-        if (aspectBtn) {
-          aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
-          aspectBtn.scrollIntoView({ block: "nearest" });
+        inPlayPauseBtn = true;
+        if (videoDiv) {
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (playPauseBtn) {
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+          playPauseBtn.classList.add("focused");
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        // Click on video container to enter fullscreen
+        if (videoDiv) {
+          if (!document.fullscreenElement) {
+            videoDiv.requestFullscreen().catch(err => {
+              console.warn("Fullscreen request failed:", err);
+            });
+          } else {
+            document.exitFullscreen();
+          }
         }
         e.preventDefault();
         return;
@@ -2423,47 +2454,94 @@ if (isMenuDotsActive) {
         return;
       }
 
-      if (isEnter) {
+      return;
+    }
+
+    // Play/Pause button navigation
+    if (inPlayPauseBtn) {
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const videoDiv = qs(".live-video-player-div");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+
+      if (isUp) {
+        // Go back to video container
+        inPlayPauseBtn = false;
+        inVideoPlayer = true;
+        if (playPauseBtn) {
+          playPauseBtn.classList.remove("focused");
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+        }
         if (videoDiv) {
-          if (!document.fullscreenElement) {
-            videoDiv.requestFullscreen();
-          } else {
-            document.exitFullscreen();
-          }
+          videoDiv.classList.add("video-focused");
+          videoDiv.style.border = "3px solid #0ea5e9";
+          videoDiv.style.boxSizing = "border-box";
+          videoDiv.style.outline = "3px solid #0ea5e9";
+          videoDiv.style.outlineOffset = "-3px";
         }
         e.preventDefault();
         return;
       }
 
-      // SPACE or K key for play/pause
-      if (
-        e.key === " " ||
-        e.key === "Spacebar" ||
-        e.key === "k" ||
-        e.key === "K"
-      ) {
-        togglePlayPause();
+      if (isDown) {
+        // Go to aspect ratio button
+        inPlayPauseBtn = false;
+        inAspectRatioBtn = true;
+        if (playPauseBtn) playPauseBtn.classList.remove("focused");
+        if (aspectBtn) {
+          aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "3px solid var(--gold)";
+          aspectBtn.scrollIntoView({ block: "nearest" });
+        }
         e.preventDefault();
         return;
       }
 
-      return;
+      if (isEnter) {
+        // Toggle play/pause
+        if (window.livePlayer) {
+          try {
+            if (window.livePlayer._fp) {
+              const fp = window.livePlayer._fp;
+              if (fp.playing) {
+                fp.pause();
+              } else {
+                fp.resume();
+              }
+            } else {
+              if (window.livePlayer.paused()) {
+                window.livePlayer.play();
+              } else {
+                window.livePlayer.pause();
+              }
+            }
+          } catch (err) {
+            console.warn("Play/Pause toggle failed:", err);
+          }
+        } else {
+          togglePlayPause();
+        }
+        e.preventDefault();
+        return;
+      }
     }
 
-    // Add new navigation section for Aspect Ratio Button
-    // Aspect ratio button navigation
     // Aspect ratio button navigation
     if (inAspectRatioBtn) {
-      const aspectBtn = qs(".aspect-ratio-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
 
       if (isUp) {
         inAspectRatioBtn = false;
-        inVideoPlayer = true;
-        if (aspectBtn) aspectBtn.style.border = "none";
-        const videoDiv = qs(".live-video-player-div");
-        if (videoDiv) {
-          videoDiv.style.outline = "4px solid #0ea5e9";
-          videoDiv.style.outlineOffset = "-4px";
+        inPlayPauseBtn = true;
+        if (aspectBtn) {
+          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "none";
+        }
+        if (playPauseBtn) {
+          playPauseBtn.classList.add("focused");
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
         }
         e.preventDefault();
         return;
@@ -2753,13 +2831,22 @@ return; // Allow other keys
         epgItems.forEach((item) => item.classList.remove("epg-focused"));
         inEPG = false;
         inVideoPlayer = true;
+        inPlayPauseBtn = false;
+        inAspectRatioBtn = false;
         const videoDiv = qs(".live-video-player-div");
+        const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+        const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
         if (videoDiv) {
           videoDiv.classList.add("video-focused");
           videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
           videoDiv.style.boxSizing = "border-box"; // Important: keeps border inside
           videoDiv.style.outline = "3px solid #0ea5e9"; // Add outline for full visibility
           videoDiv.style.outlineOffset = "-3px";
+        }
+        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+        if (aspectBtn) {
+          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "none";
         }
         e.preventDefault();
         return;
@@ -2845,13 +2932,22 @@ return; // Allow other keys
           // In last row - go to video player
           channels.forEach((c) => c.classList.remove("channel-card-focused"));
           inVideoPlayer = true;
+          inPlayPauseBtn = false;
+          inAspectRatioBtn = false;
           const videoDiv = qs(".live-video-player-div");
+          const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+          const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
           if (videoDiv) {
             videoDiv.classList.add("video-focused");
             videoDiv.style.border = "3px solid #0ea5e9";
             videoDiv.style.boxSizing = "border-box";
             videoDiv.style.outline = "3px solid #0ea5e9";
             videoDiv.style.outlineOffset = "-3px";
+          }
+          if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+          if (aspectBtn) {
+            aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+            aspectBtn.style.border = "none";
           }
         } else {
           // Move to card below (not its heart)
@@ -2923,13 +3019,22 @@ return; // Allow other keys
           // In last row - go to video player
           channels.forEach((c) => c.classList.remove("channel-card-focused"));
           inVideoPlayer = true;
+          inPlayPauseBtn = false;
+          inAspectRatioBtn = false;
           const videoDiv = qs(".live-video-player-div");
+          const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+          const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
           if (videoDiv) {
             videoDiv.classList.add("video-focused");
             videoDiv.style.border = "3px solid #0ea5e9";
             videoDiv.style.boxSizing = "border-box";
             videoDiv.style.outline = "3px solid #0ea5e9";
             videoDiv.style.outlineOffset = "-3px";
+          }
+          if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+          if (aspectBtn) {
+            aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+            aspectBtn.style.border = "none";
           }
         } else {
           // Move to card below
@@ -2971,8 +3076,12 @@ return; // Allow other keys
     // In last row - go to video player
     inChannelGrid = false;
     inVideoPlayer = true;
+    inPlayPauseBtn = false;
+    inAspectRatioBtn = false;
     channels.forEach((c) => c.classList.remove("channel-card-focused"));
     const videoDiv = qs(".live-video-player-div");
+    const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+    const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
     if (videoDiv) {
       videoDiv.classList.add("video-focused");
       videoDiv.style.border = "3px solid #0ea5e9";

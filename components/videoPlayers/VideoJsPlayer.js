@@ -1064,8 +1064,8 @@ case "Enter":
               break;
               
             case "Enter":
-              // Just unfocus seek bar, don't play/pause
-              focusPlayPause();
+              // Move focus to aspect ratio button (so user can press Enter again to activate it)
+              focusAspectRatio();
               e.preventDefault();
               break;
 

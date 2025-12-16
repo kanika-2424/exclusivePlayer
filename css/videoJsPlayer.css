@@ -6,6 +6,7 @@
 }
 .video-js-player-container{
   background: black !important;
+  overflow-y: hidden;
 }
 /* .video-js-player-container{
   animation: fadeInOut 1s ease-in-out;
@@ -77,7 +78,6 @@
   align-items: center;
   gap: 12px;
   flex-direction: column;
-  padding: 10px 14px;
   border-radius: 8px;
   z-index: 20; /* Ensure controls are above video but below overlays */
 }
@@ -504,8 +504,8 @@ margin-right: 5px;
 
 .aspect-ratio-button.focused {
   outline: none;
-  border: 2px solid var(--gold); 
-  background: var(--gold) !important;
+  border: 2px solid rgba(55, 155, 254, 1); 
+  background: rgba(55, 155, 254, 0.698) !important;
 }
 
 

@@ -267,12 +267,36 @@ function showVolumeDisplay(volume) {
   }
 
   function updatePlayPauseIcon(isPlaying) {
-    const playPauseIcon = document.querySelector(".play-pause-icon i");
-    if (playPauseIcon) {
+    const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+    if (playPauseBtn) {
+      const icon = playPauseBtn.querySelector("i");
+      if (icon) {
+        if (isPlaying) {
+          icon.className = "fa-solid fa-pause";
+        } else {
+          icon.className = "fa-solid fa-play";
+        }
+      }
+      // Show button when paused, hide when playing (after delay)
       if (isPlaying) {
-        playPauseIcon.className = "fa-solid fa-pause";
+        playPauseBtn.style.display = "flex";
+        playPauseBtn.style.opacity = "1";
+        setTimeout(() => {
+          if (window.livePlayer && !window.livePlayer.paused && !window.livePlayer._fp) {
+            playPauseBtn.style.opacity = "0";
+            setTimeout(() => {
+              playPauseBtn.style.display = "none";
+            }, 300);
+          } else if (window.livePlayer && window.livePlayer._fp && window.livePlayer._fp.playing) {
+            playPauseBtn.style.opacity = "0";
+            setTimeout(() => {
+              playPauseBtn.style.display = "none";
+            }, 300);
+          }
+        }, 1500);
       } else {
-        playPauseIcon.className = "fa-solid fa-play";
+        playPauseBtn.style.display = "flex";
+        playPauseBtn.style.opacity = "1";
       }
     }
   }
@@ -660,10 +684,51 @@ document.addEventListener("keydown", window._liveTvVolumeHandler);
       }
     }
 
-    // Add click event listener for play/pause icon
-    const playPauseIcon = document.querySelector(".play-pause-icon");
-    if (playPauseIcon) {
-      playPauseIcon.addEventListener("click", togglePlayPause);
+    // Add click event listener for play/pause button
+    const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+    if (playPauseBtn) {
+      playPauseBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlayPause();
+      });
+      
+      // Show button initially then hide after delay
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+      setTimeout(() => {
+        if (window.livePlayer && !window.livePlayer.paused && !window.livePlayer._fp) {
+          playPauseBtn.style.opacity = "0";
+          setTimeout(() => {
+            playPauseBtn.style.display = "none";
+          }, 300);
+        } else if (window.livePlayer && window.livePlayer._fp && window.livePlayer._fp.playing) {
+          playPauseBtn.style.opacity = "0";
+          setTimeout(() => {
+            playPauseBtn.style.display = "none";
+          }, 300);
+        }
+      }, 2000);
+      
+      // Listen to player events to show/hide button
+      if (window.livePlayer) {
+        if (window.livePlayer._fp) {
+          // Flowplayer
+          window.livePlayer._fp.on("pause", () => {
+            updatePlayPauseIcon(false);
+          });
+          window.livePlayer._fp.on("resume", () => {
+            updatePlayPauseIcon(true);
+          });
+        } else {
+          // Video.js
+          window.livePlayer.on("pause", () => {
+            updatePlayPauseIcon(false);
+          });
+          window.livePlayer.on("play", () => {
+            updatePlayPauseIcon(true);
+          });
+        }
+      }
     }
 const handleAspectRatioChange = () => {
   const videoEl = document.querySelector("#live-videojs-player_html5_api") ||
@@ -736,10 +801,10 @@ return `
       </button>
     </div>
 
-    <!-- Play/Pause Icon (Center) -->
-    <div class="play-pause-icon" style="display: none;">
-      <i class="fa-solid fa-play"></i>
-    </div>
+    <!-- Play/Pause Button (Center) -->
+    <button class="play-pause-btn" id="live-play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; z-index: 99999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);">
+      <i class="fa-solid fa-pause" style="font-size: 30px;"></i>
+    </button>
 
     <!-- Loading Spinner -->
     <div class="live-video-loader">
