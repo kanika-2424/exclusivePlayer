@@ -1655,18 +1655,27 @@ if (currentSection === "header") {
     return;
   }
 
-      if (currentSection === "scrollBtn") {
-        console.log("🔝 Scroll button clicked!");
-        const container = qs(".movies-grid-container");
-        if (container) {
-          container.scrollTo({ top: 0, behavior: "smooth" });
-        }
-        // Reset focus to first card
-        if (movieCards.length > 0) {
-          setTimeout(() => setFocusOnCard(0), 300);
-        }
-        return;
-      }
+   if (currentSection === "scrollBtn") {
+  console.log("🔝 Scroll button clicked - scrolling and going to menu dots!");
+  // Scroll main container to top
+  const mainContainer = qs(".livetv-main-container");
+  if (mainContainer) {
+    mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // Also scroll grid container
+  const gridContainer = qs(".movies-grid-container");
+  if (gridContainer) {
+    gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // Scroll window to top
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  
+  // Then focus on menu dots
+  setTimeout(() => {
+    setFocusOnMenuDots();
+  }, 300);
+  return;
+}
 
       if (currentSection === "search") {
         // Toggle edit mode for category search
@@ -2304,23 +2313,33 @@ document.addEventListener('keydown', menuKeyHandler);
     }
 
     // Scroll to top button handler
-    // Scroll to top button handler (ALWAYS VISIBLE)
-    const scrollToTopBtn = qs("#scrollToTopBtn");
-    if (scrollToTopBtn) {
-      scrollToTopHandler = () => {
-        const container = qs(".movies-grid-container");
-        if (container) {
-          container.scrollTo({ top: 0, behavior: "smooth" });
-        }
-        // Also reset focus to first card
-        if (currentSection === "movies" && movieCards.length > 0) {
-          setFocusOnCard(0);
-        }
-      };
-
-      scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
-      scrollToTopBtn.addEventListener("click", scrollToTopHandler);
+// Scroll to top button handler
+const scrollToTopBtn = qs("#scrollToTopBtn");
+if (scrollToTopBtn) {
+  scrollToTopHandler = () => {
+    console.log("🔝 Scroll button clicked - scrolling and going to menu dots!");
+    // Scroll main container to top
+    const mainContainer = qs(".livetv-main-container");
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
     }
+    // Also scroll grid container
+    const gridContainer = qs(".movies-grid-container");
+    if (gridContainer) {
+      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // Scroll window to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
+    // Then focus on menu dots after scroll completes
+    setTimeout(() => {
+      setFocusOnMenuDots();
+    }, 300);
+  };
+
+  scrollToTopBtn.removeEventListener("click", scrollToTopHandler);
+  scrollToTopBtn.addEventListener("click", scrollToTopHandler);
+}
 
     // cleanup
     MoviesPage.cleanup = () => {
