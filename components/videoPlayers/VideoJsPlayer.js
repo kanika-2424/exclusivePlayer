@@ -1065,7 +1065,7 @@ case "Enter":
               
             case "Enter":
               // Move focus to aspect ratio button (so user can press Enter again to activate it)
-              focusAspectRatio();
+              focusPlayPause();
               e.preventDefault();
               break;
 

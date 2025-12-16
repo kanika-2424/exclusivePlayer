@@ -191,27 +191,24 @@ margin-right: 5px;
 
 
 
-.video-aspect-235{
-  padding-top: 5%;
-  padding-bottom: 5%;
-  object-fit: fill;
-}
-
-
-.video-aspect-169{
+/* NEW - Use object-fit instead of padding */
+.video-aspect-169 {
   width: 100% !important;
   height: 100% !important;
-  object-fit: fill !important;
+  object-fit: contain !important;
 }
 
-.video-aspect-43{
-  padding-left: 12%;
-  padding-right: 12%;
-  padding-top: 2%;
-  padding-bottom: 2%;
-  object-fit: fill;
+.video-aspect-43 {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
 }
 
+.video-aspect-235 {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
 
 
 .video-js .vjs-tech {

@@ -215,7 +215,7 @@ console.log("READ VALUES:", {
             }
             localStorage.setItem("currentPage", "playlist");
             LoginPage.cleanup();
-            Router.showPage("playlist");
+            Router.showPage("listPlaylistPage");
             return;
         }
 
@@ -487,9 +487,17 @@ try {
        align-items: center; justify-content: center; z-index: 9999;">
     <div style="display: flex; flex-direction: column;
          align-items: center; justify-content: center; color: white;">
-      <div class="spinner"></div>
-      <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">Loading...</div>
-      <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>
+
+
+         
+        <div class="livetv-loading-overlay" id="liveTvLoadingOverlay">
+      <div class="loading-content">
+        <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
+        <div class="spinner"></div>
+        <div class="loading-text">Loading.....</div>
+           <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>
+      </div>
+    </div>
     </div>
   </div>
 
