@@ -1261,9 +1261,9 @@ function openMovieDetail(movieId) {
         return;
       }
       
-      if (currentSection === "categories") {
+    if (currentSection === "categories") {
   const perRow = computeCategoriesPerRow();
-  const next = currentCategoryIndex + perRow;
+  const prev = currentCategoryIndex - perRow;
 
   // Collapsed → check if cards exist before moving
   if (!isExpanded) {
@@ -1275,33 +1275,20 @@ function openMovieDetail(movieId) {
     return;
   }
 
-  // EXPANDED: check if we're in the last row
-  const totalCategories = categoriesEls.length;
-  const lastRowStartIndex =
-    Math.floor((totalCategories - 1) / perRow) * perRow;
-  const isInLastRow = currentCategoryIndex >= lastRowStartIndex;
+  // EXPANDED: check if we're in the first row
+  const isInFirstRow = currentCategoryIndex < perRow;
 
-  if (isInLastRow) {
-    // From last row → go to movies only if cards exist
-    if (cards.length > 0) {
-      currentSection = "movies";
-      const col = currentCategoryIndex % perRow;
-      currentFocusIndex = Math.min(col, cards.length - 1);
-      setFocusOnCard(currentFocusIndex);
-    }
-    // Stay on category if no cards
-  } else if (next < categoriesEls.length) {
-    // Not in last row, move down normally
-    setFocusOnCategory(next);
-  } else {
-    // 2nd-to-last row with no category below → go to last category in bottom row
-    const lastCategoryIndex = totalCategories - 1;
-    setFocusOnCategory(lastCategoryIndex);
+  if (isInFirstRow) {
+    // From first row → go to search
+    setFocusOnSearch();
+  } else if (prev >= 0) {
+    // Not in first row, move up normally
+    setFocusOnCategory(prev);
   }
 
   e.preventDefault();
   return;
-}else if (currentSection === "expand") {
+} else if (currentSection === "expand") {
         // from expand: if expanded go to category search, else go to header search
         if (isExpanded) {
           setFocusOnSearch();
@@ -1527,12 +1514,16 @@ function openMovieDetail(movieId) {
           setFocusOnCard(currentFocusIndex - 1);
         }
       } else if (currentSection === "categories") {
-        if (currentCategoryIndex === 0) {
-          // LEFT from first category → go to CATEGORY SEARCH (sidebar search)
-          setFocusOnSearch();
-        } else {
-          setFocusOnCategory(currentCategoryIndex - 1);
-        }
+        const perRow = computeCategoriesPerRow();
+  const isLeftmostColumn = (currentCategoryIndex % perRow) === 0;
+  
+  if (isLeftmostColumn) {
+    // Already at leftmost column - don't move
+    e.preventDefault();
+    return;
+  } else {
+    setFocusOnCategory(currentCategoryIndex - 1);
+  }
       } else if (currentSection === "expand") {
         const perRow = computeCategoriesPerRow(); // 8 when expanded
         const lastRightIndex = perRow - 1;

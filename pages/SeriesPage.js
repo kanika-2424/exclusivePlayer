@@ -446,7 +446,7 @@ function renderCategoriesUI() {
            data-idx="${idx}"
            data-category-name="${escapeHtml(c.name)}">
         ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
-        <span style="display: -webkit-box; text-align: center; margin: 0 auto; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 1em;" class="" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+        <span style="display: -webkit-box; text-align: center; margin: 0 auto; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" class="" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
       </div>`;
     })
     .join("");
@@ -1100,21 +1100,30 @@ if (currentSection === "series") {
 
 
 else if (currentSection === "categories") {
-  // Select category
-  const items = qsa(".movies-category-item");
-  if (items[currentCategoryIndex]) {
-    const catId = items[currentCategoryIndex].dataset.id;
-    const selectedCat = categories.find(c => String(c.id) === String(catId));
-    
-    items[currentCategoryIndex].click();
-    
-    // ⭐ If no series in category, keep focus on category
-    if (!selectedCat || !selectedCat.movies || selectedCat.movies.length === 0) {
-      setTimeout(() => {
-        setFocusOnCategory(currentCategoryIndex);
-      }, 100);
+  const perRow = computeCategoriesPerRow();
+  const prev = currentCategoryIndex - perRow;
+
+  // Collapsed → check if cards exist before moving
+  if (!isExpanded) {
+    if (cards.length > 0) {
+      setFocusOnCard(0);
     }
+    // Stay on category if no cards
+    e.preventDefault();
+    return;
   }
+
+  // EXPANDED: check if we're in the first row
+  const isInFirstRow = currentCategoryIndex < perRow;
+
+  if (isInFirstRow) {
+    // From first row → go to search
+    setFocusOnSearch();
+  } else if (prev >= 0) {
+    // Not in first row, move up normally
+    setFocusOnCategory(prev);
+  }
+
   e.preventDefault();
   return;
 } else if (currentSection === "expand") {
@@ -1325,14 +1334,18 @@ else if (currentSection === "categories") {
         } else {
           setFocusOnCard(currentFocusIndex - 1);
         }
-      } else if (currentSection === "categories") {
-        if (currentCategoryIndex === 0) {
-          // LEFT from first category → go to CATEGORY SEARCH (sidebar search)
-          setFocusOnSearch();
-        } else {
-          setFocusOnCategory(currentCategoryIndex - 1);
-        }
-      } else if (currentSection === "expand") {
+     } else if (currentSection === "categories") {
+  const perRow = computeCategoriesPerRow();
+  const isLeftmostColumn = (currentCategoryIndex % perRow) === 0;
+  
+  if (isLeftmostColumn) {
+    // Already at leftmost column - don't move
+    e.preventDefault();
+    return;
+  } else {
+    setFocusOnCategory(currentCategoryIndex - 1);
+  }
+} else if (currentSection === "expand") {
         const perRow = computeCategoriesPerRow(); // 8 when expanded
         const lastRightIndex = perRow - 1;
 
