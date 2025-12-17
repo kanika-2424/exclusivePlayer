@@ -1235,13 +1235,12 @@ else if (currentSection === "categories") {
         const lastRowStartIndex = Math.floor((totalCategories - 1) / perRow) * perRow;
         const isInLastRow = currentCategoryIndex >= lastRowStartIndex;
 
-        if (isInLastRow) {
-          // From last row → go to series (align column)
-          currentSection = "series";
-          const col = currentCategoryIndex % perRow;
-          currentFocusIndex = Math.min(col, cards.length - 1);
-          setFocusOnCard(currentFocusIndex);
-        } else if (next < categoriesEls.length) {
+       if (isInLastRow) {
+  // From last row → ALWAYS go to first card (index 0)
+  currentSection = "series";
+  currentFocusIndex = 0;
+  setFocusOnCard(0);
+}else if (next < categoriesEls.length) {
           // Not in last row, move down normally
           setFocusOnCategory(next);
         } else {

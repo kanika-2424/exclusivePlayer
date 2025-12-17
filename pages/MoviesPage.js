@@ -1378,41 +1378,40 @@ function openMovieDetail(movieId) {
         return;
       }
 
-      if (currentSection === "categories") {
-        const perRow = computeCategoriesPerRow();
-        const next = currentCategoryIndex + perRow;
+    if (currentSection === "categories") {
+  const perRow = computeCategoriesPerRow();
+  const next = currentCategoryIndex + perRow;
 
-        // Collapsed → skip categories and go to cards
-        if (!isExpanded) {
-          setFocusOnCard(0);
-          e.preventDefault();
-          return;
-        }
+  // Collapsed → skip categories and go to cards
+  if (!isExpanded) {
+    setFocusOnCard(0);
+    e.preventDefault();
+    return;
+  }
 
-        // EXPANDED: check if we're in the last row
-        const totalCategories = categoriesEls.length;
-        const lastRowStartIndex =
-          Math.floor((totalCategories - 1) / perRow) * perRow;
-        const isInLastRow = currentCategoryIndex >= lastRowStartIndex;
+  // EXPANDED: check if we're in the last row
+  const totalCategories = categoriesEls.length;
+  const lastRowStartIndex =
+    Math.floor((totalCategories - 1) / perRow) * perRow;
+  const isInLastRow = currentCategoryIndex >= lastRowStartIndex;
 
-        if (isInLastRow) {
-          // From last row → go to movies (align column)
-          currentSection = "movies";
-          const col = currentCategoryIndex % perRow;
-          currentFocusIndex = Math.min(col, cards.length - 1);
-          setFocusOnCard(currentFocusIndex);
-        } else if (next < categoriesEls.length) {
-          // Not in last row, move down normally
-          setFocusOnCategory(next);
-        } else {
-          // 2nd-to-last row with no category below → go to last category in bottom row
-          const lastCategoryIndex = totalCategories - 1;
-          setFocusOnCategory(lastCategoryIndex);
-        }
+ if (isInLastRow) {
+  // From last row → ALWAYS go to first card (index 0)
+  currentSection = "movies";
+  currentFocusIndex = 0;
+  setFocusOnCard(0);
+} else if (next < categoriesEls.length) {
+    // Not in last row, move down normally
+    setFocusOnCategory(next);
+  } else {
+    // 2nd-to-last row with no category below → go to last category in bottom row
+    const lastCategoryIndex = totalCategories - 1;
+    setFocusOnCategory(lastCategoryIndex);
+  }
 
-        e.preventDefault();
-        return;
-      }
+  e.preventDefault();
+  return;
+}
 
       if (currentSection === "expand") {
         // from expand go to movies
