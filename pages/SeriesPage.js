@@ -597,14 +597,12 @@ if (noDataDiv) {
 
   // Focus helpers
   let movieCards = [];
-  function setFocusOnCard(index) {
+function setFocusOnCard(index) {
 const grid = qs(".movies-grid");
 if (!grid) {
   movieCards = [];
   return;   // ← prevents crash
 }
-
-
 
 movieCards = Array.from(grid.querySelectorAll(".movie-card"));
 
@@ -621,12 +619,23 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     }
     index = Math.max(0, Math.min(index, movieCards.length - 1));
     currentFocusIndex = index;
+    
+    // If it's the first row, ensure proper spacing from top
+    const cardsPerRow = computeCardsPerRow();
+    if (index < cardsPerRow) {
+      // First row - scroll grid container to show cards properly
+      const gridContainer = qs(".movies-grid-container");
+      if (gridContainer) {
+        gridContainer.scrollTop = 0;
+      }
+    }
+    
     movieCards[index].classList.add("focused");
     movieCards[index].scrollIntoView({ block: "nearest", inline: "nearest"});
     currentSection = "series";
   }
 
-  function setFocusOnCategory(index) {
+function setFocusOnCategory(index) {
     removeAllFocus();
     const items = Array.from(document.querySelectorAll(".movies-category-item"));
     if (!items || items.length === 0) return;
@@ -635,6 +644,27 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
 
     currentCategoryIndex = index;
     lastFocusedCategory = index;
+
+    // Scroll to top to ensure header is visible
+    const mainContainer = qs(".livetv-main-container");
+    const gridContainer = qs(".movies-grid-container");
+    const sidebar = qs(".movies-sidebar");
+    const categoriesWrapper = qs(".movies-categories-wrapper");
+    
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (gridContainer) {
+      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // Scroll sidebar to top
+    if (sidebar) {
+      sidebar.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (categoriesWrapper) {
+      categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Blur any input fields
     const searchInput = qs(".search-category-input");
@@ -645,8 +675,30 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     currentSection = "categories";
   }
 
-  function setFocusOnSearch() { // category search (sidebar search)
+ function setFocusOnSearch() { // category search (sidebar search)
     removeAllFocus();
+    
+    // Scroll to top to ensure header is visible
+    const mainContainer = qs(".livetv-main-container");
+    const gridContainer = qs(".movies-grid-container");
+    const sidebar = qs(".movies-sidebar");
+    const categoriesWrapper = qs(".movies-categories-wrapper");
+    
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (gridContainer) {
+      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // Scroll sidebar to top to show search input
+    if (sidebar) {
+      sidebar.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (categoriesWrapper) {
+      categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
     const container = qs(".search-category-name"); // Parent container
     const input = qs(".search-category-input"); // Input element
 
@@ -658,8 +710,30 @@ movieCards = Array.from(grid.querySelectorAll(".movie-card"));
     currentSection = "search";
   }
 
- function setFocusOnHeaderSearch() { // header search (top)
+function setFocusOnHeaderSearch() { // header search (top)
   removeAllFocus();
+  
+  // Scroll to top to ensure header is visible
+  const mainContainer = qs(".livetv-main-container");
+  const gridContainer = qs(".movies-grid-container");
+  const sidebar = qs(".movies-sidebar");
+  const categoriesWrapper = qs(".movies-categories-wrapper");
+  
+  if (mainContainer) {
+    mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  if (gridContainer) {
+    gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // Scroll sidebar to top
+  if (sidebar) {
+    sidebar.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  if (categoriesWrapper) {
+    categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  
   const container = qs(".search-container"); // Parent container
   const input = qs(".search-input"); // Input element
 
@@ -994,6 +1068,26 @@ if (currentSection === "series") {
     const isTopRow = currentFocusIndex < cardsPerRow;
 
     if (isTopRow) {
+        // Scroll to top when leaving series grid
+        const mainContainer = qs(".livetv-main-container");
+        const gridContainer = qs(".movies-grid-container");
+        const sidebar = qs(".movies-sidebar");
+        const categoriesWrapper = qs(".movies-categories-wrapper");
+        
+        if (mainContainer) {
+          mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        if (gridContainer) {
+          gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        // Scroll sidebar to top to show search input
+        if (sidebar) {
+          sidebar.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        if (categoriesWrapper) {
+          categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
 
         // 🌟 EXPANDED → go to LAST CATEGORY (bottom-right category)
         if (isExpanded) {

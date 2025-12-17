@@ -694,7 +694,7 @@ if (noDataDiv) {
 
   // Focus helpers
   let movieCards = [];
-  function setFocusOnCard(index) {
+function setFocusOnCard(index) {
     console.log("🎯 setFocusOnCard called with index:", index);
 
     const grid = qs(".movies-grid");
@@ -734,20 +734,22 @@ if (noDataDiv) {
     );
 
     movieCards[index].classList.add("focused");
+    
+    // If it's the first row, ensure proper spacing from top
+    const cardsPerRow = computeCardsPerRow();
+    if (index < cardsPerRow) {
+      // First row - scroll grid container to show cards properly
+      const gridContainer = qs(".movies-grid-container");
+      if (gridContainer) {
+        gridContainer.scrollTop = 0;
+      }
+    }
+    
     movieCards[index].scrollIntoView({
       block: "nearest",
       inline: "nearest",
     });
     currentSection = "movies";
-
-
-    //   if (index === 0) {
-    //   const container = qs(".movies-grid-container");
-    //   if (container) {
-    //     container.scrollTo({ top: 0, behavior: "smooth" });
-    //     console.log("🔝 Scrolled to top (first card focused)");
-    //   }
-    // }
 
     const movieId = movieCards[index].dataset.movieId;
     console.log(
@@ -758,11 +760,9 @@ if (noDataDiv) {
     );
   }
 
-  function setFocusOnCategory(index) {
+function setFocusOnCategory(index) {
     removeAllFocus();
-    const items = Array.from(
-      document.querySelectorAll(".movies-category-item")
-    );
+    const items = Array.from(document.querySelectorAll(".movies-category-item"));
     if (!items || items.length === 0) return;
 
     index = Math.max(0, Math.min(index, items.length - 1));
@@ -775,17 +775,13 @@ if (noDataDiv) {
     if (searchInput) searchInput.blur();
 
     items[index].classList.add("focused");
-    items[index].scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
+    items[index].scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
     currentSection = "categories";
   }
-
-  function setFocusOnSearch() {
+function setFocusOnSearch() {
     // category search (sidebar search)
     removeAllFocus();
+    
     const container = qs(".search-category-name"); // Parent container
     const input = qs(".search-category-input"); // Input element
 
@@ -793,13 +789,46 @@ if (noDataDiv) {
       container.classList.add("focused"); // Add focused to parent!
       input.blur(); // Keep input blurred
       isSearchInputActive = false; // Reset edit mode
+      
+      // Force scroll the container into view at the very top
+      setTimeout(() => {
+        container.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+        
+        // Also scroll all parent containers to top
+        const mainContainer = qs(".livetv-main-container");
+        const sidebar = qs(".movies-sidebar");
+        
+        if (mainContainer) {
+          mainContainer.scrollTop = 0;
+        }
+        if (sidebar) {
+          sidebar.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+      }, 50);
     }
     currentSection = "search";
   }
 
-  function setFocusOnHeaderSearch() {
+function setFocusOnHeaderSearch() {
     // header search (top)
     removeAllFocus();
+    
+    // Scroll to top to ensure header is visible
+    const mainContainer = qs(".livetv-main-container");
+    const gridContainer = qs(".movies-grid-container");
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (gridContainer) {
+      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
     const container = qs(".search-container"); // Parent container
     const input = qs(".search-input"); // Input element
 
@@ -1190,10 +1219,31 @@ function openMovieDetail(movieId) {
         return;
       }
 
-      if (currentSection === "movies") {
+  if (currentSection === "movies") {
         const isTopRow = currentFocusIndex < cardsPerRow;
 
         if (isTopRow) {
+          // Scroll to top when leaving movies grid
+          const mainContainer = qs(".livetv-main-container");
+          const gridContainer = qs(".movies-grid-container");
+          const sidebar = qs(".movies-sidebar");
+          const categoriesWrapper = qs(".movies-categories-wrapper");
+          
+          if (mainContainer) {
+            mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          if (gridContainer) {
+            gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          // Scroll sidebar to top to show search input
+          if (sidebar) {
+            sidebar.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          if (categoriesWrapper) {
+            categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
+          }
+          window.scrollTo({ top: 0, behavior: "smooth" });
+
           // ⭐ EXPANDED → jump to LAST CATEGORY (bottom-right)
           if (isExpanded) {
             const lastCategoryIndex = categories.length - 1;
@@ -1209,7 +1259,9 @@ function openMovieDetail(movieId) {
         // Normal UP movement (not top row)
         setFocusOnCard(currentFocusIndex - cardsPerRow);
         return;
-      }if (currentSection === "categories") {
+      }
+      
+      if (currentSection === "categories") {
   const perRow = computeCategoriesPerRow();
   const next = currentCategoryIndex + perRow;
 
