@@ -675,29 +675,9 @@ function setFocusOnCategory(index) {
     currentSection = "categories";
   }
 
- function setFocusOnSearch() { // category search (sidebar search)
+function setFocusOnSearch() {
+    // category search (sidebar search)
     removeAllFocus();
-    
-    // Scroll to top to ensure header is visible
-    const mainContainer = qs(".livetv-main-container");
-    const gridContainer = qs(".movies-grid-container");
-    const sidebar = qs(".movies-sidebar");
-    const categoriesWrapper = qs(".movies-categories-wrapper");
-    
-    if (mainContainer) {
-      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    if (gridContainer) {
-      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    // Scroll sidebar to top to show search input
-    if (sidebar) {
-      sidebar.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    if (categoriesWrapper) {
-      categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
     
     const container = qs(".search-category-name"); // Parent container
     const input = qs(".search-category-input"); // Input element
@@ -706,44 +686,56 @@ function setFocusOnCategory(index) {
       container.classList.add("focused"); // Add focused to parent!
       input.blur(); // Keep input blurred
       isSearchInputActive = false; // Reset edit mode
+      
+      // Force scroll the container into view at the very top
+      setTimeout(() => {
+        container.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+        
+        // Also scroll all parent containers to top
+        const mainContainer = qs(".livetv-main-container");
+        const sidebar = qs(".movies-sidebar");
+        
+        if (mainContainer) {
+          mainContainer.scrollTop = 0;
+        }
+        if (sidebar) {
+          sidebar.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+      }, 50);
     }
     currentSection = "search";
   }
 
-function setFocusOnHeaderSearch() { // header search (top)
-  removeAllFocus();
-  
-  // Scroll to top to ensure header is visible
-  const mainContainer = qs(".livetv-main-container");
-  const gridContainer = qs(".movies-grid-container");
-  const sidebar = qs(".movies-sidebar");
-  const categoriesWrapper = qs(".movies-categories-wrapper");
-  
-  if (mainContainer) {
-    mainContainer.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  if (gridContainer) {
-    gridContainer.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  // Scroll sidebar to top
-  if (sidebar) {
-    sidebar.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  if (categoriesWrapper) {
-    categoriesWrapper.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  
-  const container = qs(".search-container"); // Parent container
-  const input = qs(".search-input"); // Input element
+function setFocusOnHeaderSearch() {
+    // header search (top)
+    removeAllFocus();
+    
+    // Scroll to top to ensure header is visible
+    const mainContainer = qs(".livetv-main-container");
+    const gridContainer = qs(".movies-grid-container");
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (gridContainer) {
+      gridContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
+    const container = qs(".search-container"); // Parent container
+    const input = qs(".search-input"); // Input element
 
-  if (container && input) {
-    container.classList.add("focused"); // Add focused to parent!
-    input.blur(); // Keep input blurred initially
-    isHeaderSearchActive = false; // Reset edit mode
+    if (container && input) {
+      container.classList.add("focused"); // Add focused to parent!
+      input.blur(); // Keep input blurred
+      isHeaderSearchActive = false; // Reset edit mode
+    }
+    currentSection = "header";
   }
-  currentSection = "header";
-}
 
   function setFocusOnExpandBtn() {
     removeAllFocus();
