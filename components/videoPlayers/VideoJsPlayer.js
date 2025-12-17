@@ -278,6 +278,30 @@ episodeId: episodeId.toString(),
     }
   }
 
+
+  // Fallback aspect ratio overlay function
+function showAspectRatioOverlay(label) {
+  let overlay = document.getElementById('aspectRatioOverlay');
+  
+  if (!overlay) {
+    console.warn("⚠️ Aspect ratio overlay not found in DOM");
+    return;
+  }
+  
+  overlay.textContent = `Aspect Ratio: ${label}`;
+  overlay.classList.remove('hidden');
+  overlay.classList.add('show');
+  
+  // Hide after 2 seconds
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+    }, 300);
+  }, 2000);
+}
+
+
   // 🔴 Function to focus on play/pause overlay with white border
   function focusPlayPause() {
     const playOverlay = document.querySelector(".video-action-overlay.center");
@@ -319,24 +343,26 @@ episodeId: episodeId.toString(),
   }
 
   // 🔴 Function to focus on aspect ratio button
-  function focusAspectRatio() {
-    const aspectRatioButton = document.getElementById("aspectRatioButton");
-    const playOverlay = document.querySelector(".video-action-overlay.center");
-    const seekBar = document.getElementById("customSeek");
+function focusAspectRatio() {
+  const aspectRatioButton = document.getElementById("aspectRatioButton");
+  const playOverlay = document.querySelector(".video-action-overlay.center");
+  const seekBar = document.getElementById("customSeek");
+  
+  if (aspectRatioButton) {
+    isAspectRatioFocused = true;
+    isPlayPauseFocused = false;
+    isSeekBarFocused = false;
     
-    if (aspectRatioButton) {
-      isAspectRatioFocused = true;
-      isPlayPauseFocused = false;
-      isSeekBarFocused = false;
-      
-      // Add focused class to aspect ratio button
-      aspectRatioButton.classList.add('focused');
-      
-      // Remove focused class from play overlay and seek bar
-      if (playOverlay) playOverlay.classList.remove('focused');
-      if (seekBar) seekBar.classList.remove('focused');
-    }
+    console.log("🎯 Aspect ratio button focused - isAspectRatioFocused:", isAspectRatioFocused);
+    
+    // Add focused class to aspect ratio button
+    aspectRatioButton.classList.add('focused');
+    
+    // Remove focused class from play overlay and seek bar
+    if (playOverlay) playOverlay.classList.remove('focused');
+    if (seekBar) seekBar.classList.remove('focused');
   }
+}
 
   // 🔴 Function to remove all focus
   function unfocusAll() {
@@ -960,37 +986,98 @@ localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
       }
 
       // 🔴 UPDATED: Aspect ratio button navigation logic
-      if (isAspectRatioFocused) {
-        const aspectRatioButton = document.getElementById("aspectRatioButton");
-        if (aspectRatioButton) {
-          switch (e.key) {
-            case "ArrowUp":
-              // Move focus to seek bar
-              focusSeekBar();
-              e.preventDefault();
-              break;
-              
-case "Enter":
-  // Apply aspect ratio change using utility
-  const videoEl = document.querySelector("#videojs-player-tag_html5_api");
-  if (videoEl && window.VideoAspectRatio) {
-    const newLabel = window.VideoAspectRatio.cycle(videoEl);
-    window.VideoAspectRatio.showOverlay(newLabel);
-  }
-  e.preventDefault();
-  break;
-              
-            case "Escape":
-            case "Back":
-            case "BrowserBack":
-            case "XF86Back":
-              goBack();
-              e.preventDefault();
-              break;
-          }
+ // 🔴 UPDATED: Aspect ratio button navigation logic
+if (isAspectRatioFocused) {
+  console.log("🔵 Key pressed while aspect ratio focused:", e.key, "KeyCode:", e.keyCode);
+  
+  const aspectRatioButton = document.getElementById("aspectRatioButton");
+  
+  switch (e.key) {
+    case "ArrowUp":
+      console.log("⬆️ Moving from aspect ratio to seek bar");
+      focusSeekBar();
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+      
+    case "Enter":
+      console.log("✅ Enter pressed on aspect ratio button - cycling ratio");
+      
+      const videoEl = document.querySelector("#videojs-player-tag_html5_api");
+      const overlay = document.getElementById('aspectRatioOverlay');
+      
+      console.log("📺 Video element found:", !!videoEl);
+      console.log("📺 Overlay found:", !!overlay);
+      
+      if (videoEl) {
+        // Manual aspect ratio cycling
+        let newRatio = '16:9';
+        
+        if (videoEl.classList.contains('video-aspect-169')) {
+          videoEl.classList.remove('video-aspect-169');
+          videoEl.classList.add('video-aspect-43');
+          newRatio = '4:3';
+        } else if (videoEl.classList.contains('video-aspect-43')) {
+          videoEl.classList.remove('video-aspect-43');
+          videoEl.classList.add('video-aspect-235');
+          newRatio = '2.35:1';
+        } else if (videoEl.classList.contains('video-aspect-235')) {
+          videoEl.classList.remove('video-aspect-235');
+          videoEl.classList.add('video-aspect-169');
+          newRatio = '16:9';
+        } else {
+          // Default to 16:9
+          videoEl.classList.add('video-aspect-169');
+          newRatio = '16:9';
         }
-        return; // Don't process other keys when aspect ratio button is focused
+        
+        console.log("✅ Changed aspect ratio to:", newRatio);
+        
+        // Show overlay
+        if (overlay) {
+          overlay.textContent = `Aspect Ratio: ${newRatio}`;
+          overlay.classList.remove('hidden');
+          overlay.classList.add('show');
+          
+          setTimeout(() => {
+            overlay.classList.remove('show');
+            setTimeout(() => {
+              overlay.classList.add('hidden');
+            }, 300);
+          }, 2000);
+        }
+        
+        // Show toast notification
+        if (typeof Toaster !== 'undefined') {
+          // Toaster.showToast("success", `Aspect Ratio: ${newRatio}`);
+        }
+      } else {
+        console.error("❌ Video element not found");
       }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+      
+    case "Escape":
+    case "Back":
+    case "BrowserBack":
+    case "XF86Back":
+      if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back" || e.key === "BrowserBack" || e.key === "XF86Back") {
+        console.log("⬅️ Going back from aspect ratio");
+        goBack();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      break;
+  }
+  
+  // Prevent event from bubbling when aspect ratio is focused
+  e.preventDefault();
+  e.stopPropagation();
+  return;
+}
 
       // 🔴 UPDATED: Seek bar navigation logic
       if (isSeekBarFocused) {
@@ -1057,11 +1144,13 @@ case "Enter":
               e.preventDefault();
               break;
               
-            case "ArrowDown":
-              // Move focus to aspect ratio button
-              focusAspectRatio();
-              e.preventDefault();
-              break;
+         case "ArrowDown":
+  // Move focus to aspect ratio button
+  console.log("⬇️ Moving from seek bar to aspect ratio button");
+  focusAspectRatio();
+  e.preventDefault();
+  e.stopPropagation();
+  return;
               
             case "Enter":
               // Move focus to aspect ratio button (so user can press Enter again to activate it)
@@ -1281,21 +1370,52 @@ case "Enter":
 
   setTimeout(() => initPlayer(), 0);
 
-  setTimeout(() => {
-    const videoHtmlElement = document.querySelector("#videojs-player-tag_html5_api");
-    if (videoHtmlElement && window.VideoAspectRatio) {
-      window.VideoAspectRatio.initialize(videoHtmlElement);
-    }
-  }, 0);
+setTimeout(() => {
+  const videoHtmlElement = document.querySelector("#videojs-player-tag_html5_api");
+  console.log("🎬 Initializing video element:", !!videoHtmlElement);
+  
+  // Set default aspect ratio
+  if (videoHtmlElement) {
+    videoHtmlElement.classList.add('video-aspect-169');
+    console.log("✅ Default aspect ratio set to 16:9");
+  }
+  
+  if (videoHtmlElement && window.VideoAspectRatio) {
+    window.VideoAspectRatio.initialize(videoHtmlElement);
+    console.log("✅ VideoAspectRatio utility initialized");
+  }
+}, 500); // Increased timeout to ensure video element is ready
 
 setTimeout(() => {
   const aspectRatioButton = document.getElementById("aspectRatioButton");
   if (aspectRatioButton) {
     aspectRatioButton.addEventListener("click", () => {
       const videoEl = document.querySelector("#videojs-player-tag_html5_api");
+      console.log("🖱️ Aspect ratio button clicked");
+      
       if (videoEl && window.VideoAspectRatio) {
         const newLabel = window.VideoAspectRatio.cycle(videoEl);
         window.VideoAspectRatio.showOverlay(newLabel);
+      } else if (videoEl) {
+        // Fallback: Manual aspect ratio cycling
+        console.log("🔄 Using fallback for click");
+        
+        if (videoEl.classList.contains('video-aspect-169')) {
+          videoEl.classList.remove('video-aspect-169');
+          videoEl.classList.add('video-aspect-43');
+          showAspectRatioOverlay('4:3');
+        } else if (videoEl.classList.contains('video-aspect-43')) {
+          videoEl.classList.remove('video-aspect-43');
+          videoEl.classList.add('video-aspect-235');
+          showAspectRatioOverlay('2.35:1');
+        } else if (videoEl.classList.contains('video-aspect-235')) {
+          videoEl.classList.remove('video-aspect-235');
+          videoEl.classList.add('video-aspect-169');
+          showAspectRatioOverlay('16:9');
+        } else {
+          videoEl.classList.add('video-aspect-169');
+          showAspectRatioOverlay('16:9');
+        }
       }
     });
   }
