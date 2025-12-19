@@ -1,7 +1,145 @@
+// ========================================
+// SOLUTION 1: On-Screen Console (RECOMMENDED for Tizen)
+// Add this at the TOP of your main JavaScript file
+// ========================================
+
+// Create on-screen console for Tizen TV
+// window.TizenConsole = {
+//   logs: [],
+//   maxLogs: 20,
+//   overlay: null,
+  
+//   init() {
+//     // Create overlay element
+//     this.overlay = document.createElement('div');
+//     this.overlay.id = 'tizen-console';
+//     this.overlay.style.cssText = `
+//       position: fixed;
+//       bottom: 0;
+//       left: 0;
+//       right: 0;
+//       background: rgba(0, 0, 0, 0.9);
+//       color: #0f0;
+//       font-family: monospace;
+//       font-size: 16px;
+//       padding: 10px;
+//       z-index: 999999;
+//       max-height: 300px;
+//       overflow-y: auto;
+//       border-top: 2px solid #0f0;
+//       display: none;
+//     `;
+//     document.body.appendChild(this.overlay);
+    
+//     // Override console methods
+//     const originalLog = console.log;
+//     const originalError = console.error;
+//     const originalWarn = console.warn;
+    
+//     console.log = (...args) => {
+//       originalLog.apply(console, args);
+//       this.add('LOG', args);
+//     };
+    
+//     console.error = (...args) => {
+//       originalError.apply(console, args);
+//       this.add('ERROR', args);
+//     };
+    
+//     console.warn = (...args) => {
+//       originalWarn.apply(console, args);
+//       this.add('WARN', args);
+//     };
+    
+//     console.log('✅ Tizen Console initialized - Press INFO button to toggle');
+//   },
+  
+//   add(type, args) {
+//     const msg = args.map(arg => {
+//       if (typeof arg === 'object') {
+//         try {
+//           return JSON.stringify(arg, null, 2);
+//         } catch (e) {
+//           return String(arg);
+//         }
+//       }
+//       return String(arg);
+//     }).join(' ');
+    
+//     const timestamp = new Date().toLocaleTimeString();
+//     const color = type === 'ERROR' ? '#f00' : type === 'WARN' ? '#ff0' : '#0f0';
+    
+//     this.logs.push({
+//       type,
+//       msg,
+//       timestamp,
+//       color
+//     });
+    
+//     if (this.logs.length > this.maxLogs) {
+//       this.logs.shift();
+//     }
+    
+//     this.render();
+//   },
+  
+//   render() {
+//     if (!this.overlay) return;
+    
+//     this.overlay.innerHTML = this.logs.map(log => 
+//       `<div style="color: ${log.color}; margin-bottom: 5px;">
+//         <span style="color: #888">[${log.timestamp}]</span> 
+//         <strong>${log.type}:</strong> ${log.msg}
+//       </div>`
+//     ).join('');
+    
+//     // Auto-scroll to bottom
+//     this.overlay.scrollTop = this.overlay.scrollHeight;
+//   },
+  
+//   toggle() {
+//     if (!this.overlay) return;
+//     this.overlay.style.display = 
+//       this.overlay.style.display === 'none' ? 'block' : 'none';
+//   },
+  
+//   clear() {
+//     this.logs = [];
+//     this.render();
+//   }
+// };
+
+// Initialize on-screen console
+// window.TizenConsole.init();
+
+// Add keyboard shortcut to toggle console (INFO button = keyCode 457)
+
 
 window.onload = function () {
 
+
+    // window.TizenConsole.init();
+
+  // FORCE SHOW FOR FIRST TEST
+  // window.TizenConsole.overlay.style.display = 'block';
+  // console.log('🔥 Tizen Console attached to DOM');
   // -----------------------------
+
+
+  document.addEventListener('keydown', (e) => {
+  console.log('KEY:', e.keyCode);
+
+  // BLUE button → toggle console
+  if (e.keyCode === 406) {
+    window.TizenConsole.toggle();
+  }
+
+  // RED button → clear
+  if (e.keyCode === 403) {
+    window.TizenConsole.clear();
+  }
+});
+
   // GLOBAL VARIABLES (Movies / Series / Live)
   // -----------------------------
   window.moviesCategories = [];

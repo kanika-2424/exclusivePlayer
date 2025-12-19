@@ -838,23 +838,30 @@
   opacity: 1;
 }
 
-/* Aspect Ratio Classes */
 .video-aspect-169 {
-  aspect-ratio: 16/9 !important;
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
+  object-fit: contain !important; /* Changed from fill */
+  display: block !important;
+  position: relative !important;
 }
 
 .video-aspect-43 {
-  aspect-ratio: 4/3 !important;
-  width: 100% !important;
-  height: auto !important;
+  width: 75% !important; /* 4:3 ratio approximation */
+  height: 100% !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  position: relative !important;
 }
 
 .video-aspect-235 {
-  aspect-ratio: 2.35/1 !important;
   width: 100% !important;
-  height: auto !important;
+  height: 85% !important; /* Cinematic ratio approximation */
+  margin: 7.5% 0 !important;
+  object-fit: contain !important;
+  display: block !important;
+  position: relative !important;
 }
 
 /* Aspect Ratio Overlay */
@@ -1167,4 +1174,327 @@
   color: rgba(255, 255, 255, 0.6);
   font-size: 20px;
   margin-top: 20px;
+}
+
+video {
+  display: block !important;
+  visibility: visible !important;
+}
+
+
+
+
+
+video,
+.vjs-tech,
+#live-videojs-player,
+#live-videojs-player_html5_api {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  z-index: 1 !important;
+  background: #000 !important;
+}
+
+/* 3. Video container must be visible */
+.live-video-player,
+.live-video-player-div,
+.video-js {
+  display: block !important;
+  visibility: visible !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  background: #000 !important;
+  overflow: visible !important; /* Changed from hidden */
+}
+
+/* 4. Ensure video.js wrapper doesn't hide content */
+.vjs-fluid,
+.vjs-16-9,
+.vjs-4-3 {
+  padding-top: 0 !important;
+  height: 100% !important;
+}
+
+/* 5. Remove problematic transforms on old Tizen */
+.channel-card:hover,
+.channel-card-focused {
+  border: 3px solid rgba(55, 155, 254, 1);
+  /* transform: scale(1.05); */ /* REMOVE - causes issues on old Tizen */
+  opacity: 1;
+}
+
+.search-container.search-focused {
+  background: rgba(55, 155, 254, 0.2);
+  border: 2px solid rgba(55, 155, 254, 1);
+  box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
+              0 4px 16px rgba(55, 155, 254, 0.3);
+  /* transform: scale(1.05); */ /* REMOVE */
+}
+
+/* 6. Simplify flexbox for old Tizen - use display: block where possible */
+.livetv-video-wrapper {
+  width: 60%;
+  background: #000;
+  border-radius: 8px;
+  overflow: visible !important; /* Changed from hidden */
+  position: relative;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 30px;
+  display: block !important; /* Explicit block */
+}
+
+/* 7. Fix fullscreen for old Tizen */
+.live-video-player-div:-webkit-full-screen,
+.live-video-player-div:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 9999 !important;
+}
+
+.live-video-player-div:-webkit-full-screen video,
+.live-video-player-div:fullscreen video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  position: relative !important;
+}
+
+/* 8. Ensure Video.js player is visible */
+.video-js .vjs-tech {
+  display: block !important;
+  visibility: visible !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 9. Remove CSS filters on old Tizen (performance issue) */
+.channel-card.channel-blurred .channel-logo {
+  filter: blur(20px);
+  -webkit-filter: blur(20px); /* Add webkit prefix */
+}
+
+.channel-card.channel-blurred .channel-name {
+  filter: blur(8px);
+  -webkit-filter: blur(8px); /* Add webkit prefix */
+}
+
+/* 10. Simplify animations for old Tizen */
+@keyframes spin {
+  0% { transform: rotate(0deg); -webkit-transform: rotate(0deg); }
+  100% { transform: rotate(360deg); -webkit-transform: rotate(360deg); }
+}
+
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+.spinner,
+.live-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: rgba(55, 155, 254, 1);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  -webkit-animation: spin 1s linear infinite;
+}
+
+/* 11. Fix gap property (not supported on very old Tizen) - Already done in your CSS */
+/* Good - you're using margins instead of gap */
+
+/* 12. Ensure loader is visible but behind video */
+.live-video-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  z-index: 100 !important; /* Lower than controls but visible */
+  background-color: transparent !important; /* Changed from #000 */
+  pointer-events: none;
+}
+
+/* 13. Video controls z-index management */
+.videojs-aspect-ratio-div {
+  position: absolute;
+  z-index: 1000 !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  -webkit-transform: translateX(-50%) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto !important;
+}
+
+/* 14. Ensure play/pause button is clickable */
+.play-pause-btn,
+#live-play-pause-btn {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  -webkit-transform: translate(-50%, -50%) !important;
+  z-index: 900 !important;
+  background: rgba(0,0,0,0.85) !important;
+  color: white !important;
+  border: none !important;
+  width: 90px !important;
+  height: 90px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: opacity 0.3s ease !important;
+  pointer-events: auto !important;
+}
+
+/* 15. Video.js fill mode fix for old Tizen */
+.video-js.vjs-fill,
+.video-js.vjs-fluid {
+  width: 100% !important;
+  height: 100% !important;
+  padding-top: 0 !important;
+}
+
+.video-js.vjs-fill video,
+.video-js.vjs-fluid video {
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 16. Flowplayer fixes for old Tizen */
+.flowplayer,
+#flowplayer-live {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  position: relative !important;
+  background: #000 !important;
+}
+
+.flowplayer video,
+#flowplayer-live video {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  position: relative !important;
+  object-fit: contain !important;
+}
+
+/* 17. Remove overlay issues */
+.live-top-overlays {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 1500 !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+/* 18. EPG should not overlap video */
+.livetv-player-epg {
+  position: relative !important; /* Not absolute */
+  width: 100%;
+  padding: 15px;
+  background: rgba(20, 20, 20, 0.9);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* 19. Ensure video wrapper doesn't clip content */
+.livetv-video-wrapper {
+  overflow: visible !important;
+}
+
+/* 20. Fix for webkit-specific issues */
+.live-video-player-div::-webkit-media-controls {
+  display: none !important;
+}
+
+.live-video-player-div video::-webkit-media-controls {
+  display: none !important;
+}
+
+/* 21. Force hardware acceleration on old Tizen */
+video,
+.video-js,
+.flowplayer {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 22. Remove Video.js poster that might block video */
+.video-js .vjs-poster {
+  display: none !important;
+}
+
+/* 23. Critical: Ensure video container has explicit dimensions */
+.bottom-section {
+  display: flex;
+  flex: 1;
+  min-height: 400px; /* Add explicit min-height */
+  height: calc(100vh - 650px); /* Calculate based on header/grid height */
+}
+
+/* 24. Remove any CSS that might hide video on load */
+.video-js.vjs-has-started.vjs-user-inactive.vjs-playing .vjs-control-bar {
+  display: none !important;
+}
+
+/* 25. Old Tizen: Ensure no max-width/height restrictions */
+video {
+  max-width: none !important;
+  max-height: none !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+}
+
+/* 26. Fix for old Tizen fullscreen API */
+:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 27. Remove any positioning that might hide video */
+.vjs-tech {
+  position: relative !important;
+  /* Do not use position: absolute on old Tizen */
+}
+
+/* 28. Explicit video element display */
+.live-video-player video,
+.live-video-player-div video,
+#live-videojs-player,
+#live-videojs-player video {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
