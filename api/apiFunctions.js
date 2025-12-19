@@ -81,10 +81,12 @@ async function loginApi(
   fromPlaylist = false,
   playlistUrl = ""
 ) {
+  // const defaultDns = "https://test.myflu.cc/";
+  //  let alldns = JSON.parse(localStorage.getItem("all_dns")) || [];
+ 
+
   const defaultDns = "http://nubiatv.live/";
   let alldns = [];
-
-
 
 
   if (alldns.length === 0) {

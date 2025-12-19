@@ -104,41 +104,41 @@ async function SeriesDetailPage() {
 console.log("seriesDetailData" , seriesDetailData);
 
 ////////////// tmdb////////
-// var getSeriesCastData = null;
+var getSeriesCastData = null;
 
-// try {
-//   if (seriesName) {
-//     // Step 1: Search for the series to get TMDB ID
-//     const searchUrl = `https://api.themoviedb.org/3/search/tv?api_key=${localStorage.getItem("tmbdId")}&query=${encodeURIComponent(seriesName)}`;
-//     const searchRes = await fetch(searchUrl);
-//     if (!searchRes.ok) throw new Error("TMDB Search API failed");
-//     const searchData = await searchRes.json();
+try {
+  if (seriesName) {
+    // Step 1: Search for the series to get TMDB ID
+    const searchUrl = `https://api.themoviedb.org/3/search/tv?api_key=${localStorage.getItem("tmbdId")}&query=${encodeURIComponent(seriesName)}`;
+    const searchRes = await fetch(searchUrl);
+    if (!searchRes.ok) throw new Error("TMDB Search API failed");
+    const searchData = await searchRes.json();
     
-//     // Step 2: Find matching series
-//     const matchingSeries = searchData.results && searchData.results.length > 0
-//       ? searchData.results.find(s => s.original_name === seriesName.trim()) || searchData.results[0]
-//       : null;
+    // Step 2: Find matching series
+    const matchingSeries = searchData.results && searchData.results.length > 0
+      ? searchData.results.find(s => s.original_name === seriesName.trim()) || searchData.results[0]
+      : null;
     
-//     // Step 3: Fetch cast data using the TMDB ID
-//     if (matchingSeries && matchingSeries.id) {
-//       const castUrl = `https://api.themoviedb.org/3/tv/${matchingSeries.id}/credits?api_key=${localStorage.getItem("tmbdId")}`;
-//       const castRes = await fetch(castUrl);
-//       if (!castRes.ok) throw new Error("TMDB Cast API failed");
-//       getSeriesCastData = await castRes.json();
+    // Step 3: Fetch cast data using the TMDB ID
+    if (matchingSeries && matchingSeries.id) {
+      const castUrl = `https://api.themoviedb.org/3/tv/${matchingSeries.id}/credits?api_key=${localStorage.getItem("tmbdId")}`;
+      const castRes = await fetch(castUrl);
+      if (!castRes.ok) throw new Error("TMDB Cast API failed");
+      getSeriesCastData = await castRes.json();
       
-//       // Check for navigation interruption
-//       if (navigationInterrupted) {
-//         document.removeEventListener("keydown", handleBackNavigationDuringLoading);
-//         return;
-//       }
-//     }
-//   } else {
-//     console.warn("No series name available for TMDB lookup");
-//   }
-// } catch (err) {
-//   console.warn("getSeriesCast error", err);
-//   getSeriesCastData = null;
-// }
+      // Check for navigation interruption
+      if (navigationInterrupted) {
+        document.removeEventListener("keydown", handleBackNavigationDuringLoading);
+        return;
+      }
+    }
+  } else {
+    console.warn("No series name available for TMDB lookup");
+  }
+} catch (err) {
+  console.warn("getSeriesCast error", err);
+  getSeriesCastData = null;
+}
 
 
 
@@ -235,15 +235,15 @@ seriesData.cast = [
 ];
 
 ////////////// TMDB/////////
-// if (getSeriesCastData && Array.isArray(getSeriesCastData.cast)) {
-//   seriesData.cast = getSeriesCastData.cast.map((c) => ({
-//     id: c.id || c.cast_id || Math.random(),
-//     name: c.name || c.original_name || "",
-//     image: c.profile_path ? castImageUrl + c.profile_path : "/assets/profile.png",
-//   }));
-// } else {
-//   seriesData.cast = [];
-// }
+if (getSeriesCastData && Array.isArray(getSeriesCastData.cast)) {
+  seriesData.cast = getSeriesCastData.cast.map((c) => ({
+    id: c.id || c.cast_id || Math.random(),
+    name: c.name || c.original_name || "",
+    image: c.profile_path ? castImageUrl + c.profile_path : "/assets/profile.png",
+  }));
+} else {
+  seriesData.cast = [];
+}
 
 
   // try detect favorite state if helper exists

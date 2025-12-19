@@ -163,11 +163,27 @@
 ---------------------------------------------------------*/
 .episodes-grid {
   display: flex;
-  gap: 24px;
+  /* gap: 24px; */
   overflow-x: hidden;
   overflow-y: visible;
   scroll-behavior: smooth;
   padding: 10px 0;
+}
+
+
+.episodes-grid > * {
+  margin-right: 24px;
+}
+
+.episodes-grid > *:last-child {
+  margin-right: 0;
+}
+
+
+.episode {
+  flex: 0 0 calc(33.33% - 8px);
+  margin-right: 24px;
+  margin-bottom: 16px;
 }
 
 .episode-card {
@@ -193,7 +209,7 @@
   padding-bottom: 56.25%;
   border-radius: 12px;
   overflow: hidden;
- height: -webkit-fill-available
+ height: autof
 }
 
 

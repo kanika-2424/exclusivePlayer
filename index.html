@@ -51,6 +51,31 @@
       <!-- Video.js CSS -->
     <link href="https://vjs.zencdn.net/8.12.0/video-js.css" rel="stylesheet" />
 
+
+    <script>
+// Polyfill for globalThis (required for older Tizen versions)
+(function() {
+  if (typeof globalThis === 'undefined') {
+    (function() {
+      if (typeof self !== 'undefined') { return self; }
+      if (typeof window !== 'undefined') { return window; }
+      if (typeof global !== 'undefined') { return global; }
+      throw new Error('Unable to locate global object');
+    })();
+    
+    // More robust polyfill
+    if (typeof window !== 'undefined') {
+      window.globalThis = window;
+    } else if (typeof global !== 'undefined') {
+      global.globalThis = global;
+    } else if (typeof self !== 'undefined') {
+      self.globalThis = self;
+    }
+  }
+})();
+</script>
+
+
     <!-- Video.js core -->
 
     

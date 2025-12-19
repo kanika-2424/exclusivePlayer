@@ -86,21 +86,21 @@ var tmdbId =
 
 var getMovieCastData = null;
 
-// try {
-//   if (tmdbId) {
-//     // Correct TMDB call with your API key
-//     const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${localStorage.getItem("tmbdId")}`;
+try {
+  if (tmdbId) {
+    // Correct TMDB call with your API key
+    const url = `https://api.themoviedb.org/3/movie/${tmdbId}/credits?api_key=${localStorage.getItem("tmbdId")}`;
 
-//     const res = await fetch(url);
-//     if (!res.ok) throw new Error("TMDB Cast API failed");
-//     getMovieCastData = await res.json();
-//   } else {
-//     console.warn("No tmdb_id available in Xtream API");
-//   }
-// } catch (err) {
-//   console.warn("getMovieCast error", err);
-//   getMovieCastData = null;
-// }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("TMDB Cast API failed");
+    getMovieCastData = await res.json();
+  } else {
+    console.warn("No tmdb_id available in Xtream API");
+  }
+} catch (err) {
+  console.warn("getMovieCast error", err);
+  getMovieCastData = null;
+}
 
 
   if (navigationInterrupted) {
