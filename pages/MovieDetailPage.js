@@ -339,7 +339,7 @@ function formatReleaseDate(raw) {
     </header>
 
        <div class="sidebar-container-movie-detail" style="display: none;">
-      ${Sidebar({ from: "moviesDetailPage" })}
+      ${Sidebar({ from: "movieDetailPage" })}
     </div>
 
     <!-- Add Sorting Dialog -->
@@ -395,9 +395,7 @@ function formatReleaseDate(raw) {
   ` : ''}
 
 
-  <button class="action-button trailer-button" ${movieDetailData.info && movieDetailData.info.youtube_trailer ? "" : 'style="display:none;"'} tabindex="0">
-    <span>Watch Trailer</span>
-  </button>
+ 
  
 </div>
       </div>

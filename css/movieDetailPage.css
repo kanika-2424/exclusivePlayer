@@ -211,19 +211,32 @@
 /* Cast Grid — Horizontal Scrolling */
 .cast-grid {
   display: flex;
-  flex-wrap: nowrap; /* Changed from wrap to nowrap */
-  overflow-x: hidden; /* Hide scrollbar */
+  flex-wrap: nowrap;
+  overflow-x: hidden;
   overflow-y: hidden;
   scroll-behavior: smooth;
+    padding-right: 24px; /* creates visible gap */
+
+}
+
+/* GAP replacement */
+.cast-grid > .cast-card {
+  margin-right: 24px;
+}
+
+/* Remove gap after last card */
+.cast-grid > .cast-card:last-child {
+  margin-right: 0;
 }
 
 .cast-card {
   width: 170px;
-  flex-shrink: 0; /* Prevent cards from shrinking */
-  margin-right: 24px;
-  margin-bottom: 0; /* Remove bottom margin */
+  flex-shrink: 0;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
+    padding-right: 24px; /* 👈 acts like gap */
+
 }
 
 .cast-card:last-child {
@@ -330,7 +343,10 @@
   border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
+.sidebar-container-movie{
+    border:  2px solid rgba(55, 155, 254, 1) ;
 
+}
 .sidebar-container-movie-detail{
     position: fixed !important;
     top: 0;

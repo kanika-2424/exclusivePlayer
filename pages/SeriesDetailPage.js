@@ -8,6 +8,41 @@ async function SeriesDetailPage() {
   const castImageUrl = "https://image.tmdb.org/t/p/w500";
   const loadingOverlay = document.getElementById("loading-overlay");
 
+
+  // Handle app resume/focus to return to series detail page
+function handleAppResume() {
+  const shouldReturn = localStorage.getItem("returnToSeriesDetailPage");
+  const currentPage = localStorage.getItem("currentPage");
+  
+  if (shouldReturn === "true" && currentPage === "seriesDetailPage") {
+    localStorage.removeItem("returnToSeriesDetailPage");
+    
+    // Re-render the series detail page
+    const seriesId = localStorage.getItem("selectedSeriesId");
+    if (seriesId && typeof Router !== "undefined" && Router.showPage) {
+      Router.showPage("seriesDetail");
+    }
+  }
+}
+
+// Listen for various resume events
+window.addEventListener("focus", handleAppResume);
+window.addEventListener("pageshow", handleAppResume);
+
+// Tizen-specific resume handler
+if (typeof tizen !== 'undefined') {
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      handleAppResume();
+    }
+  });
+}
+
+// WebOS-specific resume handler
+if (typeof webOS !== 'undefined') {
+  document.addEventListener('webOSRelaunch', handleAppResume);
+}
+
   async function withTimeout(promise, ms = 7000) {
     let timer;
     return Promise.race([
@@ -216,23 +251,23 @@ if (isContinueWatchingSeries && currentPlaylist.continueWatchingSeries) {
 // Add to seriesData object
 seriesData.isContinueWatching = isContinueWatchingSeries;
 
-seriesData.cast = [
-  { id: 1, name: "John Doe", image: "/assets/profile.png" },
-  { id: 2, name: "Jane Smith", image: "/assets/profile.png" },
-  { id: 3, name: "Michael Johnson", image: "/assets/profile.png" },
-  { id: 4, name: "Emily Davis", image: "/assets/profile.png" },
-  { id: 5, name: "David Wilson", image: "/assets/profile.png" },
-  { id: 6, name: "Sarah Brown", image: "/assets/profile.png" },
-  { id: 7, name: "Chris Martin", image: "/assets/profile.png" },
-  { id: 8, name: "Lisa Anderson", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
-  { id: 10, name: "Amanda White", image: "/assets/profile.png" }
-];
+// seriesData.cast = [
+//   { id: 1, name: "John Doe", image: "/assets/profile.png" },
+//   { id: 2, name: "Jane Smith", image: "/assets/profile.png" },
+//   { id: 3, name: "Michael Johnson", image: "/assets/profile.png" },
+//   { id: 4, name: "Emily Davis", image: "/assets/profile.png" },
+//   { id: 5, name: "David Wilson", image: "/assets/profile.png" },
+//   { id: 6, name: "Sarah Brown", image: "/assets/profile.png" },
+//   { id: 7, name: "Chris Martin", image: "/assets/profile.png" },
+//   { id: 8, name: "Lisa Anderson", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 9, name: "Robert Taylor", image: "/assets/profile.png" },
+//   { id: 10, name: "Amanda White", image: "/assets/profile.png" }
+// ];
 
 ////////////// TMDB/////////
 if (getSeriesCastData && Array.isArray(getSeriesCastData.cast)) {
@@ -364,7 +399,6 @@ if (getSeriesCastData && Array.isArray(getSeriesCastData.cast)) {
 ` : ''}
 
 
-            <button class="action-button trailer-button" ${seriesDetailData.info && seriesDetailData.info.youtube_trailer ? "" : ''} tabindex="0">Watch Trailer</button>
             <button class="action-button cast-button" tabindex="0">
               <span>Cast</span>
               <span class="cast-arrow">  <i class="fa-solid fa-chevron-down"></i>
@@ -796,6 +830,68 @@ function removeAllFocus() {
   // initial focus: play button
   setTimeout(() => setFocusOnButton(0), 0);
 
+
+  // Error modal function
+// Error modal function
+function showErrorModal(title, message) {
+  // Create modal backdrop
+  const modalBackdrop = document.createElement('div');
+  modalBackdrop.className = 'error-modal-backdrop';
+  modalBackdrop.innerHTML = `
+    <div class="error-modal">
+      <div class="error-modal-icon">⚠️</div>
+      <h2 class="error-modal-title">${title}</h2>
+      <p class="error-modal-message">${message}</p>
+      <button class="error-modal-button focused" tabindex="0">OK</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modalBackdrop);
+  
+  // Focus the OK button
+  const okButton = modalBackdrop.querySelector('.error-modal-button');
+  setTimeout(() => okButton.focus(), 100);
+  
+  // Function to close modal
+  function closeModal() {
+    modalBackdrop.remove();
+    document.removeEventListener('keydown', closeModalHandler);
+    setFocusOnButton(1); // Return focus to trailer button
+  }
+  
+  // Close modal on button click
+  okButton.addEventListener('click', closeModal);
+  
+  // Close modal on Enter key press
+  okButton.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    }
+  });
+  
+  // Close modal on Back/Escape key
+  function closeModalHandler(e) {
+    if (e.key === 'Escape' || e.key === 'Back' || 
+        e.key === 'BrowserBack' || e.key === 'XF86Back' || e.keyCode === 10009) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    }
+  }
+  
+  document.addEventListener('keydown', closeModalHandler);
+  
+  // Also close on backdrop click
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) {
+      closeModal();
+    }
+  });
+}
+
+
   // click handlers for buttons
   const playBtn = container.querySelector(".play-button");
   const trailerBtn = container.querySelector(".trailer-button");
@@ -905,20 +1001,45 @@ if (fromStartBtn) {
   });
 }
 
-  if (trailerBtn) {
-    trailerBtn.addEventListener("click", () => {
-      if (seriesDetailData.info && seriesDetailData.info.youtube_trailer) {
-        const trailerUrl = "https://www.youtube.com/watch?v=" + seriesDetailData.info.youtube_trailer;
-        localStorage.setItem("selectedVideoItemUrl", trailerUrl);
-        localStorage.setItem("currentPage", "videojsPlayer");
-        if (typeof Router !== "undefined" && Router.showPage) Router.showPage("videoJsPlayer");
-        document.body.style.backgroundImage = "none";
-        document.body.style.backgroundColor = "black";
-      } else {
-        alert("No trailer available");
-      }
-    });
-  }
+//  if (trailerBtn) {
+//   trailerBtn.addEventListener("click", () => {
+//     if (seriesDetailData.info && seriesDetailData.info.youtube_trailer) {
+//       const trailerUrl = "https://www.youtube.com/watch?v=" + seriesDetailData.info.youtube_trailer;
+      
+//       // Store series ID and page info before opening browser
+//       localStorage.setItem("returnToSeriesDetailPage", "true");
+//       localStorage.setItem("selectedSeriesId", seriesData.id.toString());
+//       localStorage.setItem("currentPage", "seriesDetailPage");
+      
+//       // Open trailer in system browser
+//       if (window.open) {
+//         window.open(trailerUrl, '_blank');
+//       } else if (typeof tizen !== 'undefined') {
+//         // Tizen TV
+//         tizen.application.launch('org.tizen.browser', trailerUrl);
+//       } else if (typeof webapis !== 'undefined') {
+//         // Samsung Tizen using webapis
+//         webapis.appcommon.launch('org.tizen.browser', trailerUrl);
+//       } else {
+//         // Fallback: try standard window.location
+//         window.location.href = trailerUrl;
+//       }
+//     } else {
+//       alert("No trailer available");
+//     }
+//   });
+// }
+
+if (trailerBtn) {
+  trailerBtn.addEventListener("click", () => {
+    if (seriesDetailData.info && seriesDetailData.info.youtube_trailer) {
+      // Show error modal instead of opening trailer
+      showErrorModal("YouTube Unknown Error", "Unable to play trailer at this time.");
+    } else {
+      showErrorModal("No Trailer Available", "This series doesn't have a trailer.");
+    }
+  });
+}
 
 
 const castWrapper = container.querySelector("#cast-wrapper");
@@ -1677,6 +1798,10 @@ SeriesDetailPage.cleanup = function () {
   document.removeEventListener("keydown", handleBackNavigationDuringLoading);
     document.removeEventListener("keydown", handleMenuKey);
 
+
+      window.removeEventListener("focus", handleAppResume);
+  window.removeEventListener("pageshow", handleAppResume);
+  
 
    const backdrop = document.getElementById('cast-backdrop');
   if (backdrop) backdrop.remove();

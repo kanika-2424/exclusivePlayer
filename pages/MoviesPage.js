@@ -1258,6 +1258,7 @@ function openMovieDetail(movieId) {
 
         // Normal UP movement (not top row)
         setFocusOnCard(currentFocusIndex - cardsPerRow);
+        
         return;
       }
       
@@ -1268,7 +1269,8 @@ function openMovieDetail(movieId) {
   // Collapsed → check if cards exist before moving
   if (!isExpanded) {
     if (cards.length > 0) {
-      setFocusOnCard(0);
+             setFocusOnHeaderSearch();
+
     }
     // Stay on category if no cards
     e.preventDefault();
@@ -1277,6 +1279,9 @@ function openMovieDetail(movieId) {
 
   // EXPANDED: check if we're in the first row
   const isInFirstRow = currentCategoryIndex < perRow;
+
+  console.log("isInFirstRow" , isInFirstRow);
+  
 
   if (isInFirstRow) {
     // From first row → go to search

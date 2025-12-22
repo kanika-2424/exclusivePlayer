@@ -3,7 +3,7 @@
 // Add this at the TOP of your main JavaScript file
 // ========================================
 
-// Create on-screen console for Tizen TV
+// // Create on-screen console for Tizen TV
 // window.TizenConsole = {
 //   logs: [],
 //   maxLogs: 20,
@@ -109,7 +109,7 @@
 //   }
 // };
 
-// Initialize on-screen console
+// // Initialize on-screen console
 // window.TizenConsole.init();
 
 // Add keyboard shortcut to toggle console (INFO button = keyCode 457)
@@ -120,10 +120,10 @@ window.onload = function () {
 
     // window.TizenConsole.init();
 
-  // FORCE SHOW FOR FIRST TEST
+  // // FORCE SHOW FOR FIRST TEST
   // window.TizenConsole.overlay.style.display = 'block';
   // console.log('🔥 Tizen Console attached to DOM');
-  // -----------------------------
+  // //-----------------------------
 
 
   document.addEventListener('keydown', (e) => {

@@ -1106,7 +1106,8 @@ else if (currentSection === "categories") {
   // Collapsed → check if cards exist before moving
   if (!isExpanded) {
     if (cards.length > 0) {
-      setFocusOnCard(0);
+               setFocusOnHeaderSearch();
+
     }
     // Stay on category if no cards
     e.preventDefault();

@@ -43,6 +43,11 @@
     transition: 0.3s;
 }
 
+
+
+.search-category-name ::placeholder{
+    color: white
+}
 .search-category-input {
     width: 100%;
     background: transparent;

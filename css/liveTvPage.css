@@ -507,7 +507,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 10000;
+    /* z-index: 10000 !important; */
     background-color: #000;
 }
 
@@ -751,7 +751,7 @@
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 99999 !important;
+  z-index: 9999 !important;
   background: rgba(0,0,0,0.85) !important;
   color: white !important;
   width: 90px !important;
@@ -1324,8 +1324,8 @@ video,
   left: 50%;
   transform: translate(-50%, -50%);
   -webkit-transform: translate(-50%, -50%);
-  z-index: 100 !important; /* Lower than controls but visible */
-  background-color: transparent !important; /* Changed from #000 */
+  z-index: 99999 !important; /* Lower than controls but visible */
+  background-color: black !important; /* Changed from #000 */
   pointer-events: none;
 }
 
