@@ -165,34 +165,45 @@ function showVolumeDisplay(volume) {
     if (muteEl) muteEl.style.display = "none";
   }
 
-  function togglePlayPause() {
-    if (!window.livePlayer) return;
+function togglePlayPause() {
+  if (!window.livePlayer) return;
 
-    try {
-      if (window.livePlayer._fp) {
-        // Flowplayer implementation
-        const fp = window.livePlayer._fp;
-        if (fp.playing) {
-          fp.pause();
-          updatePlayPauseIcon(false);
-        } else {
-          fp.resume();
-          updatePlayPauseIcon(true);
-        }
-      } else {
-        // Video.js implementation
-        if (window.livePlayer.paused()) {
-          window.livePlayer.play();
-          updatePlayPauseIcon(true);
-        } else {
-          window.livePlayer.pause();
-          updatePlayPauseIcon(false);
-        }
-      }
-    } catch (err) {
-      console.warn("Play/Pause toggle failed:", err);
+  try {
+    // Show play/pause icon temporarily
+    const playPauseIcon = document.querySelector(".play-pause-icon");
+    if (playPauseIcon) {
+      playPauseIcon.style.display = "flex";
+      playPauseIcon.style.opacity = "1";
     }
+    
+    if (window.livePlayer._fp) {
+      // Flowplayer implementation
+      const fp = window.livePlayer._fp;
+      if (fp.playing) {
+        fp.pause();
+        updatePlayPauseIcon(false);
+      } else {
+        fp.resume();
+        updatePlayPauseIcon(true);
+        // Hide after 3 seconds when playing
+        hideControlsAfterDelay();
+      }
+    } else {
+      // Video.js implementation
+      if (window.livePlayer.paused()) {
+        window.livePlayer.play();
+        updatePlayPauseIcon(true);
+        // Hide after 3 seconds when playing
+        hideControlsAfterDelay();
+      } else {
+        window.livePlayer.pause();
+        updatePlayPauseIcon(false);
+      }
+    }
+  } catch (err) {
+    console.warn("Play/Pause toggle failed:", err);
   }
+}
 
   function updatePlayPauseIcon(isPlaying) {
     const playPauseIcon = document.querySelector(".play-pause-icon i");
@@ -204,6 +215,29 @@ function showVolumeDisplay(volume) {
       }
     }
   }
+
+  function hideControlsAfterDelay() {
+  setTimeout(() => {
+    const playPauseIcon = document.querySelector(".play-pause-icon");
+    const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+    
+    if (playPauseIcon && !playPauseIcon.classList.contains("focused")) {
+      playPauseIcon.style.transition = "opacity 0.3s ease";
+      playPauseIcon.style.opacity = "0";
+      setTimeout(() => {
+        playPauseIcon.style.display = "none";
+      }, 300);
+    }
+    
+    if (aspectRatioDiv && !aspectRatioDiv.classList.contains("focused")) {
+      aspectRatioDiv.style.transition = "opacity 0.3s ease";
+      aspectRatioDiv.style.opacity = "0";
+      setTimeout(() => {
+        aspectRatioDiv.style.display = "none";
+      }, 300);
+    }
+  }, 3000);
+}
 
   // Function to update aspect ratio button visibility
   function updateAspectRatioButtonVisibility() {
@@ -243,6 +277,78 @@ function showVolumeDisplay(volume) {
     `;
   }
 
+  function showControls() {
+  console.log("🎮 showControls called");
+  
+  const playPauseIcon = document.querySelector(".play-pause-icon");
+  const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
+  
+  console.log("Play/Pause Icon:", playPauseIcon);
+  console.log("Aspect Ratio Btn:", aspectRatioBtn);
+  
+  if (playPauseIcon) {
+    playPauseIcon.style.display = "flex";
+    playPauseIcon.style.opacity = "1";
+    console.log("✅ Play/Pause shown");
+  }
+  
+  if (aspectRatioBtn) {
+    aspectRatioBtn.style.display = "block";
+    aspectRatioBtn.style.opacity = "1";
+    console.log("✅ Aspect ratio shown");
+  }
+  
+  // Clear existing timeout
+  if (window._liveControlsHideTimeout) {
+    clearTimeout(window._liveControlsHideTimeout);
+  }
+  
+  // Auto-hide after 3 seconds
+  window._liveControlsHideTimeout = setTimeout(() => {
+    console.log("⏱️ Auto-hiding controls");
+    autoHideControls();
+  }, 3000);
+}
+
+
+
+
+
+  // Add this function after player initialization
+function autoHideControls() {
+  // Don't hide if video is paused or not playing
+  if (window.livePlayer) {
+    try {
+      if (window.livePlayer._fp) {
+        if (!window.livePlayer._fp.playing) return;
+      } else {
+        if (window.livePlayer.paused()) return;
+      }
+    } catch (err) {
+      console.warn("Check play state error:", err);
+    }
+  }
+  
+  const playPauseIcon = document.querySelector(".play-pause-icon");
+  const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
+  
+  if (playPauseIcon) {
+    playPauseIcon.style.opacity = "0";
+    playPauseIcon.style.transition = "opacity 0.5s ease";
+    setTimeout(() => {
+      playPauseIcon.style.display = "none";
+    }, 500);
+  }
+  
+  if (aspectRatioBtn) {
+    aspectRatioBtn.style.opacity = "0";
+    aspectRatioBtn.style.transition = "opacity 0.5s ease";
+    setTimeout(() => {
+      aspectRatioBtn.style.display = "none";
+    }, 500);
+  }
+}
+
   setTimeout(() => {
     if (window.livePlayer) {
       try {
@@ -259,7 +365,7 @@ function showVolumeDisplay(volume) {
     if (errorEl) errorEl.classList.add("hidden");
     
     // Initial aspect ratio button visibility
-    updateAspectRatioButtonVisibility();
+    // updateAspectRatioButtonVisibility();
 
     if (isTsStream && typeof flowplayer !== "undefined") {
       const hlsUrl = srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`);
@@ -323,14 +429,12 @@ fp.on("resume", () => {
   if (errorEl) errorEl.classList.add("hidden");
   updateAspectRatioButtonVisibility();
   
-  // Remove/Hide any internal waiting overlays just in case
   const fpWaiting = fpContainer.querySelector('.fp-waiting');
   if (fpWaiting) fpWaiting.style.display = 'none';
   const vLoader = document.querySelector(".live-video-loader");
   if (vLoader) vLoader.classList.add("hidden");
   updatePlayPauseIcon(true);
   
-  // Auto-hide top overlays after 5 seconds
   setTimeout(() => {
     const topOverlays = document.querySelector(".live-top-overlays");
     if (topOverlays) {
@@ -338,6 +442,14 @@ fp.on("resume", () => {
       topOverlays.style.transition = "opacity 0.5s ease";
     }
   }, 5000);
+
+    hideControlsAfterDelay();
+
+  
+  // ADD THIS: Auto-hide controls after 3 seconds
+  setTimeout(() => {
+    autoHideControls();
+  }, 3000);
 });
         fp.on("pause", () => {
           if (loadingEl) loadingEl.classList.add("hidden");
@@ -457,7 +569,16 @@ window.livePlayer.on("playing", () => {
       topOverlays.style.transition = "opacity 0.5s ease";
     }
   }, 5000);
+
+    hideControlsAfterDelay();
+
+  
+  // ADD THIS: Auto-hide controls after 3 seconds
+  setTimeout(() => {
+    autoHideControls();
+  }, 3000);
 });
+
 
         window.livePlayer.on("pause", () => {
           updatePlayPauseIcon(false);
@@ -610,10 +731,52 @@ if (aspectRatioButton) {
   console.log("Aspect ratio button event listener attached");
 }
 
+
+
+
+  const playerContainer = document.querySelector('.live-video-player-div');
+  if (playerContainer) {
+    console.log("✅ Attaching mouse/touch listeners");
+    
+    const mouseMoveHandler = () => {
+      console.log("🖱️ Mouse moved");
+      showControls();
+    };
+    
+    const touchHandler = () => {
+      console.log("👆 Touch detected");
+      showControls();
+    };
+    
+    playerContainer.addEventListener('mousemove', mouseMoveHandler);
+    playerContainer.addEventListener('touchstart', touchHandler);
+    
+    // Store handlers for cleanup
+    window._liveControlsHandlers = { mouseMoveHandler, touchHandler };
+  }
+
+
   }, 50);
+  
+
+
 
   // Add cleanup function to dispose player when component is not open
   LiveVideoJsComponent.cleanup = function() {
+
+ if (window._liveControlsHandlers) {
+    const playerContainer = document.querySelector('.live-video-player-div');
+    if (playerContainer) {
+      playerContainer.removeEventListener('mousemove', window._liveControlsHandlers.mouseMoveHandler);
+      playerContainer.removeEventListener('touchstart', window._liveControlsHandlers.touchHandler);
+    }
+    window._liveControlsHandlers = null;
+  }
+      if (window._liveControlsHideTimeout) {
+    clearTimeout(window._liveControlsHideTimeout);
+    window._liveControlsHideTimeout = null;
+  }
+  
       // Clean up volume event listener
   if (window._liveTvVolumeHandler) {
     document.removeEventListener("keydown", window._liveTvVolumeHandler);
@@ -657,44 +820,86 @@ if (aspectRatioButton) {
     window._liveTvVolumeHandlerAttached = false;
   };
 
-  return `
-    <div class="live-video-player live-video-player-div" style="width:100%; height:50%;">
-               <div class="videojs-aspect-ratio-div">
-<button id="videojs-aspect-ratio" class="videojs-aspect-ratio-btn" ><i class="fa-solid fa-compress" style="color:'white'"></i>Aspect Ratio </button>
-      </div>
-      <div class="play-pause-icon" style="display: none;">
-        <i class="fa-solid fa-play"></i>
+ return `
+  <div class="live-video-player live-video-player-div"
+       style="width:100%; height:100vh; position:relative; background:#000;">
 
-      </div>
-      <div class="live-top-overlays">
-        <div class="live-channel-name">${channelName || ""}</div>
-        <div class="live-badge">LIVE</div>
-      </div>
-      <div class="live-video-loader"><div class="live-spinner"></div></div>
-      <div class="live-video-error hidden">
-        <div class="error-icon">⚠️</div>
-        <p>Failed to load video</p>
-        <button class="retry-btn">Retry</button>
-      </div>
-      <div class="live-video-controls">
-        <button id="live-fullscreen-btn" class="live-control-btn" tabindex="-1">
-         <i class="fa-solid fa-expand live-fullscreen-btn-icon"></i>
-        </button>
-      </div>
-      ${isTsStream
-        ? `<div id="flowplayer-live" class="flowplayer " style="height:100%; width:100%;">
-             <video>
-               <source type="application/x-mpegURL" src="${srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`)}">
-             </video>
-           </div>`
-        : `<video id="${id}" class="video-js vjs-big-play-centered vjs-fullscreen " playsinline webkit-playsinline style="height:100%; width:100%;"></video>`}
-      <div class="livetv-player-epg">
-        <div class="livetv-player-epg-item">
-          <p class="livetv-player-epg-title">Loading EPG...</p>
-        </div>
-      </div>
-          <div id="aspectRatioOverlay" class="aspect-ratio-overlay hidden"></div>
-
+    <!-- Aspect Ratio -->
+    <div class="videojs-aspect-ratio-div" style="display:block; opacity:1;">
+      <button id="videojs-aspect-ratio" class="videojs-aspect-ratio-btn">
+        <i class="fa-solid fa-compress"></i> Aspect Ratio
+      </button>
     </div>
-  `;
+
+    <!-- Play / Pause -->
+    <div class="play-pause-icon" style="display:flex; opacity:1;">
+      <i class="fa-solid fa-play"></i>
+    </div>
+
+    <!-- 🔥 VIDEO MUST BE INSIDE THIS CONTAINER -->
+    ${isTsStream
+      ? `
+        <div id="flowplayer-live"
+             class="flowplayer"
+             style="width:100%; height:100%;">
+          <video style="width:100%; height:100%;">
+            <source
+              type="application/x-mpegURL"
+              src="${srcUrl.replace(/\.ts(\?.*)?$/i, (m, q) => `.m3u8${q || ""}`)}"
+            />
+          </video>
+        </div>
+      `
+      : `
+        <video
+          id="${id}"
+          class="video-js vjs-big-play-centered"
+          playsinline
+          webkit-playsinline
+          style="width:100%; height:100%;"
+        ></video>
+      `
+    }
+
+    <!-- Top overlays -->
+    <div class="live-top-overlays">
+      <div class="live-channel-name">${channelName || ""}</div>
+      <div class="live-badge">LIVE</div>
+    </div>
+
+    <!-- Loader -->
+    <div class="live-video-loader">
+      <div class="live-spinner"></div>
+    </div>
+
+    <!-- Error -->
+    <div class="live-video-error hidden">
+      <div class="error-icon">⚠️</div>
+      <p>Failed to load video</p>
+      <button class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="live-video-controls">
+      <button id="live-fullscreen-btn"
+              class="live-control-btn"
+              tabindex="-1">
+        <i class="fa-solid fa-expand live-fullscreen-btn-icon"></i>
+      </button>
+    </div>
+
+    <!-- Aspect Ratio Overlay -->
+    <div id="aspectRatioOverlay"
+         class="aspect-ratio-overlay hidden"></div>
+
+  </div>
+
+  <!-- EPG OUTSIDE PLAYER -->
+  <div class="livetv-player-epg">
+    <div class="livetv-player-epg-item">
+      <p class="livetv-player-epg-title">Loading EPG...</p>
+    </div>
+  </div>
+`;
+
 }
