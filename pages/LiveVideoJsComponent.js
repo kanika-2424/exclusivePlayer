@@ -7,6 +7,24 @@ function LiveVideoJsComponent(
 ) {
   const id = "live-videojs-player";
   let epgData = [];
+  window.isTvFocusActive = false;
+
+  const playerContainer = document.querySelector(".live-video-player-div");
+
+if (playerContainer) {
+  playerContainer.setAttribute("tabindex", "0");
+
+  playerContainer.addEventListener("focus", () => {
+    window.isTvFocusActive = true;
+    showControls(true); // force show
+  });
+
+  playerContainer.addEventListener("blur", () => {
+    window.isTvFocusActive = false;
+    hideControlsAfterDelay();
+  });
+}
+
   
   // Store reference to previous cleanup to avoid race conditions
   const previousCleanup = LiveVideoJsComponent.cleanup;
@@ -277,35 +295,30 @@ function togglePlayPause() {
     `;
   }
 
-  function showControls() {
-  console.log("🎮 showControls called");
-  
+ function showControls(force = false) {
   const playPauseIcon = document.querySelector(".play-pause-icon");
   const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
-  
-  console.log("Play/Pause Icon:", playPauseIcon);
-  console.log("Aspect Ratio Btn:", aspectRatioBtn);
-  
+
   if (playPauseIcon) {
     playPauseIcon.style.display = "flex";
     playPauseIcon.style.opacity = "1";
-    console.log("✅ Play/Pause shown");
   }
-  
+
   if (aspectRatioBtn) {
     aspectRatioBtn.style.display = "block";
     aspectRatioBtn.style.opacity = "1";
-    console.log("✅ Aspect ratio shown");
   }
-  
-  // Clear existing timeout
+
+  // ❌ Do NOT auto-hide if TV focus is active
+  if (window.isTvFocusActive && !force) return;
+
+  // Clear old timer
   if (window._liveControlsHideTimeout) {
     clearTimeout(window._liveControlsHideTimeout);
   }
-  
-  // Auto-hide after 3 seconds
+
+  // Auto-hide only for mouse/touch
   window._liveControlsHideTimeout = setTimeout(() => {
-    console.log("⏱️ Auto-hiding controls");
     autoHideControls();
   }, 3000);
 }
@@ -314,40 +327,34 @@ function togglePlayPause() {
 
 
 
+
   // Add this function after player initialization
 function autoHideControls() {
-  // Don't hide if video is paused or not playing
+  // ❌ NEVER hide when TV focus is active
+  if (window.isTvFocusActive) return;
+
+  // ❌ NEVER hide if paused
   if (window.livePlayer) {
     try {
-      if (window.livePlayer._fp) {
-        if (!window.livePlayer._fp.playing) return;
-      } else {
-        if (window.livePlayer.paused()) return;
-      }
-    } catch (err) {
-      console.warn("Check play state error:", err);
-    }
+      if (window.livePlayer._fp && !window.livePlayer._fp.playing) return;
+      if (!window.livePlayer._fp && window.livePlayer.paused()) return;
+    } catch {}
   }
-  
+
   const playPauseIcon = document.querySelector(".play-pause-icon");
   const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
-  
+
   if (playPauseIcon) {
     playPauseIcon.style.opacity = "0";
-    playPauseIcon.style.transition = "opacity 0.5s ease";
-    setTimeout(() => {
-      playPauseIcon.style.display = "none";
-    }, 500);
+    setTimeout(() => (playPauseIcon.style.display = "none"), 300);
   }
-  
+
   if (aspectRatioBtn) {
     aspectRatioBtn.style.opacity = "0";
-    aspectRatioBtn.style.transition = "opacity 0.5s ease";
-    setTimeout(() => {
-      aspectRatioBtn.style.display = "none";
-    }, 500);
+    setTimeout(() => (aspectRatioBtn.style.display = "none"), 300);
   }
 }
+
 
   setTimeout(() => {
     if (window.livePlayer) {
@@ -703,6 +710,18 @@ window._liveTvVolumeHandler = (e) => {
       break;
   }
 };
+
+document.addEventListener("keydown", (e) => {
+  if (localStorage.getItem("currentPage") !== "liveTvPage") return;
+
+  showControls(true);
+
+  // Hide later ONLY if not focused
+  if (!window.isTvFocusActive) {
+    hideControlsAfterDelay();
+  }
+});
+
 
 // Add the event listener
 document.addEventListener("keydown", window._liveTvVolumeHandler);
