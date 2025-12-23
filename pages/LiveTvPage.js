@@ -2214,15 +2214,9 @@ if (isMenuDotsActive) {
 
     // If user is in video player area
     if (inVideoPlayer) {
+      const videoDiv = qs(".live-video-player-div");
       const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
       const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-
-
-
-        const videoDiv = qs(".live-video-player-div");
-  const playPauseIcon = qs(".play-pause-icon");
-  const aspectRatioDiv = qs(".videojs-aspect-ratio-div");
-
 
       if (isUp) {
         inVideoPlayer = false;
@@ -2240,30 +2234,22 @@ if (isMenuDotsActive) {
         return;
       }
 
-  if (isDown) {
-    // Show buttons when navigating down
-    if (playPauseIcon) {
-      playPauseIcon.style.display = "flex";
-      playPauseIcon.style.opacity = "1";
-    }
-    if (aspectRatioDiv) {
-      aspectRatioDiv.style.display = "block";
-      aspectRatioDiv.style.opacity = "1";
-    }
-    
-    inVideoPlayer = false;
-    inPlayPauseBtn = true;
-    if (videoDiv) {
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
-    }
-    if (playPauseIcon) {
-      playPauseIcon.classList.add("focused");
-      playPauseIcon.style.outline = "3px solid #0ea5e9";
-    }
-    e.preventDefault();
-    return;
-  }
+      if (isDown) {
+        // Go to play/pause button
+        inVideoPlayer = false;
+        inPlayPauseBtn = true;
+        if (videoDiv) {
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (playPauseBtn) {
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+          playPauseBtn.classList.add("focused");
+        }
+        e.preventDefault();
+        return;
+      }
 
       if (isEnter) {
         // Click on video container to enter fullscreen
@@ -2306,34 +2292,13 @@ if (isMenuDotsActive) {
     // Play/Pause button navigation
     if (inPlayPauseBtn) {
       const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const videoDiv = qs(".live-video-player-div");
       const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-
-       const playPauseIcon = qs(".play-pause-icon");
-  const videoDiv = qs(".live-video-player-div");
-  const aspectRatioDiv = qs(".videojs-aspect-ratio-div");
-
-
-        if (playPauseIcon) {
-    playPauseIcon.style.display = "flex";
-    playPauseIcon.style.opacity = "1";
-    playPauseIcon.classList.add("focused");
-  }
-  if (aspectRatioDiv) {
-    aspectRatioDiv.style.display = "block";
-    aspectRatioDiv.style.opacity = "1";
-  }
-
 
       if (isUp) {
         // Go back to video container
         inPlayPauseBtn = false;
         inVideoPlayer = true;
-
-          if (playPauseIcon) {
-      playPauseIcon.classList.remove("focused");
-      playPauseIcon.style.outline = "none";
-    }
-    
         if (playPauseBtn) {
           playPauseBtn.classList.remove("focused");
           playPauseBtn.style.display = "flex";
@@ -2395,26 +2360,8 @@ if (isMenuDotsActive) {
 
     // Aspect ratio button navigation
     if (inAspectRatioBtn) {
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
       const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-
-        const aspectRatioDiv = qs(".videojs-aspect-ratio-div");
-  const aspectBtn = aspectRatioDiv ? aspectRatioDiv.querySelector("button") : null;
-  const playPauseIcon = qs(".play-pause-icon");
-
-  // Always show buttons in this mode
-  if (playPauseIcon) {
-    playPauseIcon.style.display = "flex";
-    playPauseIcon.style.opacity = "1";
-  }
-  if (aspectRatioDiv) {
-    aspectRatioDiv.style.display = "block";
-    aspectRatioDiv.style.opacity = "1";
-    aspectRatioDiv.classList.add("focused");
-  }
-  if (aspectBtn) {
-    aspectBtn.style.outline = "3px solid #0ea5e9";
-  }
-
 
       if (isUp) {
         inAspectRatioBtn = false;
