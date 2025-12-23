@@ -106,6 +106,8 @@ function mountListPlaylistPage(playlistsData) {
   
   const addPlaylistBtn = document.querySelector(".playlist-add-user");
 
+  
+
   let focusIndex;
   if (playlistsData.length > 0) {
     focusIndex = 0;
@@ -126,6 +128,23 @@ function mountListPlaylistPage(playlistsData) {
   const cancelBtn = document.querySelector(".playlist-cancel-btn");
   const modalButtons = [removeBtn, cancelBtn];
 
+
+
+  cardElements.forEach(card => {
+  card.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+});
+
+if (addPlaylistBtn) {
+  addPlaylistBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+}
   // ---------- Focus helper ----------
   function updateFocus() {
     if (modalOpen) {

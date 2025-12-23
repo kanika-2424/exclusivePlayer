@@ -1268,10 +1268,10 @@ function openMovieDetail(movieId) {
 
   // Collapsed → check if cards exist before moving
   if (!isExpanded) {
-    if (cards.length > 0) {
+    // if (cards.length > 0) {
              setFocusOnHeaderSearch();
 
-    }
+    // }
     // Stay on category if no cards
     e.preventDefault();
     return;
