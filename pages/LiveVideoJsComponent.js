@@ -804,7 +804,7 @@ return `
     </div>
 
     <!-- Play/Pause Button (Center) -->
-    <button class="play-pause-btn" id="live-play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; z-index: 99999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);">
+    <button class="play-pause-btn" id="live-play-pause-btn" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; z-index: 99999; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; ">
       <i class="fa-solid fa-pause" style="font-size: 30px;"></i>
     </button>
 
