@@ -190,12 +190,19 @@ margin-right: 5px;
 }
 
 
+.video-js-player-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: black;
+}
+
 
 /* NEW - Use object-fit instead of padding */
 .video-aspect-169 {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
 }
 
 .video-aspect-43 {
@@ -213,8 +220,21 @@ margin-right: 5px;
 
 .video-js .vjs-tech {
   background: rgb(0, 0, 0) !important;
-  height: 100vh !important;
+  /* height: 100vh !important; */
 }
+
+
+
+.video-js,
+.video-js video,
+.video-js .vjs-tech {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  background: black !important;
+}
+
+
 
 /* -------------------------------- */
 /* Hide YT Controls (for embeds)    */
@@ -509,9 +529,11 @@ margin-right: 5px;
 
 /* Aspect Ratio Classes */
 .video-aspect-169 {
-  aspect-ratio: 16/9 !important;
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
+  object-fit: contain !important; /* Changed from fill */
+  display: block !important;
+  position: relative !important;
 }
 
 .video-aspect-43 {
