@@ -1253,18 +1253,27 @@ setTimeout(() => {
         togglePlayPause();
       });
 
-      const videoContainer = document.querySelector(".live-video-player-div");
-      if (videoContainer) {
-        videoContainer.addEventListener("click", (e) => {
-          if (e.target === videoContainer || e.target === videoEl) {
-            if (!document.fullscreenElement) {
-              videoContainer.requestFullscreen().catch(err => {
-                console.warn("Fullscreen request failed:", err);
-              });
-            }
-          }
-        });
+     const videoContainer = document.querySelector(".live-video-player-div");
+if (videoContainer) {
+  videoContainer.addEventListener("click", (e) => {
+    if (e.target === videoContainer || e.target === videoEl) {
+      if (!document.fullscreenElement && 
+          !document.webkitFullscreenElement && 
+          !document.mozFullScreenElement && 
+          !document.msFullscreenElement) {
+        if (videoContainer.requestFullscreen) {
+          videoContainer.requestFullscreen();
+        } else if (videoContainer.webkitRequestFullscreen) {
+          videoContainer.webkitRequestFullscreen();
+        } else if (videoContainer.mozRequestFullScreen) {
+          videoContainer.mozRequestFullScreen();
+        } else if (videoContainer.msRequestFullscreen) {
+          videoContainer.msRequestFullscreen();
+        }
       }
+    }
+  });
+}
 
       videoEl.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -2251,20 +2260,43 @@ if (isMenuDotsActive) {
         return;
       }
 
-      if (isEnter) {
-        // Click on video container to enter fullscreen
-        if (videoDiv) {
-          if (!document.fullscreenElement) {
-            videoDiv.requestFullscreen().catch(err => {
-              console.warn("Fullscreen request failed:", err);
-            });
-          } else {
-            document.exitFullscreen();
-          }
+    if (isEnter) {
+  // Toggle fullscreen on video container
+  if (videoDiv) {
+    try {
+      if (!document.fullscreenElement && 
+          !document.webkitFullscreenElement && 
+          !document.mozFullScreenElement && 
+          !document.msFullscreenElement) {
+        // Enter fullscreen - try different methods for TV compatibility
+        if (videoDiv.requestFullscreen) {
+          videoDiv.requestFullscreen();
+        } else if (videoDiv.webkitRequestFullscreen) {
+          videoDiv.webkitRequestFullscreen();
+        } else if (videoDiv.mozRequestFullScreen) {
+          videoDiv.mozRequestFullScreen();
+        } else if (videoDiv.msRequestFullscreen) {
+          videoDiv.msRequestFullscreen();
         }
-        e.preventDefault();
-        return;
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
       }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  }
+  e.preventDefault();
+  return;
+}
 
       if (isRight) {
         // Go to EPG list
