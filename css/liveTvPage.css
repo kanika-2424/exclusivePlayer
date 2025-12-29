@@ -1360,6 +1360,7 @@ video,
   background: rgba(0,0,0,0.85) !important;
   color: white !important;
   border: none !important;
+  border-radius: 50% !important;
   width: 90px !important;
   height: 90px !important;
   border-radius: 50% !important;

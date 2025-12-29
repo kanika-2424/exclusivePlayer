@@ -237,69 +237,58 @@ function showVolumeDisplay(volume) {
     if (muteEl) muteEl.style.display = "none";
   }
 
-  function togglePlayPause() {
-    if (!window.livePlayer) return;
+ function togglePlayPause() {
+  if (!window.livePlayer) return;
 
-    try {
-      if (window.livePlayer._fp) {
-        // Flowplayer implementation
-        const fp = window.livePlayer._fp;
-        if (fp.playing) {
-          fp.pause();
-          updatePlayPauseIcon(false);
-        } else {
-          fp.resume();
-          updatePlayPauseIcon(true);
-        }
+  try {
+    if (window.livePlayer._fp) {
+      // Flowplayer implementation
+      const fp = window.livePlayer._fp;
+      if (fp.playing) {
+        fp.pause();
+        updatePlayPauseIcon(false);
       } else {
-        // Video.js implementation
-        if (window.livePlayer.paused()) {
-          window.livePlayer.play();
-          updatePlayPauseIcon(true);
-        } else {
-          window.livePlayer.pause();
-          updatePlayPauseIcon(false);
-        }
+        fp.resume();
+        updatePlayPauseIcon(true);
       }
-    } catch (err) {
-      console.warn("Play/Pause toggle failed:", err);
+    } else {
+      // Video.js implementation
+      if (window.livePlayer.paused()) {
+        window.livePlayer.play();
+        updatePlayPauseIcon(true);
+      } else {
+        window.livePlayer.pause();
+        updatePlayPauseIcon(false);
+      }
     }
+    
+    // Show buttons when user interacts (if showVideoControls exists)
+    if (typeof showVideoControls === "function") {
+      showVideoControls();
+    }
+    
+  } catch (err) {
+    console.warn("Play/Pause toggle failed:", err);
   }
+}
 
-  function updatePlayPauseIcon(isPlaying) {
-    const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
-    if (playPauseBtn) {
-      const icon = playPauseBtn.querySelector("i");
-      if (icon) {
-        if (isPlaying) {
-          icon.className = "fa-solid fa-pause";
-        } else {
-          icon.className = "fa-solid fa-play";
-        }
-      }
-      // Show button when paused, hide when playing (after delay)
+function updatePlayPauseIcon(isPlaying) {
+  const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+  if (playPauseBtn) {
+    const icon = playPauseBtn.querySelector("i");
+    if (icon) {
       if (isPlaying) {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        setTimeout(() => {
-          if (window.livePlayer && !window.livePlayer.paused && !window.livePlayer._fp) {
-            playPauseBtn.style.opacity = "0";
-            setTimeout(() => {
-              playPauseBtn.style.display = "none";
-            }, 300);
-          } else if (window.livePlayer && window.livePlayer._fp && window.livePlayer._fp.playing) {
-            playPauseBtn.style.opacity = "0";
-            setTimeout(() => {
-              playPauseBtn.style.display = "none";
-            }, 300);
-          }
-        }, 1500);
+        icon.className = "fa-solid fa-pause";
       } else {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
+        icon.className = "fa-solid fa-play";
       }
     }
+    
+    // Always show button - let LiveTvPage handle hiding
+    playPauseBtn.style.display = "flex";
+    playPauseBtn.style.opacity = "1";
   }
+}
 
   
 
@@ -421,21 +410,18 @@ fp.on("resume", () => {
   if (errorEl) errorEl.classList.add("hidden");
   updateAspectRatioButtonVisibility();
   
-  // Remove/Hide any internal waiting overlays just in case
   const fpWaiting = fpContainer.querySelector('.fp-waiting');
   if (fpWaiting) fpWaiting.style.display = 'none';
   const vLoader = document.querySelector(".live-video-loader");
   if (vLoader) vLoader.classList.add("hidden");
   updatePlayPauseIcon(true);
   
-  // Auto-hide top overlays after 5 seconds
+  // Trigger auto-hide from LiveTvPage if function exists
   setTimeout(() => {
-    const topOverlays = document.querySelector(".live-top-overlays");
-    if (topOverlays) {
-      topOverlays.style.opacity = "0";
-      topOverlays.style.transition = "opacity 0.5s ease";
+    if (typeof window.startVideoControlsHideTimer === "function") {
+      window.startVideoControlsHideTimer();
     }
-  }, 5000);
+  }, 100);
 });
         fp.on("pause", () => {
           if (loadingEl) loadingEl.classList.add("hidden");
@@ -548,13 +534,12 @@ window.livePlayer.on("playing", () => {
   updateAspectRatioButtonVisibility();
   updatePlayPauseIcon(true);
   
+  // Auto-hide only aspect ratio button after 3 seconds
   setTimeout(() => {
-    const topOverlays = document.querySelector(".live-top-overlays");
-    if (topOverlays) {
-      topOverlays.style.opacity = "0";
-      topOverlays.style.transition = "opacity 0.5s ease";
+    if (typeof window.startVideoControlsHideTimer === "function") {
+      window.startVideoControlsHideTimer();
     }
-  }, 5000);
+  }, 100);
 });
 
         window.livePlayer.on("pause", () => {
@@ -736,6 +721,23 @@ const handleAspectRatioChange = () => {
   if (videoEl && window.VideoAspectRatio) {
     const newLabel = window.VideoAspectRatio.cycle(videoEl);
     window.VideoAspectRatio.showOverlay(newLabel);
+    
+    // Show aspect ratio button again
+    const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+    if (aspectRatioDiv) {
+      aspectRatioDiv.style.display = "block";
+      aspectRatioDiv.style.opacity = "1";
+      
+      // Auto-hide again after 3 seconds
+      setTimeout(() => {
+        if (window.livePlayer && (!window.livePlayer.paused || (window.livePlayer._fp && window.livePlayer._fp.playing))) {
+          aspectRatioDiv.style.opacity = "0";
+          setTimeout(() => {
+            aspectRatioDiv.style.display = "none";
+          }, 300);
+        }
+      }, 3000);
+    }
   } else {
     console.warn("Aspect ratio handler: No video element or VideoAspectRatio module found");
   }

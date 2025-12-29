@@ -79,6 +79,8 @@ function LiveTvPage() {
   // ===== API DATA (NEW) =====
   const categories = window.liveCategories || [];
   const allStreams = window.allLiveStreams || [];
+  let videoControlsHideTimer = null; // Timer for auto-hiding video controls
+
 
 
     // ===== LOADING HELPERS =====
@@ -366,6 +368,18 @@ const applySortingToChannels = (channels) => {
   let inPasswordModal = false;
   let pendingChannel = null; // Store channel data when password is required
   let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
+
+
+
+  const showAspectRatioButton = () => {
+  const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+  if (aspectRatioDiv) {
+    aspectRatioDiv.style.display = "block";
+    aspectRatioDiv.style.opacity = "1";
+    aspectRatioDiv.style.transition = "opacity 0.3s ease";
+  }
+};
+
 
   // Add this at the TOP of your LiveTvPage function (after the state variables)
 
@@ -2033,6 +2047,93 @@ if (favBtn || isFavClick) {
     }
   }
 
+
+  // Show both play button and aspect ratio button
+// Show both play button and aspect ratio button
+const showVideoControls = () => {
+  const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+  const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+  
+  if (playPauseBtn) {
+    playPauseBtn.style.display = "flex";
+    playPauseBtn.style.opacity = "1";
+    playPauseBtn.style.transition = "opacity 0.3s ease";
+  }
+  
+  if (aspectRatioDiv) {
+    aspectRatioDiv.style.display = "block";
+    aspectRatioDiv.style.opacity = "1";
+    aspectRatioDiv.style.transition = "opacity 0.3s ease";
+  }
+  
+  // Always restart auto-hide timer
+  startVideoControlsHideTimer();
+};
+
+// Make it globally accessible
+window.showVideoControls = showVideoControls;
+
+// Start timer to auto-hide video controls after 3 seconds
+// Start timer to auto-hide video controls after 3 seconds
+const startVideoControlsHideTimer = () => {
+  // Clear any existing timer
+  if (videoControlsHideTimer) {
+    clearTimeout(videoControlsHideTimer);
+    videoControlsHideTimer = null;
+  }
+  
+  videoControlsHideTimer = setTimeout(() => {
+    // Check if video is playing
+    let isPlaying = false;
+    if (window.livePlayer) {
+      try {
+        if (window.livePlayer._fp) {
+          isPlaying = window.livePlayer._fp.playing;
+        } else {
+          isPlaying = window.livePlayer.paused ? !window.livePlayer.paused() : false;
+        }
+      } catch (err) {
+        console.warn("Error checking play state:", err);
+      }
+    }
+    
+    // Only hide if video is playing
+    if (isPlaying) {
+      const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+      const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+      
+      if (playPauseBtn) {
+        playPauseBtn.style.opacity = "0";
+        playPauseBtn.style.transition = "opacity 0.3s ease";
+        setTimeout(() => {
+          playPauseBtn.style.display = "none";
+        }, 300);
+      }
+      
+      if (aspectRatioDiv) {
+        aspectRatioDiv.style.opacity = "0";
+        aspectRatioDiv.style.transition = "opacity 0.3s ease";
+        setTimeout(() => {
+          aspectRatioDiv.style.display = "none";
+        }, 300);
+      }
+    }
+    
+    videoControlsHideTimer = null;
+  }, 3000);
+};
+
+
+window.startVideoControlsHideTimer = startVideoControlsHideTimer;
+
+// Stop auto-hide timer
+const stopVideoControlsHideTimer = () => {
+  if (videoControlsHideTimer) {
+    clearTimeout(videoControlsHideTimer);
+    videoControlsHideTimer = null;
+  }
+};
+
   // KEY NAVIGATION
   function handleKeydown(e) {
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
@@ -2222,214 +2323,231 @@ if (isMenuDotsActive) {
     }
 
     // If user is in video player area
-    if (inVideoPlayer) {
-      const videoDiv = qs(".live-video-player-div");
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+   // If user is in video player area
+if (inVideoPlayer) {
+  const videoDiv = qs(".live-video-player-div");
+  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
 
-      if (isUp) {
-        inVideoPlayer = false;
-        inChannelGrid = true;
-        if (videoDiv) {
-          videoDiv.classList.remove("video-focused");
-          videoDiv.style.outline = "none";
-          videoDiv.style.border = "none";
-        }
-        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-        if (aspectBtn) aspectBtn.style.border = "none";
-        focusedChannelIndex = 0;
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
+  // Show controls whenever user navigates in video area
+  showVideoControls();
 
-      if (isDown) {
-        // Go to play/pause button
-        inVideoPlayer = false;
-        inPlayPauseBtn = true;
-        if (videoDiv) {
-          videoDiv.style.outline = "none";
-          videoDiv.style.border = "none";
-        }
-        if (playPauseBtn) {
-          playPauseBtn.style.display = "flex";
-          playPauseBtn.style.opacity = "1";
-          playPauseBtn.classList.add("focused");
-        }
-        e.preventDefault();
-        return;
-      }
-
-    if (isEnter) {
-  // Toggle fullscreen on video container
-  if (videoDiv) {
-    try {
-      if (!document.fullscreenElement && 
-          !document.webkitFullscreenElement && 
-          !document.mozFullScreenElement && 
-          !document.msFullscreenElement) {
-        // Enter fullscreen - try different methods for TV compatibility
-        if (videoDiv.requestFullscreen) {
-          videoDiv.requestFullscreen();
-        } else if (videoDiv.webkitRequestFullscreen) {
-          videoDiv.webkitRequestFullscreen();
-        } else if (videoDiv.mozRequestFullScreen) {
-          videoDiv.mozRequestFullScreen();
-        } else if (videoDiv.msRequestFullscreen) {
-          videoDiv.msRequestFullscreen();
-        }
-      } else {
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
-      }
-    } catch (err) {
-      console.error("Fullscreen error:", err);
+  if (isUp) {
+    inVideoPlayer = false;
+    inChannelGrid = true;
+    stopVideoControlsHideTimer(); // Stop timer when leaving video
+    if (videoDiv) {
+      videoDiv.classList.remove("video-focused");
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
     }
+    if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+    if (aspectBtn) aspectBtn.style.border = "none";
+    focusedChannelIndex = 0;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
   }
-  e.preventDefault();
+
+  if (isDown) {
+    // Go to play/pause button
+    inVideoPlayer = false;
+    inPlayPauseBtn = true;
+    showVideoControls(); // Show controls when moving to play button
+    if (videoDiv) {
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
+    }
+    if (playPauseBtn) {
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+      playPauseBtn.classList.add("focused");
+    }
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    // Click on video container to enter fullscreen
+    if (videoDiv) {
+      try {
+        if (!document.fullscreenElement && 
+            !document.webkitFullscreenElement && 
+            !document.mozFullScreenElement && 
+            !document.msFullscreenElement) {
+          // Enter fullscreen - try different methods for TV compatibility
+          if (videoDiv.requestFullscreen) {
+            videoDiv.requestFullscreen();
+          } else if (videoDiv.webkitRequestFullscreen) {
+            videoDiv.webkitRequestFullscreen();
+          } else if (videoDiv.mozRequestFullScreen) {
+            videoDiv.mozRequestFullScreen();
+          } else if (videoDiv.msRequestFullscreen) {
+            videoDiv.msRequestFullscreen();
+          }
+        } else {
+          // Exit fullscreen
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+      } catch (err) {
+        console.error("Fullscreen error:", err);
+      }
+    }
+    showVideoControls(); // Show controls on any interaction
+    e.preventDefault();
+    return;
+  }
+
+  if (isRight) {
+    // Go to EPG list
+    inVideoPlayer = false;
+    inEPG = true;
+    stopVideoControlsHideTimer(); // Stop timer when leaving video
+    if (videoDiv) {
+      videoDiv.classList.remove("video-focused");
+      videoDiv.style.outline = "none";
+      videoDiv.style.border = "none";
+    }
+    if (aspectBtn) aspectBtn.style.border = "none";
+    focusedEPGIndex = 0;
+    const epgItems = qsa(".epg-item");
+    if (epgItems.length) {
+      epgItems[0].classList.add("epg-focused");
+      epgItems[0].scrollIntoView({ block: "nearest" });
+    }
+    e.preventDefault();
+    return;
+  }
+
   return;
 }
 
-      if (isRight) {
-        // Go to EPG list
-        inVideoPlayer = false;
-        inEPG = true;
-        if (videoDiv) {
-          videoDiv.classList.remove("video-focused");
-          videoDiv.style.outline = "none";
-          videoDiv.style.border = "none";
-        }
-        if (aspectBtn) aspectBtn.style.border = "none";
-        focusedEPGIndex = 0;
-        const epgItems = qsa(".epg-item");
-        if (epgItems.length) {
-          epgItems[0].classList.add("epg-focused");
-          epgItems[0].scrollIntoView({ block: "nearest" });
-        }
-        e.preventDefault();
-        return;
-      }
-
-      return;
-    }
-
     // Play/Pause button navigation
-    if (inPlayPauseBtn) {
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const videoDiv = qs(".live-video-player-div");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+   if (inPlayPauseBtn) {
+  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+  const videoDiv = qs(".live-video-player-div");
+  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
 
-      if (isUp) {
-        // Go back to video container
-        inPlayPauseBtn = false;
-        inVideoPlayer = true;
-        if (playPauseBtn) {
-          playPauseBtn.classList.remove("focused");
-          playPauseBtn.style.display = "flex";
-          playPauseBtn.style.opacity = "1";
-        }
-        if (videoDiv) {
-          videoDiv.classList.add("video-focused");
-          videoDiv.style.border = "3px solid #0ea5e9";
-          videoDiv.style.boxSizing = "border-box";
-          videoDiv.style.outline = "3px solid #0ea5e9";
-          videoDiv.style.outlineOffset = "-3px";
-        }
-        e.preventDefault();
-        return;
-      }
+  // Show controls on any navigation
+  showVideoControls();
 
-      if (isDown) {
-        // Go to aspect ratio button
-        inPlayPauseBtn = false;
-        inAspectRatioBtn = true;
-        if (playPauseBtn) playPauseBtn.classList.remove("focused");
-        if (aspectBtn) {
-          aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
-          aspectBtn.style.border = "3px solid var(--gold)";
-          aspectBtn.scrollIntoView({ block: "nearest" });
-        }
-        e.preventDefault();
-        return;
-      }
+  if (isUp) {
+    // Go back to video container
+    inPlayPauseBtn = false;
+    inVideoPlayer = true;
+    if (playPauseBtn) {
+      playPauseBtn.classList.remove("focused");
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+    }
+    if (videoDiv) {
+      videoDiv.classList.add("video-focused");
+      videoDiv.style.border = "3px solid #0ea5e9";
+      videoDiv.style.boxSizing = "border-box";
+      videoDiv.style.outline = "3px solid #0ea5e9";
+      videoDiv.style.outlineOffset = "-3px";
+    }
+    e.preventDefault();
+    return;
+  }
 
-      if (isEnter) {
-        // Toggle play/pause
-        if (window.livePlayer) {
-          try {
-            if (window.livePlayer._fp) {
-              const fp = window.livePlayer._fp;
-              if (fp.playing) {
-                fp.pause();
-              } else {
-                fp.resume();
-              }
-            } else {
-              if (window.livePlayer.paused()) {
-                window.livePlayer.play();
-              } else {
-                window.livePlayer.pause();
-              }
-            }
-          } catch (err) {
-            console.warn("Play/Pause toggle failed:", err);
+  if (isDown) {
+    // Go to aspect ratio button
+    inPlayPauseBtn = false;
+    inAspectRatioBtn = true;
+    if (playPauseBtn) playPauseBtn.classList.remove("focused");
+    if (aspectBtn) {
+      aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
+      aspectBtn.style.border = "3px solid var(--gold)";
+      aspectBtn.scrollIntoView({ block: "nearest" });
+    }
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    // Toggle play/pause
+    if (window.livePlayer) {
+      try {
+        if (window.livePlayer._fp) {
+          const fp = window.livePlayer._fp;
+          if (fp.playing) {
+            fp.pause();
+          } else {
+            fp.resume();
           }
         } else {
-          togglePlayPause();
+          if (window.livePlayer.paused()) {
+            window.livePlayer.play();
+          } else {
+            window.livePlayer.pause();
+          }
         }
-        e.preventDefault();
-        return;
+      } catch (err) {
+        console.warn("Play/Pause toggle failed:", err);
       }
+    } else {
+      togglePlayPause();
     }
+    showVideoControls(); // Show controls on interaction
+    e.preventDefault();
+    return;
+  }
+}
 
     // Aspect ratio button navigation
-    if (inAspectRatioBtn) {
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+  if (inAspectRatioBtn) {
+  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
 
-      if (isUp) {
-        inAspectRatioBtn = false;
-        inPlayPauseBtn = true;
-        if (aspectBtn) {
-          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-          aspectBtn.style.border = "none";
-        }
-        if (playPauseBtn) {
-          playPauseBtn.classList.add("focused");
-          playPauseBtn.style.display = "flex";
-          playPauseBtn.style.opacity = "1";
-        }
-        e.preventDefault();
-        return;
-      }
+  // Show controls on any navigation
+  showVideoControls();
 
-      if (isDown) {
-        inAspectRatioBtn = false;
-        inEPG = true;
-        if (aspectBtn) aspectBtn.style.border = "none";
-        focusedEPGIndex = 0;
-        const epgItems = qsa(".epg-item");
-        if (epgItems.length) {
-          epgItems[0].classList.add("epg-focused");
-        }
-        e.preventDefault();
-        return;
-      }
-
-      if (isEnter) {
-        toggleAspectRatio();
-        e.preventDefault();
-        return;
-      }
+  if (isUp) {
+    inAspectRatioBtn = false;
+    inPlayPauseBtn = true;
+    if (aspectBtn) {
+      aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+      aspectBtn.style.border = "none";
     }
+    if (playPauseBtn) {
+      playPauseBtn.classList.add("focused");
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+    }
+    e.preventDefault();
+    return;
+  }
+
+  if (isDown) {
+    inAspectRatioBtn = false;
+    inEPG = true;
+    stopVideoControlsHideTimer(); // Stop timer when leaving video controls
+    if (aspectBtn) aspectBtn.style.border = "none";
+    focusedEPGIndex = 0;
+    const epgItems = qsa(".epg-item");
+    if (epgItems.length) {
+      epgItems[0].classList.add("epg-focused");
+    }
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    toggleAspectRatio();
+    showVideoControls(); // Show controls and restart timer
+    e.preventDefault();
+    return;
+  }
+}
 
     // HEADER SEARCH BOX NAVIGATION
     if (inHeaderSearch) {
@@ -2697,6 +2815,8 @@ return; // Allow other keys
         inVideoPlayer = true;
         inPlayPauseBtn = false;
         inAspectRatioBtn = false;
+          showVideoControls(); // Show controls when entering video from EPG
+
         const videoDiv = qs(".live-video-player-div");
         const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
         const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
@@ -2943,6 +3063,8 @@ return; // Allow other keys
     inPlayPauseBtn = false;
     inAspectRatioBtn = false;
     channels.forEach((c) => c.classList.remove("channel-card-focused"));
+      showAspectRatioButton();
+
     const videoDiv = qs(".live-video-player-div");
     const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
     const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
@@ -3100,6 +3222,10 @@ return; // Allow other keys
       document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeydown);
       document.removeEventListener("keydown", menuKeyHandler); // ADD THIS LINE
+
+
+        stopVideoControlsHideTimer();
+
 
       const modal = document.getElementById("passwordModalOverlay");
       if (modal) {
