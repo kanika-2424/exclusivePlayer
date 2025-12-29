@@ -1189,7 +1189,7 @@ video {
 
 video,
 .vjs-tech,
-#live-videojs-player,
+
 #live-videojs-player_html5_api {
   display: block !important;
   visibility: visible !important;
@@ -1328,10 +1328,20 @@ video,
   left: 50%;
   transform: translate(-50%, -50%);
   -webkit-transform: translate(-50%, -50%);
-  z-index: 99999 !important; /* Lower than controls but visible */
-  background-color: black !important; /* Changed from #000 */
+
+  width: 80px;          /* 👈 REQUIRED */
+  height: 80px;         /* 👈 REQUIRED */
+  border-radius: 50%;   /* 👈 MAKES IT CIRCLE */
+
+  background-color: black !important;
+  z-index: 99999 !important;
   pointer-events: none;
+
+  display: flex;        /* optional: center icon/spinner */
+  align-items: center;
+  justify-content: center;
 }
+
 
 /* 13. Video controls z-index management */
 .videojs-aspect-ratio-div {
@@ -1498,9 +1508,32 @@ video {
 /* 28. Explicit video element display */
 .live-video-player video,
 .live-video-player-div video,
-#live-videojs-player,
+
 #live-videojs-player video {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+
+
+
+#videojs-fullscreen{
+   /* position: absolute;
+  top: 50%;
+  left: 50%; */
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 24px;
+  z-index: 1000;
+  pointer-events: none;
+}
+.ideojs-fullscreen-btn .focus{
+ border: 3px solid #0ea5e9 !important;
+  outline: 3px solid #0ea5e9 !important;
+  outline-offset: 2px;
+}
+
