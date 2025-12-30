@@ -168,7 +168,129 @@ episodeId: episodeId.toString(),
       return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     }
   }
+let pendingSeekTimeout = null;
+let accumulatedSeekOffset = 0;
+let lastSeekTime = 0;
+let pendingResumeTimeout = null;
 
+
+  // 🔴 Debounced seek function to prevent buffer overload on low-RAM devices
+function debouncedSeek(offset) {
+  // Clear any pending seek operation
+  if (pendingSeekTimeout) {
+    clearTimeout(pendingSeekTimeout);
+    pendingSeekTimeout = null;
+  }
+
+  // Clear any pending resume timeout
+  if (pendingResumeTimeout) {
+    clearTimeout(pendingResumeTimeout);
+    pendingResumeTimeout = null;
+  }
+
+  // Accumulate the seek offset
+  accumulatedSeekOffset += offset;
+
+  // Store play state before seeking (only once per seek session)
+  const isFirstSeek = pendingSeekTimeout === null;
+  if (isFirstSeek) {
+    wasPlayingBeforeSeek = !player.paused();
+    if (wasPlayingBeforeSeek && !userManuallyPaused) {
+      player.pause();
+    }
+  }
+
+  // 🔴 IMMEDIATELY update seek bar for smooth visual feedback
+  const seekBar = document.getElementById("customSeek");
+
+  // Show loading indicator immediately when seeking starts
+  const loadingEl = document.querySelector(".video-buffer-loader");
+  if (loadingEl && !errorActive) {
+    loadingEl.classList.remove("hidden");
+  }
+
+  if (seekBar && player && player.currentTime) {
+    try {
+      const currentTime = player.currentTime();
+      const duration = player.duration();
+      const newTime = Math.max(
+        0,
+        Math.min(duration, currentTime + accumulatedSeekOffset)
+      );
+      seekBar.value = newTime;
+
+      // Update time display immediately too
+      if (currentTimeEl) {
+        currentTimeEl.textContent = formatTime(newTime);
+      }
+
+      // Update seek bar background gradient
+      const percent = (newTime / duration) * 100;
+      let bufferedPercent = 0;
+      if (player.buffered().length > 0) {
+        bufferedPercent =
+          (player.buffered().end(player.buffered().length - 1) / duration) *
+          100;
+      }
+      seekBar.style.background = `linear-gradient(to right,
+        var(--gold) 0%, var(--gold) ${percent}%,
+        #aaa ${percent}%, #aaa ${bufferedPercent}%,
+        #888 ${bufferedPercent}%, #888 100%)`;
+    } catch (err) {
+      // Ignore errors during immediate update
+    }
+  }
+
+  // Set a new timeout to execute the seek after 300ms of no input
+  pendingSeekTimeout = setTimeout(() => {
+    if (!player || !player.currentTime || errorActive) {
+      accumulatedSeekOffset = 0;
+      return;
+    }
+
+    try {
+      const currentTime = player.currentTime();
+      const duration = player.duration();
+      const newTime = Math.max(
+        0,
+        Math.min(duration, currentTime + accumulatedSeekOffset)
+      );
+
+      // Execute the accumulated seek
+      player.currentTime(newTime);
+
+      // Update seek bar
+      const seekBar = document.getElementById("customSeek");
+      if (seekBar) {
+        seekBar.value = newTime;
+      }
+
+      // Show appropriate overlay
+      if (accumulatedSeekOffset > 0) {
+        showOverlay("forward");
+      } else if (accumulatedSeekOffset < 0) {
+        showOverlay("backward");
+      }
+
+      // Reset accumulated offset
+      accumulatedSeekOffset = 0;
+
+      // Resume playback if it was playing before
+      if (wasPlayingBeforeSeek && !userManuallyPaused) {
+        pendingResumeTimeout = setTimeout(() => {
+          player.play().catch((err) => {
+            console.log("Resume after debounced seek failed:", err);
+          });
+        }, 200);
+      }
+    } catch (err) {
+      console.warn("Debounced seek error:", err);
+      accumulatedSeekOffset = 0;
+    }
+
+    pendingSeekTimeout = null;
+  }, 300); // Wait 300ms after last input before executing seek
+}
   function updateVolume(direction) {
     if (typeof window.tizen !== "undefined" && window.tizen.tvaudiocontrol) {
       let currentVolume = window.tizen.tvaudiocontrol.getVolume();
@@ -1093,8 +1215,8 @@ if (isAspectRatioFocused) {
                     player.pause();
                   }
                   
-                  const newTime = Math.max(0, player.currentTime() - 10);
-                  player.currentTime(newTime);
+                               debouncedSeek(-10);
+
                   showOverlay("backward");
                   seekBar.value = newTime;
                   
@@ -1120,8 +1242,10 @@ if (isAspectRatioFocused) {
                     player.pause();
                   }
                   
-                  const newTime = Math.min(player.duration(), player.currentTime() + 10);
-                  player.currentTime(newTime);
+                  // const newTime = Math.min(player.duration(), player.currentTime() + 10);
+                  // player.currentTime(newTime);
+                  debouncedSeek(10);
+                  
                   showOverlay("forward");
                   seekBar.value = newTime;
                   
@@ -1204,7 +1328,8 @@ if (isAspectRatioFocused) {
                   player.pause();
                 }
                 
-                player.currentTime(player.currentTime() + 10);
+              debouncedSeek(10);
+             
                 showOverlay("forward");
                 
                 // Only resume if it was playing AND not manually paused
@@ -1228,7 +1353,8 @@ if (isAspectRatioFocused) {
                   player.pause();
                 }
                 
-                player.currentTime(player.currentTime() - 10);
+                             debouncedSeek(-10);
+
                 showOverlay("backward");
                 
                 // Only resume if it was playing AND not manually paused
@@ -1275,7 +1401,8 @@ if (isAspectRatioFocused) {
                 player.pause();
               }
               
-              player.currentTime(player.currentTime() + 10);
+                  debouncedSeek(10);
+             
               showOverlay("forward");
               
               // Only resume if it was playing
@@ -1299,7 +1426,8 @@ if (isAspectRatioFocused) {
                 player.pause();
               }
               
-              player.currentTime(player.currentTime() - 10);
+                          debouncedSeek(-10);
+
               showOverlay("backward");
               
               // Only resume if it was playing
