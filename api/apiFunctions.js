@@ -85,9 +85,12 @@ async function loginApi(
   //  let alldns = JSON.parse(localStorage.getItem("all_dns")) || [];
  
 
-  // const defaultDns = "http://nubiatv.live/";
+  // const defaultDns = "http://nubiatv.live/";z
     const defaultDns = "http://mega2025.site:8080/";
-  let alldns = [];
+
+   let alldns = JSON.parse(localStorage.getItem("all_dns")) || [];
+
+  // let alldns = [];
 
 
   if (alldns.length === 0) {

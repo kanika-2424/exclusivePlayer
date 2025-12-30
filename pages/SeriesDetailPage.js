@@ -1489,10 +1489,19 @@ function handleRemoteNavigation(e) {
         setFocusOnButton(0);
         return;
       }
-      if (currentSection === "buttons") {
-        setFocusOnSeason();
-        return;
-      }
+    if (currentSection === "buttons") {
+    // ⭐ FIXED: Just focus the season button, don't open dropdown
+    removeAllFocus();
+    currentSection = "seasons";
+    const seasonDropdown = container.querySelector(".season-dropdown");
+    if (seasonDropdown) {
+      seasonDropdown.classList.add("focused");
+      try { 
+        seasonDropdown.scrollIntoView({ behavior: "smooth", block: "center" }); 
+      } catch(e){}
+    }
+    return;
+  }
       if (currentSection === "seasons") {
         if (episodes.length > 0) {
           currentFocusIndex = 0;
@@ -1643,6 +1652,11 @@ function handleRemoteNavigation(e) {
 
   if (!wrapper || !btn || !menu) return;
 
+    const backdrop = document.createElement('div');
+  backdrop.className = 'season-backdrop';
+  backdrop.id = 'season-backdrop';
+  document.body.appendChild(backdrop);
+
   // Populate menu from seriesData.seasons (safe fallback)
   const seasons = Array.isArray(seriesData.seasons) && seriesData.seasons.length
     ? seriesData.seasons
@@ -1670,6 +1684,8 @@ function handleRemoteNavigation(e) {
     btn.classList.add("open");
     btn.setAttribute("aria-expanded", "true");
     menu.classList.remove("hidden");
+      backdrop.classList.add("active"); // ⭐ ADD THIS LINE
+
 
      const h = menu.offsetHeight;
   wrapper.style.setProperty("--dropdown-height", `${h + 15}px`);
@@ -1690,6 +1706,7 @@ function handleRemoteNavigation(e) {
     btn.setAttribute("aria-expanded", "false");
     menu.classList.add("hidden");
       wrapper.style.removeProperty("--dropdown-height");
+  backdrop.classList.remove("active"); // ⭐ ADD THIS LINE
 
 
 
@@ -1699,6 +1716,13 @@ function handleRemoteNavigation(e) {
     // return focus to the button
     btn.focus();
   }
+
+  // ⭐ CLOSE DROPDOWN WHEN CLICKING BACKDROP
+backdrop.addEventListener("click", () => {
+  if (!menu.classList.contains("hidden")) {
+    closeMenu();
+  }
+});
 
   // toggle on button click
   btn.addEventListener("click", (ev) => {
@@ -1735,47 +1759,62 @@ function handleRemoteNavigation(e) {
     items[focusedIndex].scrollIntoView({ block: "nearest" });
   }
 
-  document.addEventListener("keydown", function seasonMenuKeyHandler(e) {
-    // if menu closed, allow Enter on button to open
-    if (!menu || !btn) return;
-    const isOpen = !menu.classList.contains("hidden");
+document.addEventListener("keydown", function seasonMenuKeyHandler(e) {
+  if (!menu || !btn) return;
+  
+  // ⭐ CRITICAL: Only handle if season dropdown is open OR if we're in seasons section
+  const isOpen = !menu.classList.contains("hidden");
+  const isSeasonButtonFocused = currentSection === "seasons";
+  
+  // ⭐ If dropdown is closed and we're NOT in seasons section, don't handle anything
+  if (!isOpen && !isSeasonButtonFocused) return;
 
-    if (isOpen) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const items = menu.querySelectorAll(".season-dropdown-item");
-        if (focusedIndex < items.length - 1) focusedIndex++;
-        updateItemFocus();
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (focusedIndex > 0) focusedIndex--;
-        updateItemFocus();
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const items = menu.querySelectorAll(".season-dropdown-item");
-        const item = items[focusedIndex];
-        if (item) item.click();
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeMenu();
-        return;
-      }
-    } else {
-      // menu closed: open with Enter / ArrowDown when season button focused
-      const activeEl = document.activeElement;
-      if (activeEl === btn && (e.key === "Enter" || e.key === "ArrowDown")) {
-        e.preventDefault();
-        openMenu();
-      }
+  if (isOpen) {
+    // ⭐ HANDLE BACK/RETURN KEY - CLOSE DROPDOWN
+    if (
+      e.keyCode === 10009 ||
+      e.keyCode === 27 ||
+      e.key === "Escape" ||
+      e.key === "Back" ||
+      e.key === "BrowserBack" ||
+      e.key === "XF86Back"
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      closeMenu();
+      return;
     }
-  });
 
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const items = menu.querySelectorAll(".season-dropdown-item");
+      if (focusedIndex < items.length - 1) focusedIndex++;
+      updateItemFocus();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (focusedIndex > 0) focusedIndex--;
+      updateItemFocus();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const items = menu.querySelectorAll(".season-dropdown-item");
+      const item = items[focusedIndex];
+      if (item) item.click();
+      return;
+    }
+  } else {
+    // ⭐ Menu closed: only open with Enter when we're in seasons section
+    if (isSeasonButtonFocused && e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      openMenu();
+    }
+  }
+}, true); // Use capture phase
   // close when clicking outside
   document.addEventListener("click", function onDocClick(ev) {
     if (!wrapper.contains(ev.target)) {
@@ -1791,6 +1830,8 @@ function handleRemoteNavigation(e) {
 
   document.addEventListener("keydown", handleRemoteNavigation);
 
+  
+
   // cleanup function
 SeriesDetailPage.cleanup = function () {
   // remove listeners
@@ -1805,6 +1846,11 @@ SeriesDetailPage.cleanup = function () {
 
    const backdrop = document.getElementById('cast-backdrop');
   if (backdrop) backdrop.remove();
+
+
+   const seasonBackdrop = document.getElementById('season-backdrop');
+  if (seasonBackdrop) seasonBackdrop.remove();
+
 
    const sortingDialog = document.querySelector('.sorting-dialog-container');
   if (sortingDialog) {

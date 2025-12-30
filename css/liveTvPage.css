@@ -1153,8 +1153,8 @@
 }
 
 .loading-logo {
-  width: 200px;
-  height: 200px;
+  width: 400px;
+  height: 300px;
   animation: pulse 2s ease-in-out infinite;
   margin-bottom: 40px;
 }

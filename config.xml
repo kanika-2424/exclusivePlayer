@@ -4,7 +4,7 @@
     <tizen:application id="xKU9qfnKOU.ExclusiveTvApp" package="xKU9qfnKOU" required_version="2.3"/>
     <content src="index.html"/>
     <feature name="http://tizen.org/feature/screen.size.normal.1080.1920"/>
-    <icon src="icon.png"/>
+    <icon src="logo.png"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/prelaunch.support" value="true"/>
     <tizen:metadata key="http://tizen.org/metadata/app_ui_type/base_screen_resolution" value="extensive"/>
     <name>ExclusiveTvApp</name>
