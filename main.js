@@ -230,6 +230,8 @@ Toaster(); // Initialize Toaster
 // -------------------------
 
 if (isLogin && selectedPlaylist) {
+
+  showLoader();
   // User already logged in with playlist
   console.log("✅ User is logged in, loading dashboard...");
 
@@ -297,6 +299,8 @@ if (isLogin && selectedPlaylist) {
           if (loadingOverlay) {
             loadingOverlay.classList.add("hidden");
           }
+
+          hideLoader(); 
           resetLoadingPercentage();
           
           // Set current page and navigate to dashboard
@@ -445,4 +449,45 @@ function showSplashScreen() {
   allPages.forEach((page) => {
     if (page.id !== "splash-page") page.style.display = "none";
   });
+}
+
+function showGlobalLoader(text = "Loading, please wait…") {
+  const loader = document.getElementById("global-loader");
+  if (!loader) return;
+  loader.querySelector(".loader-text").innerText = text;
+  loader.classList.remove("hidden");
+}
+
+function hideGlobalLoader() {
+  const loader = document.getElementById("global-loader");
+  if (!loader) return;
+  loader.classList.add("hidden");
+}
+
+
+const LoadingScreen = () => {
+  return `
+    <div class="livetv-loading-overlay" id="LoadingOverlay">
+      <div class="loading-content">
+        <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Dashboard</div>
+        <div class="loading-subtext">Please wait while we load your dashboard...</div>
+      </div>
+    </div>
+  `;
+};
+
+function showLoader() {
+  if (document.getElementById("LoadingOverlay")) return;
+
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    LoadingScreen()
+  );
+}
+
+function hideLoader() {
+  const loader = document.getElementById("LoadingOverlay");
+  if (loader) loader.remove();
 }
