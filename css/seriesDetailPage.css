@@ -62,7 +62,7 @@
   gap: 12px;
   cursor: pointer;
   outline: none;
-  transition: transform .15s ease;
+  /* transition: transform .15s ease; */
 }
 
 /* slight lift on hover/focus */
@@ -81,7 +81,7 @@
 }
 
 .dropdown-arrow {
-  transition: transform .25s ease;
+  /* transition: transform .25s ease; */
   font-size: 18px;
 }
 
@@ -126,7 +126,7 @@
   cursor: pointer;
   display: flex;
   justify-content: space-between;
-  transition: background .15s ease, transform .12s ease;
+  /* transition: background .15s ease, transform .12s ease; */
 }
 
 /* Hover + Keyboard Focus */
@@ -191,7 +191,7 @@
   min-width: calc((100% - 48px) / 3);
   background: transparent;
   border-radius: 12px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   cursor: pointer;
   border: 3px solid transparent;
 }
@@ -348,7 +348,7 @@ margin-right: 8px;
 .cast-button {
   background: transparent;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   color: white;
 }
 
@@ -368,7 +368,7 @@ margin-right: 8px;
 .cast-button .cast-arrow {
   margin-left: 8px;
   font-size: 16px;
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .cast-button.open .cast-arrow {
@@ -504,7 +504,7 @@ margin-right: 8px;
   object-fit: cover;
   margin-bottom: 10px;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease;
+  /* transition: border-color 0.2s ease; */
 }
 
 .cast-dropdown-card:hover .cast-image,
@@ -634,7 +634,7 @@ margin-right: 8px;
 .episode-progress-fill {
   height: 100%;
   background: #0099ff;
-  transition: width 0.3s ease;
+  /* transition: width 0.3s ease; */
 }
 
 
@@ -645,7 +645,7 @@ margin-right: 8px;
 .from-start-button {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .from-start-button:hover,
@@ -700,7 +700,7 @@ margin-right: 8px;
     text-decoration: none;
     font-size: 16px;
     border-radius: 8px;
-    transition: background 0.3s;
+    /* transition: background 0.3s; */
 }
 
 .sidebar-link:hover,
@@ -731,7 +731,7 @@ margin-right: 8px;
     padding: 8px;
     display: flex;
     gap: 4px;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
 }
 
 .menu-dots:hover,
@@ -798,7 +798,7 @@ margin-right: 8px;
   font-weight: bold;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   outline: none;
 }
 

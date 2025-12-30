@@ -176,6 +176,11 @@ case 'videoJsPlayer':
             this.currentPage = 'Playlist';
             localStorage.setItem('currentPage', 'playlist');
         }
+
+
+
+
+        
     } else {
         // fallback to login if no users
         pageElement = document.getElementById('login-page');

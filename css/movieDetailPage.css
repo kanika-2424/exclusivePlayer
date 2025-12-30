@@ -93,7 +93,7 @@
   cursor: pointer;
   flex-shrink: 0;
   padding-top: 5px;
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .favorite-heart:hover {
@@ -248,7 +248,7 @@
   height: 370px;
   object-fit: cover;
   border-radius: 15px;
-  transition: transform 0.3s ease, border 0.3s ease;
+  /* transition: transform 0.3s ease, border 0.3s ease; */
 }
 
 .cast-card.focused .cast-image {
@@ -269,7 +269,7 @@
   border: none;
   display: flex;
   align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  /* transition: transform 0.3s ease, box-shadow 0.3s ease; */
   cursor: pointer;
 }
 
@@ -317,7 +317,7 @@
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
-  transition: background 0.3s ease;
+  /* transition: background 0.3s ease; */
 }
 
 .menu-dots .dot {
@@ -325,7 +325,7 @@
   height: 6px;
   background: white;
   border-radius: 50%;
-  transition: background 0.3s ease;
+  /* transition: background 0.3s ease; */
 }
 
 .menu-dots.menu-focused .dot {
@@ -379,7 +379,7 @@
     text-decoration: none;
     font-size: 16px;
     border-radius: 8px;
-    transition: background 0.3s;
+    /* transition: background 0.3s; */
 }
 
 .sidebar-link:hover,
@@ -410,7 +410,7 @@
     padding: 8px;
     display: flex;
     gap: 4px;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
 }
 
 .menu-dots:hover,

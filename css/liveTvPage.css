@@ -127,7 +127,7 @@
     cursor: pointer;
     padding: 10px;
     border-radius: 8px;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
 }
 
 .menu-dots .dot {
@@ -175,7 +175,7 @@
     display: flex;
     align-items: center;
     border: 2px solid transparent;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
 }
 
 .sidebar-search-box.search-focused {
@@ -215,7 +215,7 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
     margin-bottom: 8px;
     border: 2px solid transparent;
 }
@@ -280,7 +280,7 @@
     justify-content: space-between;
     box-sizing: border-box;
     cursor: pointer;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
     position: relative;
     margin-right: 15px;
     margin-bottom: 12px;
@@ -325,7 +325,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
     z-index: 99;
 }
 
@@ -412,7 +412,7 @@
     padding: 5px;
     display: flex;
     align-items: center;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
 }
 
 /* EPG LIST */
@@ -430,7 +430,7 @@
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
     border: 0.5px solid transparent;
 }
 
@@ -728,7 +728,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.3s ease !important;
+  /* transition: all 0.3s ease !important; */
   /* box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important; */
 }
 
@@ -763,7 +763,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.3s ease !important;
+  /* transition: all 0.3s ease !important; */
   box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
 }
 
@@ -806,7 +806,7 @@
   justify-content: center;
   background-color: transparent;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   padding: 0;
   z-index: 99;
 }
@@ -832,7 +832,7 @@
   font-weight: bold;
   z-index: 99999;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  /* transition: opacity 0.3s ease; */
   pointer-events: none;
 }
 
@@ -880,7 +880,7 @@
   font-weight: bold;
   z-index: 99999;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  /* transition: opacity 0.3s ease; */
   pointer-events: none;
 }
 
@@ -1013,7 +1013,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s;
+  /* transition: all 0.3s; */
   font-weight: bold;
 }
 
@@ -1075,7 +1075,7 @@
     text-decoration: none;
     font-size: 16px;
     border-radius: 8px;
-    transition: background 0.3s;
+    /* transition: background 0.3s; */
 }
 
 .sidebar-link:hover,
@@ -1106,7 +1106,7 @@
     padding: 8px;
     display: flex;
     gap: 4px;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
 }
 
 .menu-dots:hover,
@@ -1378,7 +1378,7 @@ video,
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: opacity 0.3s ease !important;
+  /* transition: opacity 0.3s ease !important; */
   pointer-events: auto !important;
 }
 
@@ -1429,7 +1429,7 @@ video,
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  /* transition: opacity 0.5s ease; */
 }
 
 /* 18. EPG should not overlap video */

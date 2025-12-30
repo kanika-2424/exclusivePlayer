@@ -62,7 +62,7 @@
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    transition: opacity 0.3s ease;
+    /* transition: opacity 0.3s ease; */
 }
 
 .sorting-overlay-dialog-hidden {
@@ -104,7 +104,7 @@
     cursor: pointer;
     padding: 10px;
     border-radius: 6px;
-    transition: background 0.3s;
+    /* transition: background 0.3s; */
 }
 
 .sorting-option:hover,
@@ -132,7 +132,7 @@
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
 }
 
 #sortingCloseBtn {

@@ -14,7 +14,7 @@
     background: rgba(217, 217, 217, 0.13);
     border-radius: 10px;
     backdrop-filter: blur(18px);
-    transition: all 0.35s ease;
+    /* transition: all 0.35s ease; */
     overflow: visible;
 }
 
@@ -40,7 +40,7 @@
     border-radius: 10px;
     border: 0.5px solid rgba(255, 255, 255, 0.5);
 
-    transition: 0.3s;
+    /* transition: 0.3s; */
 }
 
 
@@ -73,7 +73,7 @@
 .movies-categories-wrapper {
     max-height: 65px;
     overflow: visible;
-    transition: max-height 0.35s ease;
+    /* transition: max-height 0.35s ease; */
     flex: 1;
     display: flex;
     align-items: center;
@@ -94,7 +94,7 @@
     overflow: hidden;
     width: 100%;
     padding: 5px;
-    transition: all 0.35s ease;
+    /* transition: all 0.35s ease; */
 }
 
 /* Show only first 7 items when not expanded */
@@ -120,7 +120,7 @@
     color: white;
     font-size: 17px;
     cursor: pointer;
-    transition: 0.25s;
+    /* transition: 0.25s; */
     position: relative;
 }
 
@@ -143,7 +143,7 @@
     color: white;
 
     cursor: pointer;
-    transition: transform 0.25s ease, border-color 0.25s ease;
+    /* transition: transform 0.25s ease, border-color 0.25s ease; */
 }
 
 .category-toggle-btn:hover {
@@ -172,7 +172,7 @@
     border-radius: 14px;
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.25s ease, width 0.25s ease, height 0.25s ease;
+    /* transition: transform 0.25s ease, width 0.25s ease, height 0.25s ease; */
     z-index: 1;
 }
 
@@ -246,7 +246,7 @@
 .movie-hover {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    /* transition: opacity 0.25s ease; */
 }
 
 /* Show on hover */
@@ -388,7 +388,7 @@
   align-items: center;
   cursor: pointer;
   z-index: 9999;
-  transition: 0.3s ease;
+  /* transition: 0.3s ease; */
 }
 
 .scroll-top-btn:hover,
@@ -525,7 +525,7 @@
     text-decoration: none;
     font-size: 16px;
     border-radius: 8px;
-    transition: background 0.3s;
+    /* transition: background 0.3s; */
 }
 
 .sidebar-link:hover,
@@ -556,7 +556,7 @@
     padding: 8px;
     display: flex;
     gap: 4px;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
 }
 
 .menu-dots:hover,

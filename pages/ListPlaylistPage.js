@@ -6,6 +6,17 @@ function ListPlaylistPage() {
   let enterDownFocusIndex = null;
 
 
+    // CHECK IF USER IS ALREADY LOGGED IN - Redirect to dashboard
+  const isLogin = localStorage.getItem("isLogin") === "true";
+  const selectedPlaylist = localStorage.getItem("selectedPlaylist");
+  
+  if (isLogin && selectedPlaylist) {
+    console.log("✅ User already logged in, redirecting to dashboard...");
+    localStorage.setItem("currentPage", "dashboard");
+    Router.showPage("dashboard");
+    return "";
+  }
+
   if (playlistsData.length === 0) {
     localStorage.removeItem("currentPage");
     Router.showPage("login");
