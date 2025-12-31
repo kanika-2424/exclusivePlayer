@@ -1794,6 +1794,14 @@ const renderEPGList = (epgData) => {
       .join("");
 
     channelGrid.innerHTML = channelCardsHTML;
+
+      setTimeout(() => {
+    const updateScrollArrows = window.updateScrollArrows;
+    if (typeof updateScrollArrows === 'function') {
+      updateScrollArrows();
+    }
+  }, 100);
+
   };
 
   // ===== RENDER SIDEBAR CATEGORIES =====
@@ -2620,73 +2628,81 @@ if (inVideoPlayer) {
     }
 
     // SIDEBAR SEARCH BOX NAVIGATION
-    if (inSidebarSearch) {
-      // UP: Move to header search
-      // UP: Move to header search with cursor at end
-      if (isUp) {
-        inSidebarSearch = false;
-        inHeaderSearch = true;
-        // isSidebarSearchActive = false;
-        setSidebarSearchFocus(false);
-        setHeaderSearchFocus(true);
+  // SIDEBAR SEARCH BOX NAVIGATION
+if (inSidebarSearch) {
+  // UP: Move to header search with cursor at end
+  if (isUp) {
+    inSidebarSearch = false;
+    inHeaderSearch = true;
+    setSidebarSearchFocus(false);
+    setHeaderSearchFocus(true);
 
-        // Auto-enter edit mode with cursor at end
-        setTimeout(() => {
-          isHeaderSearchActive = true;
-          const input = qs(".search-input");
-          if (input) {
-            input.focus();
-            const textLength = input.value.length;
-            input.setSelectionRange(textLength, textLength);
-          }
-        }, 0);
-
-        e.preventDefault();
-        return;
+    // Auto-enter edit mode with cursor at end
+    setTimeout(() => {
+      isHeaderSearchActive = true;
+      const input = qs(".search-input");
+      if (input) {
+        input.focus();
+        const textLength = input.value.length;
+        input.setSelectionRange(textLength, textLength);
       }
+    }, 0);
 
-      // DOWN: Move to first sidebar item
-      if (isDown) {
-        inSidebarSearch = false;
-        inSidebar = true;
-        isSidebarSearchActive = false;
-        setSidebarSearchFocus(false);
-        focusedSidebarIndex = 0;
-        setSidebarFocus(focusedSidebarIndex);
-        e.preventDefault();
-        return;
-      }
+    e.preventDefault();
+    return;
+  }
 
-      // RIGHT: Go to channel grid (remove cursor)
-      if (isRight) {
-        inSidebarSearch = false;
-        inChannelGrid = true;
-        // isSidebarSearchActive = false;
-        setSidebarSearchFocus(false);
+  // DOWN: Move to first sidebar item
+  if (isDown) {
+    inSidebarSearch = false;
+    inSidebar = true;
+    isSidebarSearchActive = false;
+    setSidebarSearchFocus(false);
+    focusedSidebarIndex = 0;
+    setSidebarFocus(focusedSidebarIndex);
+    e.preventDefault();
+    return;
+  }
 
-        const sidebarInput = qs(".sidebar-search-input");
-        if (sidebarInput) {
-          sidebarInput.blur();
-          sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
-        }
+  // RIGHT: Go to channel grid - ALWAYS START FROM FIRST CHANNEL
+  if (isRight) {
+    inSidebarSearch = false;
+    inChannelGrid = true;
+    setSidebarSearchFocus(false);
 
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
+    const sidebarInput = qs(".sidebar-search-input");
+    if (sidebarInput) {
+      sidebarInput.blur();
+      sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
+    }
 
-      // If in edit mode, allow typing
-      if (isSidebarSearchActive) {
-        return; // Allow typing
-      }
+    // ALWAYS reset to first channel
+    focusedChannelIndex = 0;
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    
+    // Scroll channel grid to start
+    const channelGrid = qs(".channel-grid");
+    if (channelGrid) {
+      channelGrid.scrollTo({ left: 0, behavior: "smooth" });
+    }
 
-      // LEFT: Stay in search box when not editing
-      if (isLeft) {
-        e.preventDefault();
-        return;
-      }
+    e.preventDefault();
+    return;
+  }
 
-       if (isEnter) {
+  // If in edit mode, allow typing
+  if (isSidebarSearchActive) {
+    return; // Allow typing
+  }
+
+  // LEFT: Stay in search box when not editing
+  if (isLeft) {
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
     isSidebarSearchActive = !isSidebarSearchActive;
     const searchInput = qs(".sidebar-search-input");
     if (searchInput) {
@@ -2705,74 +2721,85 @@ if (inVideoPlayer) {
     return;
   }
 
+  // If in edit mode, allow typing - don't prevent default
+  if (isSidebarSearchActive) {
+    return; // Allow normal keyboard input
+  }
 
-// If in edit mode, allow typing - don't prevent default
-if (isSidebarSearchActive) {
-  return; // Allow normal keyboard input
+  // Block navigation keys when not in edit mode
+  if (isUp || isDown || isLeft || isRight) {
+    e.preventDefault();
+    return;
+  }
+
+  return; // Allow other keys
 }
-
-// Block navigation keys when not in edit mode
-if (isUp || isDown || isLeft || isRight) {
-  e.preventDefault();
-  return;
-}
-
-return; // Allow other keys
-    }
 
     // Sidebar navigation
-    if (inSidebar) {
-      // UP: Go back to sidebar search box or stay at first item
-      if (isUp) {
-        if (focusedSidebarIndex > 0) {
-          focusedSidebarIndex--;
-          setSidebarFocus(focusedSidebarIndex);
-        } else {
-          // Move to sidebar search box
-          inSidebar = false;
-          inSidebarSearch = true;
-          sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
-          setSidebarSearchFocus(true);
-        }
-        e.preventDefault();
-        return;
-      }
-
-      // DOWN: Navigate sidebar items
-      if (isDown) {
-        if (focusedSidebarIndex < sidebarItems.length - 1) {
-          focusedSidebarIndex++;
-          setSidebarFocus(focusedSidebarIndex);
-        }
-        e.preventDefault();
-        return;
-      }
-
-      // RIGHT: Go back to channels
-      if (isRight) {
-        inSidebar = false;
-        inChannelGrid = true;
-        sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
-
-      // LEFT: Stay in sidebar
-      if (isLeft) {
-        e.preventDefault();
-        return;
-      }
-
-      // ENTER: Click sidebar item
-      if (isEnter) {
-        sidebarItems[focusedSidebarIndex].click();
-        e.preventDefault();
-        return;
-      }
-
-      return;
+ // Sidebar navigation
+if (inSidebar) {
+  // UP: Go back to sidebar search box or stay at first item
+  if (isUp) {
+    if (focusedSidebarIndex > 0) {
+      focusedSidebarIndex--;
+      setSidebarFocus(focusedSidebarIndex);
+    } else {
+      // Move to sidebar search box
+      inSidebar = false;
+      inSidebarSearch = true;
+      sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
+      setSidebarSearchFocus(true);
     }
+    e.preventDefault();
+    return;
+  }
+
+  // DOWN: Navigate sidebar items
+  if (isDown) {
+    if (focusedSidebarIndex < sidebarItems.length - 1) {
+      focusedSidebarIndex++;
+      setSidebarFocus(focusedSidebarIndex);
+    }
+    e.preventDefault();
+    return;
+  }
+
+  // RIGHT: Go back to channels - ALWAYS START FROM FIRST CHANNEL
+  if (isRight) {
+    inSidebar = false;
+    inChannelGrid = true;
+    sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
+    
+    // ALWAYS reset to first channel
+    focusedChannelIndex = 0;
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    
+    // Scroll channel grid to start
+    const channelGrid = qs(".channel-grid");
+    if (channelGrid) {
+      channelGrid.scrollTo({ left: 0, behavior: "smooth" });
+    }
+    
+    e.preventDefault();
+    return;
+  }
+
+  // LEFT: Stay in sidebar
+  if (isLeft) {
+    e.preventDefault();
+    return;
+  }
+
+  // ENTER: Click sidebar item
+  if (isEnter) {
+    sidebarItems[focusedSidebarIndex].click();
+    e.preventDefault();
+    return;
+  }
+
+  return;
+}
 
     // EPG navigation
     if (inEPG) {
@@ -2845,257 +2872,124 @@ return; // Allow other keys
       return;
     }
 
-    // FAVORITE BUTTON NAVIGATION
-    if (inFavoriteBtn) {
-      const channels = qsa(".channel-card");
-      const card = channels[focusedChannelIndex];
-      const favBtn = card.querySelector(".favorite-btn");
-      const cols = 5;
+ // FAVORITE BUTTON NAVIGATION
+if (inFavoriteBtn) {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  const favBtn = card ? card.querySelector(".favorite-btn") : null;
+  const rows = 3;
 
-      if (isLeft) {
-        // Go back to channel card
-        inFavoriteBtn = false;
-        inChannelGrid = true;
-        if (favBtn) favBtn.style.outline = "none";
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
+  if (isLeft) {
+    // Go back to current channel card
+    inFavoriteBtn = false;
+    inChannelGrid = true;
+    if (favBtn) favBtn.style.outline = "none";
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
 
-      if (isRight) {
-        const card = channels[focusedChannelIndex];
-        const removeBtn = card.querySelector(".remove-history-btn");
+  if (isRight) {
+    const card = channels[focusedChannelIndex];
+    const removeBtn = card ? card.querySelector(".remove-history-btn") : null;
 
-        // If remove button exists (in history view), go to it
-        if (removeBtn && selectedCategoryId === "channelHistory") {
-          inFavoriteBtn = false;
-          inRemoveHistoryBtn = true;
-          if (favBtn) favBtn.style.outline = "none";
-          setRemoveHistoryBtnFocus(true);
-          e.preventDefault();
-          return;
-        }
-
-        // Otherwise, go to next channel card
-        inFavoriteBtn = false;
-        inChannelGrid = true;
-        if (favBtn) favBtn.style.outline = "none";
-
-        if (focusedChannelIndex < channels.length - 1) {
-          focusedChannelIndex++;
-        }
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
-
-      if (isEnter) {
-        // Click the favorite button
-        favBtn.click();
-        e.preventDefault();
-        return;
-      }
-
-      // UP/DOWN: Navigate to adjacent rows while staying on favorite button
-      if (isUp && focusedChannelIndex >= cols) {
-        focusedChannelIndex -= cols;
-        if (favBtn) favBtn.style.outline = "none";
-        setFavoriteBtnFocus(true);
-        e.preventDefault();
-        return;
-      }
-
-      if (isDown) {
-        inFavoriteBtn = false;
-        inChannelGrid = true;
-        if (favBtn) favBtn.style.outline = "none";
-
-        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-
-        if (focusedChannelIndex >= lastRowStart) {
-          // In last row - go to video player
-          channels.forEach((c) => c.classList.remove("channel-card-focused"));
-          inVideoPlayer = true;
-          inPlayPauseBtn = false;
-          inAspectRatioBtn = false;
-          const videoDiv = qs(".live-video-player-div");
-          const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-          const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-          if (videoDiv) {
-            videoDiv.classList.add("video-focused");
-            videoDiv.style.border = "3px solid #0ea5e9";
-            videoDiv.style.boxSizing = "border-box";
-            videoDiv.style.outline = "3px solid #0ea5e9";
-            videoDiv.style.outlineOffset = "-3px";
-          }
-          if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-          if (aspectBtn) {
-            aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-            aspectBtn.style.border = "none";
-          }
-        } else {
-          // Move to card below (not its heart)
-          focusedChannelIndex += cols;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        }
-        e.preventDefault();
-        return;
-      }
-
+    // If remove button exists (in history view), go to it
+    if (removeBtn && selectedCategoryId === "channelHistory") {
+      inFavoriteBtn = false;
+      inRemoveHistoryBtn = true;
+      if (favBtn) favBtn.style.outline = "none";
+      setRemoveHistoryBtnFocus(true);
+      e.preventDefault();
       return;
     }
 
-    // REMOVE HISTORY BUTTON NAVIGATION
-    if (inRemoveHistoryBtn) {
-      const channels = qsa(".channel-card");
-      const card = channels[focusedChannelIndex];
-      const removeBtn = card.querySelector(".remove-history-btn");
-      const cols = 5;
+    // Otherwise, move to next column's card (same row)
+    inFavoriteBtn = false;
+    inChannelGrid = true;
+    if (favBtn) favBtn.style.outline = "none";
 
-      if (isLeft) {
-        // Go back to favorite button
-        inRemoveHistoryBtn = false;
-        inFavoriteBtn = true;
-        if (removeBtn) removeBtn.style.outline = "none";
-        setFavoriteBtnFocus(true);
-        e.preventDefault();
-        return;
-      }
-
-      if (isRight) {
-        // Go to next channel card
-        inRemoveHistoryBtn = false;
-        inChannelGrid = true;
-        if (removeBtn) removeBtn.style.outline = "none";
-
-        if (focusedChannelIndex < channels.length - 1) {
-          focusedChannelIndex++;
-        }
-        setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        e.preventDefault();
-        return;
-      }
-
-      if (isEnter) {
-        // Click the remove button
-        removeBtn.click();
-        e.preventDefault();
-        return;
-      }
-
-      // UP/DOWN: Navigate to adjacent rows while staying on remove button
-      if (isUp && focusedChannelIndex >= cols) {
-        focusedChannelIndex -= cols;
-        if (removeBtn) removeBtn.style.outline = "none";
-        setRemoveHistoryBtnFocus(true);
-        e.preventDefault();
-        return;
-      }
-
-      if (isDown) {
-        inRemoveHistoryBtn = false;
-        inChannelGrid = true;
-        if (removeBtn) removeBtn.style.outline = "none";
-
-        const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-
-        if (focusedChannelIndex >= lastRowStart) {
-          // In last row - go to video player
-          channels.forEach((c) => c.classList.remove("channel-card-focused"));
-          inVideoPlayer = true;
-          inPlayPauseBtn = false;
-          inAspectRatioBtn = false;
-          const videoDiv = qs(".live-video-player-div");
-          const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-          const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-          if (videoDiv) {
-            videoDiv.classList.add("video-focused");
-            videoDiv.style.border = "3px solid #0ea5e9";
-            videoDiv.style.boxSizing = "border-box";
-            videoDiv.style.outline = "3px solid #0ea5e9";
-            videoDiv.style.outlineOffset = "-3px";
-          }
-          if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-          if (aspectBtn) {
-            aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-            aspectBtn.style.border = "none";
-          }
-        } else {
-          // Move to card below
-          focusedChannelIndex += cols;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        }
-        e.preventDefault();
-        return;
-      }
-
-      return;
+    const nextChannelIndex = focusedChannelIndex + rows;
+    
+    if (nextChannelIndex < channels.length) {
+      focusedChannelIndex = nextChannelIndex;
     }
-    // CHANNEL GRID NAVIGATION
-    if (inChannelGrid) {
-      const cols = 5;
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
 
-      if (isUp) {
-        if (focusedChannelIndex >= cols) {
-          focusedChannelIndex -= cols;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        } else {
-          // Move to header search if in first row
-          inChannelGrid = false;
-          inHeaderSearch = true;
-          channels.forEach((c) => c.classList.remove("channel-card-focused"));
-          setHeaderSearchFocus(true);
-        }
-        e.preventDefault();
-        return;
-      }
+  if (isEnter) {
+    // Click the favorite button
+    if (favBtn) favBtn.click();
+    e.preventDefault();
+    return;
+  }
 
-      // Find this section in handleKeydown and REPLACE the isDown block in CHANNEL GRID NAVIGATION:
+  // UP: Move to card above in same column
+  if (isUp) {
+    inFavoriteBtn = false;
+    inChannelGrid = true;
+    if (favBtn) favBtn.style.outline = "none";
+    
+    const currentRow = focusedChannelIndex % rows;
+    
+    if (currentRow > 0) {
+      focusedChannelIndex--;
+    }
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
 
-    if (isDown) {
-  const cols = 5;
-  const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-
-  if (focusedChannelIndex >= lastRowStart) {
-    // In last row - go to video player
-    inChannelGrid = false;
-    inVideoPlayer = true;
-    inPlayPauseBtn = false;
-    inAspectRatioBtn = false;
-    channels.forEach((c) => c.classList.remove("channel-card-focused"));
+  // DOWN: Move to card below or go to video player
+ // DOWN: Move to card below or go to video player
+if (isDown) {
+  inFavoriteBtn = false;
+  inChannelGrid = true;
+  if (favBtn) favBtn.style.outline = "none";
+  
+  const nextIndex = focusedChannelIndex + 1;
+  const currentRow = focusedChannelIndex % rows;
+  const nextRow = nextIndex % rows;
+  
+  // Check if we can move down
+  if (nextIndex < channels.length && nextRow > currentRow) {
+    focusedChannelIndex = nextIndex;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  } else {
+    // At bottom - check if channel is playing
+    const playingCard = qs(".channel-card-playing");
+    
+    if (playingCard) {
+      // Channel is playing - go to video player
+      inChannelGrid = false;
+      inVideoPlayer = true;
+      inPlayPauseBtn = false;
+      inAspectRatioBtn = false;
+      
+      channels.forEach((c) => c.classList.remove("channel-card-focused"));
       showAspectRatioButton();
 
-    const videoDiv = qs(".live-video-player-div");
-    const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-    const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-    if (videoDiv) {
-      videoDiv.classList.add("video-focused");
-      videoDiv.style.border = "3px solid #0ea5e9";
-      videoDiv.style.boxSizing = "border-box";
-      videoDiv.style.outline = "3px solid #0ea5e9";
-      videoDiv.style.outlineOffset = "-3px";
-    }
-  } else {
-    // Normal down navigation
-    const targetIndex = focusedChannelIndex + cols;
-    
-    // If target is beyond last card, go to last card in that column or last card overall
-    if (targetIndex >= channels.length) {
-      // Calculate which card in the last row aligns with current column
-      const currentColumn = focusedChannelIndex % cols;
-      const lastRowStart = Math.floor((channels.length - 1) / cols) * cols;
-      const targetInLastRow = lastRowStart + currentColumn;
+      const videoDiv = qs(".live-video-player-div");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
       
-      // If that position exists, go there; otherwise go to last card
-      if (targetInLastRow < channels.length) {
-        focusedChannelIndex = targetInLastRow;
-      } else {
-        focusedChannelIndex = channels.length - 1;
+      if (videoDiv) {
+        videoDiv.classList.add("video-focused");
+        videoDiv.style.border = "3px solid #0ea5e9";
+        videoDiv.style.boxSizing = "border-box";
+        videoDiv.style.outline = "3px solid #0ea5e9";
+        videoDiv.style.outlineOffset = "-3px";
       }
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+      if (aspectBtn) {
+        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+        aspectBtn.style.border = "none";
+      }
     } else {
-      // Normal move down
-      focusedChannelIndex = targetIndex;
+      // No channel playing - return focus to card
       setFocus(channels, focusedChannelIndex, "channel-card-focused");
     }
   }
@@ -3103,38 +2997,246 @@ return; // Allow other keys
   return;
 }
 
-      if (isLeft) {
-        if (focusedChannelIndex > 0) {
-          focusedChannelIndex--;
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
-        } else {
-          // GO TO SIDEBAR SEARCH BOX
-          inChannelGrid = false;
-          inSidebarSearch = true;
-          channels.forEach((c) => c.classList.remove("channel-card-focused"));
-          setSidebarSearchFocus(true);
-        }
-        e.preventDefault();
-        return;
-      }
+  return;
+}
 
-      if (isRight) {
-        // Go to favorite button of current card
-        inChannelGrid = false;
-        inFavoriteBtn = true;
-        channels.forEach((c) => c.classList.remove("channel-card-focused"));
-        setFavoriteBtnFocus(true);
-        e.preventDefault();
-        return;
-      }
+// REMOVE HISTORY BUTTON NAVIGATION
+if (inRemoveHistoryBtn) {
+  const channels = qsa(".channel-card");
+  const card = channels[focusedChannelIndex];
+  const removeBtn = card ? card.querySelector(".remove-history-btn") : null;
+  const rows = 3;
 
-      if (isEnter) {
-        const selected = channels[focusedChannelIndex];
-        if (selected) selected.click();
-        e.preventDefault();
-        return;
+  if (isLeft) {
+    // Go back to favorite button
+    inRemoveHistoryBtn = false;
+    inFavoriteBtn = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+    setFavoriteBtnFocus(true);
+    e.preventDefault();
+    return;
+  }
+
+  if (isRight) {
+    // Move to next column's card (same row)
+    inRemoveHistoryBtn = false;
+    inChannelGrid = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+
+    const nextChannelIndex = focusedChannelIndex + rows;
+
+    if (nextChannelIndex < channels.length) {
+      focusedChannelIndex = nextChannelIndex;
+    }
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    // Click the remove button
+    if (removeBtn) removeBtn.click();
+    e.preventDefault();
+    return;
+  }
+
+  // UP: Move to card above
+  if (isUp) {
+    inRemoveHistoryBtn = false;
+    inChannelGrid = true;
+    if (removeBtn) removeBtn.style.outline = "none";
+    
+    const currentRow = focusedChannelIndex % rows;
+    
+    if (currentRow > 0) {
+      focusedChannelIndex--;
+    }
+    
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    e.preventDefault();
+    return;
+  }
+
+  // DOWN: Move to card below or go to video player
+// DOWN: Move to card below or go to video player
+if (isDown) {
+  inRemoveHistoryBtn = false;
+  inChannelGrid = true;
+  if (removeBtn) removeBtn.style.outline = "none";
+  
+  const nextIndex = focusedChannelIndex + 1;
+  const currentRow = focusedChannelIndex % rows;
+  const nextRow = nextIndex % rows;
+  
+  if (nextIndex < channels.length && nextRow > currentRow) {
+    focusedChannelIndex = nextIndex;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  } else {
+    // At bottom - check if channel is playing
+    const playingCard = qs(".channel-card-playing");
+    
+    if (playingCard) {
+      // Channel is playing - go to video player
+      inChannelGrid = false;
+      inVideoPlayer = true;
+      inPlayPauseBtn = false;
+      inAspectRatioBtn = false;
+      
+      channels.forEach((c) => c.classList.remove("channel-card-focused"));
+      showAspectRatioButton();
+
+      const videoDiv = qs(".live-video-player-div");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+      
+      if (videoDiv) {
+        videoDiv.classList.add("video-focused");
+        videoDiv.style.border = "3px solid #0ea5e9";
+        videoDiv.style.boxSizing = "border-box";
+        videoDiv.style.outline = "3px solid #0ea5e9";
+        videoDiv.style.outlineOffset = "-3px";
+      }
+      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+      if (aspectBtn) {
+        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+        aspectBtn.style.border = "none";
+      }
+    } else {
+      // No channel playing - return focus to card
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    }
+  }
+  e.preventDefault();
+  return;
+}
+
+  return;
+}
+    // CHANNEL GRID NAVIGATION
+// CHANNEL GRID NAVIGATION
+if (inChannelGrid) {
+  const rows = 3; // Total rows
+  const totalChannels = channels.length;
+  
+  // Calculate current position
+  const currentRow = focusedChannelIndex % rows; // 0, 1, or 2
+  const currentCol = Math.floor(focusedChannelIndex / rows); // Which column
+  
+  if (isUp) {
+    if (currentRow > 0) {
+      // Move up within same column
+      focusedChannelIndex--;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      
+      // Scroll into view
+      const card = channels[focusedChannelIndex];
+      if (card) {
+        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      }
+    } else {
+      // Already in first row - go to header search
+      inChannelGrid = false;
+      inHeaderSearch = true;
+      channels.forEach((c) => c.classList.remove("channel-card-focused"));
+      setHeaderSearchFocus(true);
+    }
+    e.preventDefault();
+    return;
+  }
+
+if (isDown) {
+  const nextIndex = focusedChannelIndex + 1;
+  const nextRow = nextIndex % rows;
+  
+  // Check if next card exists and is below current card
+  if (nextIndex < totalChannels && nextRow > currentRow) {
+    // Move down within same column
+    focusedChannelIndex = nextIndex;
+    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    
+    // Scroll into view
+    const card = channels[focusedChannelIndex];
+    if (card) {
+      card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+    }
+  } else {
+    // At bottom row - check if a channel is playing
+    const playingCard = qs(".channel-card-playing");
+    
+    if (playingCard) {
+      // Channel is playing - go to video player
+      inChannelGrid = false;
+      inVideoPlayer = true;
+      inPlayPauseBtn = false;
+      inAspectRatioBtn = false;
+      channels.forEach((c) => c.classList.remove("channel-card-focused"));
+      showAspectRatioButton();
+
+      const videoDiv = qs(".live-video-player-div");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+      
+      if (videoDiv) {
+        videoDiv.classList.add("video-focused");
+        videoDiv.style.border = "3px solid #0ea5e9";
+        videoDiv.style.boxSizing = "border-box";
+        videoDiv.style.outline = "3px solid #0ea5e9";
+        videoDiv.style.outlineOffset = "-3px";
+      }
+      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+      if (aspectBtn) {
+        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+        aspectBtn.style.border = "none";
       }
     }
+    // If no channel is playing, stay on current card (do nothing)
+  }
+  e.preventDefault();
+  return;
+}
+
+  if (isLeft) {
+    const prevIndex = focusedChannelIndex - rows;
+    
+    if (prevIndex >= 0) {
+      // Move to previous column (left card in same row)
+      focusedChannelIndex = prevIndex;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      
+      // Scroll into view
+      const card = channels[focusedChannelIndex];
+      if (card) {
+        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      }
+    } else {
+      // First column - GO TO SIDEBAR SEARCH BOX
+      inChannelGrid = false;
+      inSidebarSearch = true;
+      channels.forEach((c) => c.classList.remove("channel-card-focused"));
+      setSidebarSearchFocus(true);
+    }
+    e.preventDefault();
+    return;
+  }
+
+  if (isRight) {
+    // FIRST go to favorite button of current card
+    inChannelGrid = false;
+    inFavoriteBtn = true;
+    channels.forEach((c) => c.classList.remove("channel-card-focused"));
+    setFavoriteBtnFocus(true);
+    e.preventDefault();
+    return;
+  }
+
+  if (isEnter) {
+    const selected = channels[focusedChannelIndex];
+    if (selected) selected.click();
+    e.preventDefault();
+    return;
+  }
+}
   }
 
   // Setup event listeners
@@ -3223,6 +3325,10 @@ return; // Allow other keys
       document.removeEventListener("keydown", handleKeydown);
       document.removeEventListener("keydown", menuKeyHandler); // ADD THIS LINE
 
+        const channelGrid = qs(".channel-grid");
+  if (channelGrid) {
+    channelGrid.removeEventListener("scroll", window.updateScrollArrows);
+  }
 
         stopVideoControlsHideTimer();
 
@@ -3297,6 +3403,77 @@ return; // Allow other keys
     }
   }, 0);
 
+
+  // ===== SCROLL ARROW VISIBILITY CONTROL =====
+const updateScrollArrows = () => {
+  const channelGrid = qs(".channel-grid");
+  const leftArrow = qs("#channelScrollLeft");
+  const rightArrow = qs("#channelScrollRight");
+  
+  if (!channelGrid || !leftArrow || !rightArrow) return;
+  
+  const scrollLeft = channelGrid.scrollLeft;
+  const maxScroll = channelGrid.scrollWidth - channelGrid.clientWidth;
+  
+  // Show/hide left arrow
+  if (scrollLeft <= 0) {
+    leftArrow.classList.add("disabled");
+  } else {
+    leftArrow.classList.remove("disabled");
+  }
+  
+  // Show/hide right arrow
+  if (scrollLeft >= maxScroll - 5) { // -5 for threshold
+    rightArrow.classList.add("disabled");
+  } else {
+    rightArrow.classList.remove("disabled");
+  }
+};
+
+window.updateScrollArrows = updateScrollArrows;
+
+
+// Add scroll event listener
+const channelGrid = qs(".channel-grid");
+if (channelGrid) {
+  channelGrid.addEventListener("scroll", updateScrollArrows);
+  
+  // Initial check
+  updateScrollArrows();
+}
+
+// Add click handlers for arrows
+const leftArrow = qs("#channelScrollLeft");
+const rightArrow = qs("#channelScrollRight");
+
+if (leftArrow) {
+  leftArrow.addEventListener("click", () => {
+    const channelGrid = qs(".channel-grid");
+    if (channelGrid) {
+      channelGrid.scrollBy({ left: -300, behavior: "smooth" });
+    }
+  });
+}
+
+if (rightArrow) {
+  rightArrow.addEventListener("click", () => {
+    const channelGrid = qs(".channel-grid");
+    if (channelGrid) {
+      channelGrid.scrollBy({ left: 300, behavior: "smooth" });
+    }
+  });
+}
+
+// Update arrows after rendering channels
+const observer = new MutationObserver(() => {
+  updateScrollArrows();
+});
+
+if (channelGrid) {
+  observer.observe(channelGrid, { childList: true, subtree: true });
+}
+
+
   // Header time
   const now = new Date();
   const time = formatTime(now);
@@ -3351,9 +3528,17 @@ ${SortingDialog()}
     <div id="sidebar-area"></div>
 
     <div class="main-content-area">
-      <div class="channel-grid">
-        <!-- Channels will be rendered dynamically by renderChannels() -->
-      </div>
+       <div class="channel-grid-wrapper">
+
+    
+    <div class="channel-grid">
+      <!-- Channels will be rendered dynamically by renderChannels() -->
+    </div>
+    
+    <button class="channel-scroll-arrow channel-scroll-right" id="channelScrollRight">
+      <i class="fa fa-chevron-right"></i>
+    </button>
+  </div>
 
       <div class="bottom-section">
      <div class="livetv-video-wrapper" style="padding: 5px; background: #000;">

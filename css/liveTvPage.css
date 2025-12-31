@@ -255,20 +255,88 @@
     overflow: hidden;
 }
 
-/* CHANNEL GRID - FILLS HORIZONTALLY */
-.channel-grid {
-    display: flex;
-    flex-wrap: wrap;
-    padding: 20px;
-    background: rgba(217, 217, 217, 0.13);
-    height: 303px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    margin-bottom: 30px; /* Replace gap */
+/* Channel Grid Wrapper */
+.channel-grid-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 30px;
 }
 
+/* Channel Grid - Update existing styles */
+.channel-grid {
+    display: grid;
+    grid-template-rows: repeat(3, 118px);
+    grid-auto-flow: column;
+    grid-auto-columns: 250px;
+    gap: 12px 15px;
+    padding: 20px;
+    background: rgba(217, 217, 217, 0.13);
+    height: 390px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth; /* Smooth scrolling */
+}
+
+/* Scroll Arrows */
+.channel-scroll-arrow {
+  position: absolute;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+
+  /* Perfect circle */
+  border-radius: 50%;
+
+  /* Background */
+  background-color: rgba(55, 155, 254, 0.45);
+  border: 2px solid rgba(55, 155, 254, 0.5);
+
+  /* Center icon/text */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #fff;
+  font-size: 24px;
+
+  cursor: pointer;
+  z-index: 10;
+
+
+}
+
+.channel-scroll-arrow:hover {
+  background: rgba(14, 165, 233, 0.8);
+  border-color: rgba(55, 155, 254, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.channel-scroll-arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.channel-scroll-left {
+  left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.channel-scroll-right {
+  right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Hide arrows when at edges */
+.channel-scroll-arrow.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Update channel card */
 .channel-card {
-    width: calc(20% - 12px); /* 5 cards per row with spacing */
+    width: 100%; /* Fill grid cell */
     height: 118px;
     opacity: 0.8;
     background: rgba(55, 155, 254, 0.15);
@@ -280,10 +348,8 @@
     justify-content: space-between;
     box-sizing: border-box;
     cursor: pointer;
-    /* transition: all 0.3s; */
     position: relative;
-    margin-right: 15px;
-    margin-bottom: 12px;
+    margin: 0; /* Remove margins - using grid gap */
 }
 
 .channel-card:nth-child(5n) {
@@ -1537,3 +1603,24 @@ video {
   outline-offset: 2px;
 }
 
+
+
+/* Horizontal Scrollbar Styling */
+.channel-grid::-webkit-scrollbar {
+    width: 8px;
+    height: 12px; /* Thicker for horizontal */
+}
+
+.channel-grid::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+}
+
+.channel-grid::-webkit-scrollbar-thumb {
+    background: rgba(14, 165, 233, 0.6);
+    border-radius: 6px;
+}
+
+.channel-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(14, 165, 233, 0.8);
+}
