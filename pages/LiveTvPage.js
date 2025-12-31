@@ -952,23 +952,12 @@ const verifyPassword = () => {
   }
 };
 
-  // Play channel function
-  // ===== PLAY CHANNEL FUNCTION (UPDATED) =====
+
   // ===== PLAY CHANNEL FUNCTION (FIXED) =====
   const playChannel = (channelData) => {
     console.log("🎬 Playing channel:", channelData); // Debug log
 
-    const selectedPlaylist =
-      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-    const hasParentalPassword =
-      selectedPlaylist.parentalPassword &&
-      selectedPlaylist.parentalPassword.length > 0;
-
-    if (hasParentalPassword && isAdultContent(channelData)) {
-      console.log("🔒 Adult content detected - showing password prompt");
-      showPasswordModal(channelData);
-      return; // Stop here and wait for password verification
-    }
+ 
 
     const videoWrapper = qs(".livetv-video-wrapper");
     if (!videoWrapper) {
@@ -1262,13 +1251,23 @@ if (videoContainer) {
 
     // Add to history
     if (selectedCategoryId !== "channelHistory") {
-      const selectedChannelItem = allStreams.find(
-        (item) => item.stream_id == channelData.stream_id
-      );
-      if (selectedChannelItem && typeof addItemToHistory === "function") {
-        addItemToHistory(selectedChannelItem, "ChannelListLive");
-      }
+
+   const isAdult = isAdultContent(channelData);
+  
+  if (!isAdult) {
+    // Only add non-adult content to history
+    const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+    const selectedChannelItem = streams.find(
+      (item) => item.stream_id == channelData.stream_id
+    );
+    
+    if (selectedChannelItem && typeof window.addItemToHistory === "function") {
+      window.addItemToHistory(selectedChannelItem, "ChannelListLive");
     }
+  } else {
+    console.log("🔒 Adult content - not adding to history");
+  }
+}
 
     console.log("✅ Channel playback initiated");
   };
@@ -1696,7 +1695,7 @@ const renderChannels = () => {
       }
 
       return `
-      <div class="channel-card ${shouldBlur ? "channel-blurred" : ""}" 
+      <div class="channel-card " 
            data-stream-id="${ch.stream_id}" 
            data-name="${ch.name}" 
            data-logo="${ch.stream_icon}">
@@ -1728,11 +1727,7 @@ const renderChannels = () => {
           </div>
         </div>
         <div class="channel-name">${ch.name}</div>
-        ${
-          shouldBlur
-            ? '<div class="blur-overlay"><i class="fa fa-lock"></i></div>'
-            : ""
-        }
+       
       </div>
     `;
     })

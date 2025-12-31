@@ -1003,6 +1003,7 @@
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  zoom: 1.7;
 }
 
 .password-modal {
@@ -1086,6 +1087,7 @@
 .password-submit-btn {
   background: #0ea5e9;
   color: white;
+  margin-right: 10px;
 }
 
 .password-submit-btn:hover,
