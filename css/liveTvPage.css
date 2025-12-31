@@ -350,6 +350,8 @@
     cursor: pointer;
     position: relative;
     margin: 0; /* Remove margins - using grid gap */
+      position: relative;
+
 }
 
 .channel-card:nth-child(5n) {
@@ -965,7 +967,7 @@
 
 /* Blurred channel card styling */
 .channel-card.channel-blurred .channel-logo {
-  filter: blur(20px);
+  filter: blur(0px);
 }
 
 .channel-card.channel-blurred .channel-name {
@@ -1219,8 +1221,8 @@
 }
 
 .loading-logo {
-  width: 400px;
-  height: 300px;
+  width: 800px;
+  height: 600px;
   animation: pulse 2s ease-in-out infinite;
   margin-bottom: 40px;
 }
@@ -1623,4 +1625,255 @@ video {
 
 .channel-grid::-webkit-scrollbar-thumb:hover {
     background: rgba(14, 165, 233, 0.8);
+}
+
+.sidebar-locked {
+  opacity: 0.6;
+}
+
+
+/* Locked category overlay - spans full grid area */
+.locked-category-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Make sure channel grid wrapper has position relative */
+.channel-grid-wrapper {
+  position: relative;
+}
+
+.channel-grid {
+  position: relative;
+  min-height: 300px; /* Ensure it has height even when empty */
+}
+
+/* Locked category overlay - spans full grid area */
+.locked-category-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+
+
+
+/* Make sure channel grid wrapper has position relative */
+.channel-grid-wrapper {
+  position: relative;
+}
+
+
+
+/* Blurred channel card styling - Tizen Compatible */
+.channel-card.channel-blurred {
+  position: relative;
+}
+
+.channel-card.channel-blurred .channel-logo {
+  filter: blur(20px);
+  -webkit-filter: blur(20px);
+  /* Fallback for very old Tizen */
+  opacity: 0.3;
+}
+
+.channel-card.channel-blurred .channel-name {
+  filter: blur(8px);
+  -webkit-filter: blur(8px);
+  /* Fallback for very old Tizen */
+  opacity: 0.5;
+}
+
+.blur-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85); /* Darker for better visibility */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3.13px; /* Match channel card radius */
+  z-index: 10;
+  pointer-events: none; /* Allow clicking through to parent */
+}
+
+.blur-overlay i {
+  font-size: 48px;
+  color: #ef4444;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Locked category overlay - Tizen Compatible */
+.locked-category-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 100;
+  border-radius: 8px;
+}
+
+/* Centered message box */
+.locked-category-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 40px;
+  border-radius: 16px;
+  max-width: 600px;
+  animation: fadeIn 0.3s ease;
+  -webkit-animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    -webkit-transform: scale(0.9);
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: scale(1);
+    transform: scale(1);
+  }
+}
+
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+    -webkit-transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: scale(1);
+  }
+}
+
+/* Sidebar locked state */
+.sidebar-item {
+  position: relative;
+}
+
+/* Blur ONLY the text */
+.sidebar-item.sidebar-locked .sidebar-text {
+  filter: blur(5px);
+}
+
+/* Lock icon above blur */
+.sidebar-lock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  color: white;
+  font-size: 36px;
+  pointer-events: none;
+}
+
+
+.sidebar-item.sidebar-locked::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(239, 68, 68, 0.1);
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+/* Make sure channel grid wrapper has position relative */
+.channel-grid-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+
+
+
+/* Blur the entire channel card */
+.channel-blurred {
+  filter: blur(4px);
+  opacity: 0.6;
+  pointer-events: none; /* Prevent clicks / focus */
+  position: relative;
+}
+
+/* Lock overlay on top */
+.blur-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+/* Lock icon */
+.blur-overlay i {
+  font-size: 32px;
+  color: #fff;
+}
+
+
+.channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+/* Center empty-state */
+.no-channels {
+  grid-column: 1 / -1; 
+  overflow-x: hidden;
+        /* span full grid width */
+        
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30vh;       
+  text-align: center;
+  color: #aaa;
 }

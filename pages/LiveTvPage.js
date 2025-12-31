@@ -364,6 +364,7 @@ const applySortingToChannels = (channels) => {
   let inFavoriteBtn = false; // ADD THIS LINE
   let inRemoveHistoryBtn = false; // ADD THIS
   let isMenuDotsActive = false; // Track if menu dots are focused
+let lockedCategories = new Set(); // Track which categories are locked
 
   let inPasswordModal = false;
   let pendingChannel = null; // Store channel data when password is required
@@ -415,6 +416,43 @@ const applySortingToChannels = (channels) => {
       (keyword) => name.includes(keyword) || categoryName.includes(keyword)
     );
   };
+
+  // ===== CHECK IF CATEGORY HAS ADULT CONTENT =====
+// ===== CHECK IF CATEGORY HAS ADULT CONTENT =====
+const categoryHasAdultContent = (categoryId) => {
+  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+  
+  // Special handling for built-in categories
+  if (categoryId === "All") {
+    return streams.some(ch => isAdultContent(ch));
+  }
+  
+  if (categoryId === "favorites") {
+    const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
+    const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
+      pl => pl.playlistName === currentPlaylistName
+    );
+    const favoritesList = currentPlaylist.favoritesLiveTV || [];
+    
+    const favChannels = favoritesList.map(favItem => {
+      if (typeof favItem === "number") {
+        return streams.find(s => s.stream_id === favItem);
+      }
+      return favItem;
+    }).filter(Boolean);
+    
+    return favChannels.some(ch => isAdultContent(ch));
+  }
+  
+  if (categoryId === "channelHistory") {
+    // History should never be locked (adult channels aren't added to history)
+    return false;
+  }
+  
+  // Regular categories
+  const categoryChannels = streams.filter(s => s.category_id === categoryId);
+  return categoryChannels.some(ch => isAdultContent(ch));
+};
 
   // ===== VIDEO ASPECT RATIO MANAGER =====
   // ===== VIDEO ASPECT RATIO MANAGER =====
@@ -849,189 +887,70 @@ const setSidebarSearchFocus = (active) => {
   };
 
   // ===== VERIFY PASSWORD =====
-  // ===== VERIFY PASSWORD (UPDATED) =====
-  // ===== VERIFY PASSWORD (FINAL VERSION) =====
-  // ===== VERIFY PASSWORD (FIXED) =====
-  const verifyPassword = () => {
-    const input = document.getElementById("passwordModalInput");
-    const enteredPassword = input.value.trim() || "";
+const verifyPassword = () => {
+  const input = document.getElementById("passwordModalInput");
+  const enteredPassword = input.value.trim() || "";
 
-    console.log("🔑 Verifying password...", { enteredPassword }); // Debug
-
-    if (!enteredPassword) {
-      console.log("❌ No password entered");
-      if (
-        typeof Toaster !== "undefined" &&
-        typeof Toaster.showToast === "function"
-      ) {
-        Toaster.showToast("error", "Please enter password");
-      } else {
-        alert("Please enter password");
-      }
-      return;
+  if (!enteredPassword) {
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "Please enter password");
     }
-
-    const selectedPlaylist =
-      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-    const savedPassword = selectedPlaylist.parentalPassword || "";
-
-    console.log("🔑 Comparing passwords..."); // Debug
-
-    if (!savedPassword) {
-      console.log("❌ No password set in settings");
-      if (
-        typeof Toaster !== "undefined" &&
-        typeof Toaster.showToast === "function"
-      ) {
-        Toaster.showToast(
-          "error",
-          "No parental password set. Please set one in Settings."
-        );
-      } else {
-        alert("No parental password set. Please set one in Settings.");
-      }
-      hidePasswordModal(true); // Clear pending
-      return;
-    }
-
-    if (enteredPassword === savedPassword) {
-      console.log("✅ Password correct!");
-
-      // Store the channel data BEFORE closing modal
-      const channelToPlay = { ...pendingChannel };
-
-      console.log("📺 Channel to play:", channelToPlay); // Debug
-
-      // Close modal WITHOUT clearing pendingChannel
-      hidePasswordModal(false);
-
-      // Show success message
-      if (
-        typeof Toaster !== "undefined" &&
-        typeof Toaster.showToast === "function"
-      ) {
-        Toaster.showToast("success", "Access granted");
-      }
-
-      // Clear pendingChannel manually
-      pendingChannel = null;
-
-      // Play channel after a small delay
-setTimeout(() => {
-  if (channelToPlay && channelToPlay.stream_id) {
-    console.log("🎬 Now playing:", channelToPlay.name);
-
-    const videoWrapper = qs(".livetv-video-wrapper");
-    if (!videoWrapper) {
-      console.error("❌ Video wrapper not found!");
-      return;
-    }
-
-    const currentPlaylistData = JSON.parse(localStorage.getItem("currentPlaylistData"));
-    const playlistLiveExtension = JSON.parse(localStorage.getItem("selectedPlaylist"));
-
-    if (!currentPlaylistData || !playlistLiveExtension) {
-      console.error("❌ Playlist data not found!");
-      return;
-    }
-
-    const liveVideoUrl = `${currentPlaylistData.server_info.server_protocol}://${currentPlaylistData.server_info.url}:${currentPlaylistData.server_info.port}/live/${currentPlaylistData.user_info.username}/${currentPlaylistData.user_info.password}/${channelToPlay.stream_id}.${playlistLiveExtension.streamFormat || "m3u8"}`;
-
-    console.log("🔗 Stream URL:", liveVideoUrl);
-
-    if (window.livePlayer) {
-      try {
-        window.livePlayer.dispose();
-      } catch (err) {
-        console.warn("Player disposal error:", err);
-      }
-      window.livePlayer = null;
-    }
-
-    const hasLiveVideoJs = typeof LiveVideoJsComponent !== "undefined";
-    const hasFlowPlayer = typeof FlowLivePlayerComponent !== "undefined";
-
-    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    const currentPlaylist = playlistsData.find(
-      (pl) => pl.playlistName === selectedPlaylist.playlistName
-    );
-
-    const isTs = (currentPlaylist.streamFormat || "").toLowerCase() === "ts";
-
-    // ===== UPDATED: Use only LiveVideoJsComponent or FlowLivePlayerComponent =====
-    if (isTs && hasFlowPlayer) {
-      videoWrapper.innerHTML = FlowLivePlayerComponent(
-        channelToPlay.stream_id,
-        liveVideoUrl,
-        channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
-        "100vh",
-        channelToPlay.name || "Unknown Channel"
-      );
-    } else if (hasLiveVideoJs) {
-      videoWrapper.innerHTML = LiveVideoJsComponent(
-        channelToPlay.stream_id,
-        liveVideoUrl,
-        channelToPlay.stream_icon || channelToPlay.logo || "/assets/profile.png",
-        "100vh",
-        channelToPlay.name || "Unknown Channel"
-      );
-    } else {
-      console.error("❌ No player components available!");
-      videoWrapper.innerHTML = `
-        <div class="live-video-player live-video-player-div" style="width:100%; height:100%;">
-          <div class="live-no-url-message">
-            <div class="no-url-icon">⚠️</div>
-            <p class="no-url-text">Video player components not loaded</p>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    // Update visual states and EPG (rest of the code remains the same)
-    qsa(".channel-card").forEach((c) => {
-      c.classList.remove("channel-card-selected", "channel-card-focused", "channel-card-playing");
-    });
-
-    const selectedCard = qs(`.channel-card[data-stream-id="${channelToPlay.stream_id}"]`);
-    if (selectedCard) {
-      selectedCard.classList.add("channel-card-selected", "channel-card-focused", "channel-card-playing");
-      const allCards = qsa(".channel-card");
-      const cardIndex = Array.from(allCards).indexOf(selectedCard);
-      if (cardIndex !== -1) {
-        focusedChannelIndex = cardIndex;
-      }
-    }
-
-    updateEPG(channelToPlay);
-
-    if (selectedCategoryId !== "channelHistory") {
-      const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-      const selectedChannelItem = streams.find((item) => item.stream_id == channelToPlay.stream_id);
-      if (selectedChannelItem && typeof window.addItemToHistory === "function") {
-        window.addItemToHistory(selectedChannelItem, "ChannelListLive");
-      }
-    }
-
-    console.log("✅ Channel playback initiated");
+    return;
   }
-}, 300);
-    } else {
-      console.log("❌ Password incorrect");
-      if (
-        typeof Toaster !== "undefined" &&
-        typeof Toaster.showToast === "function"
-      ) {
-        Toaster.showToast("error", "Incorrect Password");
-      } else {
-        alert("Incorrect password");
-      }
-      if (input) {
-        input.value = "";
-        input.focus();
-      }
+
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const savedPassword = selectedPlaylist.parentalPassword || "";
+
+  if (!savedPassword) {
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "No parental password set. Please set one in Settings.");
     }
-  };
+    hidePasswordModal(true);
+    return;
+  }
+
+  if (enteredPassword === savedPassword) {
+    // Unlock the category
+    const categoryToUnlock = pendingChannel; // This will be the category ID now
+    
+    if (categoryToUnlock) {
+      lockedCategories.delete(categoryToUnlock);
+      
+      // Update UI
+      hidePasswordModal(false);
+      
+      if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+        Toaster.showToast("success", "Category unlocked");
+      }
+      
+      // Switch to unlocked category
+      selectedCategoryId = categoryToUnlock;
+      renderChannels();
+      renderSidebarCategories();
+      
+      // Focus first channel
+      setTimeout(() => {
+        const channels = qsa(".channel-card");
+        if (channels.length > 0) {
+          focusedChannelIndex = 0;
+          inChannelGrid = true;
+          inSidebar = false;
+          setFocus(channels, 0, "channel-card-focused");
+        }
+      }, 100);
+    }
+    
+    pendingChannel = null;
+  } else {
+    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
+      Toaster.showToast("error", "Incorrect Password");
+    }
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+  }
+};
 
   // Play channel function
   // ===== PLAY CHANNEL FUNCTION (UPDATED) =====
@@ -1141,12 +1060,13 @@ setTimeout(() => {
         const selectedChannelItem = streams.find(
           (item) => item.stream_id == channelData.stream_id
         );
-        if (
-          selectedChannelItem &&
-          typeof window.addItemToHistory === "function"
-        ) {
-          window.addItemToHistory(selectedChannelItem, "ChannelListLive");
-        }
+
+         if (selectedChannelItem && !isAdultContent(selectedChannelItem) && typeof window.addItemToHistory === "function") {
+    window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+  }
+
+
+      
       }
 
       // Initialize Video.js if available
@@ -1697,60 +1617,85 @@ const renderEPGList = (epgData) => {
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
-  const renderChannels = () => {
-    const filtered = getFilteredCategories();
+const renderChannels = () => {
+  const filtered = getFilteredCategories();
 
-    let selectedCat = filtered.find(
-      (c) => c.category_id === selectedCategoryId
-    );
-    if (!selectedCat) {
-      selectedCat = filtered[0];
-      selectedCategoryId = selectedCat.category_id;
-    }
+  let selectedCat = filtered.find(
+    (c) => c.category_id === selectedCategoryId
+  );
+  if (!selectedCat) {
+    selectedCat = filtered[0];
+    selectedCategoryId = selectedCat.category_id;
+  }
 
-    const allChannels = selectedCat.channels || [];
-    const channelsToShow = allChannels;
+  const channelGrid = qs(".channel-grid");
+  if (!channelGrid) return;
 
-    const channelGrid = qs(".channel-grid");
-    if (!channelGrid) return;
+  // Check if category is locked
+  const isLocked = lockedCategories.has(selectedCategoryId);
+  
+  console.log("📺 Rendering category:", selectedCategoryId);
+  console.log("🔒 Is locked:", isLocked);
+  console.log("🔒 All locked categories:", Array.from(lockedCategories));
+  
+  if (isLocked) {
+    console.log("🔒 Showing locked overlay for category:", selectedCategoryId);
+    channelGrid.innerHTML = `
+      <div class="locked-category-overlay">
+        <div class="locked-category-message">
+          <i class="fa fa-lock" style="font-size: 64px; color: #ef4444; margin-bottom: 20px;"></i>
+          <p style="font-size: 28px; color: #fff; font-weight: bold; margin-bottom: 10px;">This category is locked</p>
+          <p style="font-size: 18px; color: #ccc; margin: 0;">Select the category from sidebar to unlock</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
 
-    if (channelsToShow.length === 0) {
-      channelGrid.innerHTML = `
+  const allChannels = selectedCat.channels || [];
+  const channelsToShow = allChannels;
+
+  if (channelsToShow.length === 0) {
+    channelGrid.innerHTML = `
       <div class="no-channels">
         <p>No channels found in this category</p>
       </div>`;
-      return;
-    }
+    return;
+  }
 
-    const currentPlaylistName = JSON.parse(
-      localStorage.getItem("selectedPlaylist")
-    ).playlistName;
-    const currentPlaylist = JSON.parse(
-      localStorage.getItem("playlistsData")
-    ).find((pl) => pl.playlistName === currentPlaylistName);
-    const favoritesList = currentPlaylist.favoritesLiveTV || [];
+  // Rest of your renderChannels code...
+  const currentPlaylistName = JSON.parse(
+    localStorage.getItem("selectedPlaylist")
+  ).playlistName;
+  const currentPlaylist = JSON.parse(
+    localStorage.getItem("playlistsData")
+  ).find((pl) => pl.playlistName === currentPlaylistName);
+  const favoritesList = currentPlaylist.favoritesLiveTV || [];
 
-    // Check if we're in history view
-    const isHistoryView = selectedCategoryId === "channelHistory";
+  const isHistoryView = selectedCategoryId === "channelHistory";
 
-    // Get parental control settings
-    const selectedPlaylist =
-      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-    const hasParentalPassword =
-      selectedPlaylist.parentalPassword &&
-      selectedPlaylist.parentalPassword.length > 0;
+  const selectedPlaylist =
+    JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const hasParentalPassword =
+    selectedPlaylist.parentalPassword &&
+    selectedPlaylist.parentalPassword.length > 0;
 
-    const channelCardsHTML = channelsToShow
-      .map((ch) => {
-        const isFav = favoritesList.some(
-          (fav) =>
-            (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
-        );
+  console.log("🔒 Has parental password:", hasParentalPassword);
 
-        // Check if content should be blurred
-        const shouldBlur = hasParentalPassword && isAdultContent(ch);
+  const channelCardsHTML = channelsToShow
+    .map((ch) => {
+      const isFav = favoritesList.some(
+        (fav) =>
+          (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
+      );
 
-        return `
+      const shouldBlur = hasParentalPassword && isAdultContent(ch);
+      
+      if (shouldBlur) {
+        console.log("🔒 Blurring channel:", ch.name);
+      }
+
+      return `
       <div class="channel-card ${shouldBlur ? "channel-blurred" : ""}" 
            data-stream-id="${ch.stream_id}" 
            data-name="${ch.name}" 
@@ -1790,54 +1735,80 @@ const renderEPGList = (epgData) => {
         }
       </div>
     `;
-      })
-      .join("");
+    })
+    .join("");
 
-    channelGrid.innerHTML = channelCardsHTML;
+  channelGrid.innerHTML = channelCardsHTML;
 
-      setTimeout(() => {
+  setTimeout(() => {
     const updateScrollArrows = window.updateScrollArrows;
     if (typeof updateScrollArrows === 'function') {
       updateScrollArrows();
     }
   }, 100);
-
-  };
+};
 
   // ===== RENDER SIDEBAR CATEGORIES =====
-  const renderSidebarCategories = () => {
-    const filtered = getFilteredCategories();
+const renderSidebarCategories = () => {
+  const filtered = getFilteredCategories();
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
 
-    const categoriesHTML = filtered
-      .map((c) => {
-        const isActive = c.category_id === selectedCategoryId;
-        return `
-        <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" 
-             data-category-id="${c.category_id}">
-          <span class="sidebar-item-name">${c.category_name}</span>
-          <span class="sidebar-item-count">${
-            c.channels ? c.channels.length : 0
-          }</span>
+  const categoriesHTML = filtered
+    .map((c) => {
+      const isActive = c.category_id === selectedCategoryId;
+      const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+      const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+      
+      return `
+        <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+             data-category-id="${c.category_id}"
+             data-has-adult="${hasAdultContent}">
+          <span class="sidebar-item-name">
+  <span class="sidebar-text">
+    ${c.category_name}
+  </span>
+
+  ${hasAdultContent ? `
+    <i class="fa fa-lock sidebar-lock"></i>
+  ` : ''}
+</span>
+
+          <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
         </div>
       `;
-      })
-      .join("");
+    })
+    .join("");
 
-    const sidebarArea = qs("#sidebar-area");
-    if (sidebarArea) {
-      sidebarArea.innerHTML = `
-        <div class="sidebar-content">
-          <div class="sidebar-search-box">
-            <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
-            <i class="fa fa-search"></i>
-          </div>
-          <div class="sidebar-items">
-            ${categoriesHTML}
-          </div>
+  const sidebarArea = qs("#sidebar-area");
+  if (sidebarArea) {
+    sidebarArea.innerHTML = `
+      <div class="sidebar-content">
+        <div class="sidebar-search-box">
+          <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
+          <i class="fa fa-search"></i>
         </div>
-      `;
+        <div class="sidebar-items">
+          ${categoriesHTML}
+        </div>
+      </div>
+    `;
+  }
+};
+
+
+// Initialize locked categories
+const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+
+if (hasParentalPassword) {
+  const filtered = getFilteredCategories();
+  filtered.forEach(cat => {
+    if (categoryHasAdultContent(cat.category_id)) {
+      lockedCategories.add(cat.category_id);
     }
-  };
+  });
+}
 
   window.updateLiveTvSidebar = renderSidebarCategories;
 
@@ -2022,27 +1993,38 @@ if (favBtn || isFavClick) {
       return;
     }
 
-    // Sidebar category click
-    const sidebarItem = e.target.closest(".sidebar-item");
-    if (sidebarItem) {
-      const catId = sidebarItem.dataset.categoryId;
-      selectedCategoryId = catId;
-      currentChunk = 1;
-      focusedChannelIndex = 0;
+  // Sidebar category click
+const sidebarItem = e.target.closest(".sidebar-item");
+if (sidebarItem) {
+  const catId = sidebarItem.dataset.categoryId;
+  const hasAdult = sidebarItem.dataset.hasAdult === "true";
+  const isLocked = lockedCategories.has(catId);
+  
+  // Check if category is locked
+  if (hasAdult && isLocked) {
+    // Show password modal to unlock category
+    showPasswordModal(catId); // Pass category ID instead of channel
+    return;
+  }
+  
+  // Category is unlocked or has no adult content - switch to it
+  selectedCategoryId = catId;
+  currentChunk = 1;
+  focusedChannelIndex = 0;
 
-      renderChannels();
-      renderSidebarCategories();
+  renderChannels();
+  renderSidebarCategories();
 
-      setTimeout(() => {
-        const channels = qsa(".channel-card");
-        if (channels.length > 0) {
-          setFocus(channels, 0, "channel-card-focused");
-          inChannelGrid = true;
-          inSidebar = false;
-        }
-      }, 50);
-      return;
+  setTimeout(() => {
+    const channels = qsa(".channel-card");
+    if (channels.length > 0) {
+      setFocus(channels, 0, "channel-card-focused");
+      inChannelGrid = true;
+      inSidebar = false;
     }
+  }, 50);
+  return;
+}
 
     // EPG item click
     const epgItem = e.target.closest(".epg-item");
@@ -2792,11 +2774,28 @@ if (inSidebar) {
   }
 
   // ENTER: Click sidebar item
-  if (isEnter) {
-    sidebarItems[focusedSidebarIndex].click();
-    e.preventDefault();
-    return;
+// ENTER: Click sidebar item or unlock category
+if (isEnter) {
+  const sidebarItems = qsa(".sidebar-item");
+  const selectedItem = sidebarItems[focusedSidebarIndex];
+  
+  if (selectedItem) {
+    const catId = selectedItem.dataset.categoryId;
+    const hasAdult = selectedItem.dataset.hasAdult === "true";
+    const isLocked = lockedCategories.has(catId);
+    
+    if (hasAdult && isLocked) {
+      // Show password modal
+      showPasswordModal(catId);
+    } else {
+      // Switch to category
+      selectedItem.click();
+    }
   }
+  
+  e.preventDefault();
+  return;
+}
 
   return;
 }
@@ -3244,17 +3243,79 @@ if (isDown) {
     document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKeydown);
 
-    // Load sidebar data
-    // const categoriesData = [
-    //   { name: "Favorite Channels", count: 46 },
-    //   { name: "Channels History", count: 245 },
-    //   { name: "English Channels", count: 4 },
-    //   { name: "Sports Channels", count: 10 },
-    //   { name: "French Channels", count: 34 }
-    // ];
+     // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
+ // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
+const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
 
-    // ===== INITIALIZE PAGE =====
-    // Render sidebar categories
+console.log("🔒 Parental password set:", hasParentalPassword);
+console.log("🔒 Password value:", selectedPlaylist.parentalPassword);
+
+if (hasParentalPassword) {
+  // Get all categories and check for adult content
+  const allCategories = categories || window.liveCategories || [];
+  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+  
+  console.log("🔍 Total streams:", streams.length);
+  console.log("🔍 Total categories:", allCategories.length);
+  
+  // Check each stream for adult content
+  let adultChannelsFound = 0;
+  streams.forEach(ch => {
+    if (isAdultContent(ch)) {
+      adultChannelsFound++;
+      console.log("🔞 Adult channel found:", ch.name, "Category:", ch.category_id);
+    }
+  });
+  
+  console.log("🔞 Total adult channels found:", adultChannelsFound);
+  
+  allCategories.forEach(cat => {
+    const categoryChannels = streams.filter(s => s.category_id === cat.category_id);
+    const hasAdult = categoryChannels.some(ch => isAdultContent(ch));
+    
+    if (hasAdult) {
+      lockedCategories.add(cat.category_id);
+      console.log("🔒 Locked category:", cat.category_name, "ID:", cat.category_id);
+    }
+  });
+  
+  // Also check "All" category
+  const hasAdultInAll = streams.some(ch => isAdultContent(ch));
+  if (hasAdultInAll) {
+    lockedCategories.add("All");
+    console.log("🔒 Locked category: All");
+  }
+  
+  // Check Favorites
+  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
+  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
+    pl => pl.playlistName === currentPlaylistName
+  );
+  const favoritesList = currentPlaylist.favoritesLiveTV || [];
+  
+  console.log("🔍 Checking favorites:", favoritesList.length);
+  
+  const favChannels = favoritesList.map(favItem => {
+    if (typeof favItem === "number") {
+      return streams.find(s => s.stream_id === favItem);
+    }
+    return favItem;
+  }).filter(Boolean);
+  
+  const hasAdultInFav = favChannels.some(ch => isAdultContent(ch));
+  if (hasAdultInFav) {
+    lockedCategories.add("favorites");
+    console.log("🔒 Locked category: Favorites");
+  }
+  
+  console.log("🔒 Total locked categories:", lockedCategories.size);
+  console.log("🔒 Locked category IDs:", Array.from(lockedCategories));
+} else {
+  console.log("⚠️ No parental password set - skipping category locking");
+}
+
+
     renderSidebarCategories();
 
     // Render channels
@@ -3285,24 +3346,22 @@ if (isDown) {
     }
 
     // Set initial focus on first channel
-    setTimeout(() => {
-      const channels = qsa(".channel-card");
-      if (channels.length > 0) {
-        setFocus(channels, 0, "channel-card-focused");
-        focusedChannelIndex = 0;
-        inChannelGrid = true;
-        inSidebar = false;
-        inSidebarSearch = false;
-        inHeaderSearch = false;
-        inEPG = false;
-        inVideoPlayer = false;
-        inFavoriteBtn = false; // ADD THIS
-        inRemoveHistoryBtn = false; // ADD THIS
-      }
-
-            hideLoading();
-
-    }, 100);
+   // Set initial focus on SIDEBAR SEARCH
+setTimeout(() => {
+  // Focus on sidebar search instead of channels
+  inSidebarSearch = true;
+  inChannelGrid = false;
+  inSidebar = false;
+  inHeaderSearch = false;
+  inEPG = false;
+  inVideoPlayer = false;
+  inFavoriteBtn = false;
+  inRemoveHistoryBtn = false;
+  
+  setSidebarSearchFocus(true);
+  
+  hideLoading();
+}, 100);
 
     // document.querySelector("#sidebar-area").innerHTML =
     //   SidebarCategories(categoriesData);

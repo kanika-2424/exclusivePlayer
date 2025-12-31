@@ -460,17 +460,17 @@ try {
 
       <div class="input-group">
         <img class="nameicon" src="/assets/name.png" alt="name" />
-        <input type="text" placeholder="Any Name" autocomplete="off" value="ok">
+        <input type="text" placeholder="Any Name" autocomplete="off" value="okk">
       </div>
 
       <div class="input-group">
         <img src="/assets/profile.png" alt="username" />
-        <input type="text" placeholder="Username" autocomplete="off" value="testapp265">
+        <input type="text" placeholder="Username" autocomplete="off" value="ultrahydra">
       </div>
 
       <div class="input-group">
         <img src="/assets/lock.png" alt="password" />
-        <input type="password" placeholder="Password" autocomplete="new-password" value="MaJWZ7EmGC">
+        <input type="password" placeholder="Password" autocomplete="new-password" value="ultraperfect77">
 
         <div class="toggle-password">
   <i class="fa-solid fa-eye-slash"></i>

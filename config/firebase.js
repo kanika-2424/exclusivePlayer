@@ -1,10 +1,10 @@
-var firebaseConfig = {
-  apiKey: "AIzaSyDWMMJab7t_EzMns27VSlkB0noyT4irZvQ",
-  authDomain: "exclusive-player-1c8c4.firebaseapp.com",
-  projectId: "exclusive-player-1c8c4",
-  storageBucket: "exclusive-player-1c8c4.firebasestorage.app",
-  messagingSenderId: "73815415264",
-  appId: "1:73815415264:web:d72fb6d1070c0532ca7385"
+var firebaseConfig = { 
+  apiKey : "AIzaSyDWMMJab7t_EzMns27VSlkB0noyT4irZvQ" , 
+  authDomain : "exclusive-player-1c8c4.firebaseapp.com" , 
+  projectId : "exclusive-player-1c8c4" , 
+  storageBucket : "exclusive-player-1c8c4.firebasestorage.app" , 
+  messagingSenderId : "73815415264" , 
+  appId : "1:73815415264:web:d72fb6d1070c0532ca7385" 
 };
 
 

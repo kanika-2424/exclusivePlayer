@@ -1,7 +1,7 @@
 // ========================================
-// SOLUTION 1: On-Screen Console (RECOMMENDED for Tizen)
-// Add this at the TOP of your main JavaScript file
-// ========================================
+// ////SOLUTION 1: On-Screen Console (RECOMMENDED for Tizen)
+// /////Add this at the TOP of your main JavaScript file
+// ////========================================
 
 // // Create on-screen console for Tizen TV
 // window.TizenConsole = {
@@ -395,6 +395,13 @@ if (isLogin && selectedPlaylist) {
 
   }, 100); // Small delay to ensure splash shows
 
+
+
+
+    if (typeof logAllDnsEntries === "function") {
+    logAllDnsEntries();
+  }
+ 
 
   // Utility: Fetch TMDB ID only if function exists
   if (typeof getTmbdId === "function") {
