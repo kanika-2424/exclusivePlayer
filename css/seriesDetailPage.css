@@ -411,7 +411,7 @@ margin-right: 8px;
   border: none;
   border-radius: 12px;
   padding: 40px 60px;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  /* transition: opacity 0.3s ease, transform 0.3s ease; */
   box-sizing: border-box;
   z-index: 999;
 
