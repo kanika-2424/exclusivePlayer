@@ -465,12 +465,12 @@ try {
 
       <div class="input-group">
         <img src="/assets/profile.png" alt="username" />
-        <input type="text" placeholder="Username" autocomplete="off" value="ultrahydra">
+        <input type="text" placeholder="Username" autocomplete="off" value="testapp265">
       </div>
 
       <div class="input-group">
         <img src="/assets/lock.png" alt="password" />
-        <input type="password" placeholder="Password" autocomplete="new-password" value="ultraperfect77">
+        <input type="password" placeholder="Password" autocomplete="new-password" value="MaJWZ7EmGC">
 
         <div class="toggle-password">
   <i class="fa-solid fa-eye-slash"></i>

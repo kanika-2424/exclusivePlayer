@@ -368,40 +368,12 @@ let lockedCategories = new Set(); // Track which categories are locked
 
   let inPasswordModal = false;
   let pendingChannel = null; // Store channel data when password is required
+  let passwordModalOrigin = null; // Track where modal was opened from (sidebar/channels)
+
   let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
 let previousCategoryId = null; // Track previous category for re-locking
-let imagesLoading = false;
-let loadedImages = new Set();
-let imageLoadTimeout = null;
 
 
-
-// Show loading overlay
-const showImageLoading = () => {
-  const existing = document.getElementById("imageLoadingOverlay");
-  if (existing) return;
-
-  const overlay = document.createElement("div");
-  overlay.id = "imageLoadingOverlay";
-  overlay.innerHTML = `
-    <div class="image-loading-overlay">
-      <div class="loading-spinner"></div>
-      <p>Loading channels...</p>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-};
-
-// Hide loading overlay
-const hideImageLoading = () => {
-  const overlay = document.getElementById("imageLoadingOverlay");
-  if (overlay) {
-    overlay.classList.add("fade-out");
-    setTimeout(() => overlay.remove(), 300);
-  }
-  imagesLoading = false;
-  loadedImages = new Set();
-};
 
 
 
@@ -855,6 +827,9 @@ const setSidebarSearchFocus = (active) => {
   inChannelGrid = false;
   passwordModalFocusIndex = 0;
 
+    const previousSidebarIndex = focusedSidebarIndex;
+  inSidebar = false;
+
   // Add modal to page
   const modalContainer = document.createElement("div");
   modalContainer.innerHTML = PasswordModal();
@@ -884,7 +859,7 @@ const setSidebarSearchFocus = (active) => {
 
   // ===== HIDE PASSWORD MODAL =====
   // ===== HIDE PASSWORD MODAL (UPDATED) =====
- const hidePasswordModal = (clearPending = true) => {
+const hidePasswordModal = (clearPending = true) => {
   const modal = document.getElementById("passwordModalOverlay");
   const input = document.getElementById("passwordModalInput");
   
@@ -907,12 +882,16 @@ const setSidebarSearchFocus = (active) => {
 
   passwordModalFocusIndex = 0;
 
-  // Return focus to channel grid
+  // Always return focus to sidebar
   requestAnimationFrame(() => {
-    inChannelGrid = true;
-    const channels = qsa(".channel-card");
-    if (channels.length > 0) {
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    inSidebar = true;
+    inChannelGrid = false;
+    inSidebarSearch = false;
+    inHeaderSearch = false;
+    
+    const sidebarItems = qsa(".sidebar-item");
+    if (sidebarItems.length > 0) {
+      setSidebarFocus(focusedSidebarIndex);
     }
   });
 };
@@ -951,85 +930,67 @@ const updatePasswordModalFocus = () => {
 };
 
   // ===== VERIFY PASSWORD =====
-const verifyPassword = () => {
-  // Get input value immediately
+const verifyPasswordForCategory = () => {
   const input = document.getElementById("passwordModalInput");
-  const enteredPassword = input ? input.value.trim() : "";
+  if (!input) return;
   
-  // Blur input immediately for Tizen
-  if (input) {
-    input.blur();
-  }
-
-  if (!enteredPassword) {
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Please enter password");
-    }
-    // Refocus input after error
-    setTimeout(() => {
-      if (input) input.focus();
-    }, 100);
-    return;
-  }
-
+  const enteredPassword = input.value.trim();
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const savedPassword = selectedPlaylist.parentalPassword || "";
-
-  if (!savedPassword) {
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "No parental password set. Please set one in Settings.");
-    }
-    hidePasswordModal(true);
-    return;
-  }
-
-  if (enteredPassword === savedPassword) {
-    const categoryToUnlock = pendingChannel;
+  const correctPassword = selectedPlaylist.parentalPassword || "";
+  
+  if (enteredPassword === correctPassword) {
+    // Password correct - unlock category
+    const categoryToUnlock = pendingChannel; // This stores category ID
     
     if (categoryToUnlock) {
-      // Remove from locked categories ONLY for current view
       lockedCategories.delete(categoryToUnlock);
+      console.log("🔓 Unlocked category:", categoryToUnlock);
       
-      // Hide modal first for better UX
-      hidePasswordModal(false);
+      // Update previous category
+      previousCategoryId = categoryToUnlock;
+      selectedCategoryId = categoryToUnlock;
+    }
+    
+    // Hide modal immediately
+    hidePasswordModal(false);
+    
+    // Use requestAnimationFrame for smoother transition on Tizen
+    requestAnimationFrame(() => {
+      // Show brief loading message
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.innerHTML = `
+          <div style="display: flex; justify-content: center; align-items: center; height: 300px;">
+            <p style="color: white; font-size: 20px;">Loading channels...</p>
+          </div>
+        `;
+      }
       
-      // Then show toast and update UI
-      requestAnimationFrame(() => {
-        if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-          Toaster.showToast("success", "Category unlocked");
-        }
-        
-        // Switch to unlocked category
-        selectedCategoryId = categoryToUnlock;
-        previousCategoryId = categoryToUnlock;
+      // Render channels after a small delay for Tizen
+      setTimeout(() => {
         renderChannels();
         renderSidebarCategories();
         
-        // Focus first channel
+        // Focus on first channel after render completes
         setTimeout(() => {
           const channels = qsa(".channel-card");
           if (channels.length > 0) {
-            focusedChannelIndex = 0;
             inChannelGrid = true;
             inSidebar = false;
+            focusedChannelIndex = 0;
             setFocus(channels, 0, "channel-card-focused");
           }
         }, 100);
-      });
-    }
+      }, 50);
+    });
     
-    pendingChannel = null;
   } else {
+    // Wrong password
     if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Incorrect Password");
+      Toaster.showToast("error", "Incorrect password");
     }
-    if (input) {
-      input.value = "";
-      // Small delay before refocusing on Tizen
-      setTimeout(() => {
-        input.focus();
-      }, 100);
-    }
+    input.value = "";
+    input.focus();
   }
 };
 
@@ -1739,16 +1700,6 @@ const renderChannels = () => {
     return;
   }
 
-  // Show loading overlay
-  showImageLoading();
-  imagesLoading = true;
-  
-  // Set timeout to hide loading after 5 seconds max
-  if (imageLoadTimeout) clearTimeout(imageLoadTimeout);
-  imageLoadTimeout = setTimeout(() => {
-    hideImageLoading();
-  }, 5000);
-
   const currentPlaylistName = JSON.parse(
     localStorage.getItem("selectedPlaylist")
   ).playlistName;
@@ -1765,17 +1716,16 @@ const renderChannels = () => {
     selectedPlaylist.parentalPassword &&
     selectedPlaylist.parentalPassword.length > 0;
 
-  let loadedCount = 0;
-  const totalImages = channelsToShow.length;
-
+  // Use DocumentFragment for better performance
+  const fragment = document.createDocumentFragment();
+  const tempDiv = document.createElement('div');
+  
   const channelCardsHTML = channelsToShow
     .map((ch) => {
       const isFav = favoritesList.some(
         (fav) =>
           (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
       );
-
-      const shouldBlur = hasParentalPassword && isAdultContent(ch);
 
       return `
       <div class="channel-card" 
@@ -1786,7 +1736,7 @@ const renderChannels = () => {
           <img src="${ch.stream_icon}" 
                class="channel-logo" 
                alt="${ch.name}"
-               data-stream-id="${ch.stream_id}"
+               loading="lazy"
                onerror="this.src='/assets/profile.png'; this.onerror=null;" />
           <div class="channel-actions">
             <button class="favorite-btn">
@@ -1816,43 +1766,18 @@ const renderChannels = () => {
     })
     .join("");
 
-  channelGrid.innerHTML = channelCardsHTML;
-
-  // Handle image loading with timeout
-  setTimeout(() => {
-    const images = channelGrid.querySelectorAll("img.channel-logo");
+  // Use requestAnimationFrame for smoother rendering on Tizen
+  requestAnimationFrame(() => {
+    channelGrid.innerHTML = channelCardsHTML;
     
-    images.forEach((img) => {
-      const streamId = img.dataset.streamId;
-      
-      // Image loaded successfully
-      img.addEventListener("load", () => {
-        loadedCount++;
-        loadedImages.add(streamId);
-        
-        if (loadedCount >= totalImages) {
-          if (imageLoadTimeout) clearTimeout(imageLoadTimeout);
-          hideImageLoading();
-        }
-      });
-      
-      // Image failed to load
-      img.addEventListener("error", () => {
-        loadedCount++;
-        
-        if (loadedCount >= totalImages) {
-          if (imageLoadTimeout) clearTimeout(imageLoadTimeout);
-          hideImageLoading();
-        }
-      });
-    });
-    
-    // Update scroll arrows
-    const updateScrollArrows = window.updateScrollArrows;
-    if (typeof updateScrollArrows === 'function') {
-      updateScrollArrows();
-    }
-  }, 100);
+    // Update scroll arrows after render
+    setTimeout(() => {
+      const updateScrollArrows = window.updateScrollArrows;
+      if (typeof updateScrollArrows === 'function') {
+        updateScrollArrows();
+      }
+    }, 50);
+  });
 };
 
   // ===== RENDER SIDEBAR CATEGORIES =====
@@ -1973,7 +1898,7 @@ window.renderLiveTv = () => {
     if (inPasswordModal) {
       // Submit button
       if (e.target.classList.contains("password-submit-btn")) {
-        verifyPassword();
+    verifyPasswordForCategory(); // Changed function name
         return;
       }
 
@@ -2373,6 +2298,33 @@ if (isMenuDotsActive) {
     return;
   }
 
+
+    if (e.key === "ArrowRight") {
+    passwordModalFocusIndex++;
+    if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
+    
+
+    updatePasswordModalFocus();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === "ArrowLeft") {
+  passwordModalFocusIndex--;
+  if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
+
+  // Focus input if we moved back to it
+  if (passwordModalFocusIndex === 0) {
+    const input = document.getElementById("passwordModalInput");
+    if (input) input.focus();
+  }
+
+  updatePasswordModalFocus();
+  e.preventDefault();
+  return;
+}
+
+
   if (e.key === "ArrowUp") {
     passwordModalFocusIndex--;
     if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
@@ -2380,6 +2332,7 @@ if (isMenuDotsActive) {
     e.preventDefault();
     return;
   }
+ 
 
   if (e.key === "Enter") {
     // Blur input before any action
@@ -2390,7 +2343,7 @@ if (isMenuDotsActive) {
     
     if (passwordModalFocusIndex === 1) {
       // Submit
-      verifyPassword();
+    verifyPasswordForCategory(); // Changed function name
     } else if (passwordModalFocusIndex === 2) {
       // Cancel
       hidePasswordModal();
