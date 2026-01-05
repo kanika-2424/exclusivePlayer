@@ -476,7 +476,6 @@ const LoadingScreen = () => {
   return `
     <div class="livetv-loading-overlay" id="LoadingOverlay">
       <div class="loading-content">
-        <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
         <div class="spinner"></div>
         <div class="loading-text">Loading Dashboard</div>
         <div class="loading-subtext">Please wait while we load your dashboard...</div>

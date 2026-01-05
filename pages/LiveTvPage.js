@@ -3658,10 +3658,7 @@ setTimeout(() => {
     channelGrid.removeEventListener("scroll", window.updateScrollArrows);
   }
 
-     if (window.channelGridScrollHandler) {
-      channelGrid.removeEventListener("scroll", window.channelGridScrollHandler);
-      window.channelGridScrollHandler = null;
-    }
+    
   
 
         stopVideoControlsHideTimer();

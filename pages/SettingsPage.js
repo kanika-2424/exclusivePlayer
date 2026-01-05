@@ -512,9 +512,9 @@ if (document.activeElement && document.activeElement.tagName === "INPUT") {
       
       if (playlistsData.length > 0) {
         // If playlists exist, go to playlist page
-        localStorage.setItem("currentPage", "playlist");
+        localStorage.setItem("currentPage", "dashboard");
         if (SettingsPage.cleanup) SettingsPage.cleanup();
-        Router.showPage("playlist");
+        Router.showPage("dashboard");
       } else {
         // If no playlists, go to login page
         localStorage.removeItem("currentPage");
@@ -552,9 +552,9 @@ if (addPlaylistBtn) {
     
     if (playlistsData.length > 0) {
       // If playlists exist, go to playlist page
-      localStorage.setItem("currentPage", "playlist");
+      localStorage.setItem("currentPage", "dashboard");
       if (SettingsPage.cleanup) SettingsPage.cleanup();
-      Router.showPage("playlist");
+      Router.showPage("dashboard");
     } else {
       // If no playlists, go to login page
       localStorage.removeItem("currentPage");

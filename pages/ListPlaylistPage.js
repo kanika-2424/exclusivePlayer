@@ -102,17 +102,52 @@ function ListPlaylistPage() {
 `;
 
   // After HTML is in DOM, call mount to setup JS
-  setTimeout(() => {
-    mountListPlaylistPage(playlistsData);
-  }, 0);
+// After HTML is in DOM, call mount to setup JS
+setTimeout(() => {
+  // FORCE cleanup of Settings page
+  if (window.pageCleanups && window.pageCleanups.settings) {
+    console.log("🧹 Force cleaning Settings page from Playlist");
+    window.pageCleanups.settings();
+    window.pageCleanups.settings = null;
+  }
+  
+  if (typeof SettingsPage !== 'undefined' && SettingsPage.cleanup) {
+    SettingsPage.cleanup();
+  }
+  
+  mountListPlaylistPage(playlistsData);
+}, 150); // Increased delay to ensure DOM is ready
 
   return html;
 }
 
 let isLoggingIn = false; // Add this with other variables
 
+
+
 function mountListPlaylistPage(playlistsData) {
+
+    console.log("📋 Mounting Playlist page, currentPage:", localStorage.getItem("currentPage"));
+  
+  // FORCE cleanup of Settings page one more time
+  if (window.pageCleanups && window.pageCleanups.settings) {
+    console.log("🧹 Final Settings cleanup from mount");
+    window.pageCleanups.settings();
+    window.pageCleanups.settings = null;
+  }
+  
   // CRITICAL: Reset the login flag when mounting the page
+  isLoggingIn = false;
+
+
+  // CRITICAL: Reset the login flag when mounting the page
+
+    if (typeof SettingsPage !== 'undefined' && SettingsPage.cleanup) {
+    SettingsPage.cleanup();
+  }
+  
+
+
   isLoggingIn = false;
   
   const addPlaylistBtn = document.querySelector(".playlist-add-user");
@@ -272,41 +307,51 @@ if (addPlaylistBtn) {
     const rowLength = 4;
     const totalCards = cardElements.length;
 
-    if (modalOpen) {
-      switch (e.key) {
-        case "ArrowRight":
-          if (modalFocusIndex === -1) modalFocusIndex = 0;
-          else modalFocusIndex = (modalFocusIndex + 1) % modalButtons.length;
-          updateFocus();
-          e.preventDefault();
-          return;
-        case "ArrowLeft":
-          if (modalFocusIndex === -1) modalFocusIndex = 1;
-          else modalFocusIndex = (modalFocusIndex - 1 + modalButtons.length) % modalButtons.length;
-          updateFocus();
-          e.preventDefault();
-          return;
-        case "Enter":
-          // Ignore Enter if it's still held from long press
-          if (enterKeyIsDown) {
-            e.preventDefault();
-            return;
-          }
-          // Only execute if a button is focused
-          if (modalFocusIndex === -1) {
-            e.preventDefault();
-            return;
-          }
-          modalFocusIndex === 0 ? removePlaylist() : closeModal();
-          e.preventDefault();
-          return;
-        case "Escape":
-          closeModal();
-          e.preventDefault();
-          return;
-      }
+  if (modalOpen) {
+
+  // ✅ HANDLE BACK / RETURN / ESCAPE
+  if (
+    e.key === "Escape" ||
+    e.key === "Back" ||
+    e.key === "XF86Back" ||
+    e.keyCode === 10009
+  ) {
+    closeModal();
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  switch (e.key) {
+    case "ArrowRight":
+      if (modalFocusIndex === -1) modalFocusIndex = 0;
+      else modalFocusIndex = (modalFocusIndex + 1) % modalButtons.length;
+      updateFocus();
+      e.preventDefault();
       return;
-    }
+
+    case "ArrowLeft":
+      if (modalFocusIndex === -1) modalFocusIndex = 1;
+      else modalFocusIndex =
+        (modalFocusIndex - 1 + modalButtons.length) % modalButtons.length;
+      updateFocus();
+      e.preventDefault();
+      return;
+
+    case "Enter":
+      if (enterKeyIsDown || modalFocusIndex === -1) {
+        e.preventDefault();
+        return;
+      }
+
+      modalFocusIndex === 0 ? removePlaylist() : closeModal();
+      e.preventDefault();
+      return;
+  }
+
+  return;
+}
+
 
     // Handle long press on Enter key (only for playlist cards, not Add User button)
   if ((e.key === "Enter" || e.keyCode === 13) && !enterPressTimer) {
