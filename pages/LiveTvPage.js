@@ -3692,9 +3692,7 @@ ${SortingDialog()}
       <!-- Channels will be rendered dynamically by renderChannels() -->
     </div>
     
-    <button class="channel-scroll-arrow channel-scroll-right" id="channelScrollRight">
-      <i class="fa fa-chevron-right"></i>
-    </button>
+   
   </div>
 
       <div class="bottom-section">
