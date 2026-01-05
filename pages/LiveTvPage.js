@@ -752,11 +752,7 @@ const setSidebarSearchFocus = (active) => {
       c.classList.remove("channel-card-focused", "channel-card-selected")
     );
 
-    // Remove focus from sidebar items
-    const sidebarItems = qsa(".sidebar-item");
-    sidebarItems.forEach((item) =>
-      item.classList.remove("sidebar-focused", "sidebar-active")
-    );
+ 
 
     // Remove focus from EPG items
     const epgItems = qsa(".epg-item");

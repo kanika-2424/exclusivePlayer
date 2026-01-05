@@ -386,101 +386,103 @@ function showPasswordModal(movieId, movieName, onSuccess) {
   // Utility: group movies by category_id (string)
   console.log("currentPage", localStorage.getItem("currentPage"));
 
-  function buildCategoryMap() {
-    const allCats = Array.isArray(window.moviesCategories)
-      ? window.moviesCategories
-      : [];
-    const allMovies = Array.isArray(window.allMoviesStreams)
-      ? window.allMoviesStreams
-      : [];
+function buildCategoryMap() {
+  const allCats = Array.isArray(window.moviesCategories)
+    ? window.moviesCategories
+    : [];
+  const allMovies = Array.isArray(window.allMoviesStreams)
+    ? window.allMoviesStreams
+    : [];
 
-    const allFavoritesMovies = allMovies.filter((m) =>
-      favoritesMoviesIds.includes(m.stream_id)
+  const allFavoritesMovies = allMovies.filter((m) =>
+    favoritesMoviesIds.includes(m.stream_id)
+  );
+
+  const favoritesCategory = {
+    id: "-1",
+    name: "Favorites",
+    parent_id: 0,
+    movies: allFavoritesMovies,
+    _movieCount: allFavoritesMovies.length,
+  };
+
+  // Get continue watching movies
+  const allContinueWatchingMovies = allMovies.filter((m) => {
+    const isInContinueWatching = continueWatchingIds.includes(
+      Number(m.stream_id)
     );
-
-    const favoritesCategory = {
-      id: "-1",
-      name: "Favorites",
-      parent_id: 0,
-      movies: allFavoritesMovies,
-      _movieCount: allFavoritesMovies.length,
-    };
-
-    // Get continue watching movies
-    const allContinueWatchingMovies = allMovies.filter((m) => {
-      const isInContinueWatching = continueWatchingIds.includes(
-        Number(m.stream_id)
-      );
-      if (isInContinueWatching) {
-        console.log("✅ Found continue watching movie:", m.name, m.stream_id);
-      }
-      return isInContinueWatching;
-    });
-
-    console.log(
-      "📺 Total Continue Watching Movies:",
-      allContinueWatchingMovies.length
-    );
-
-    const continueWatchingCategory = {
-      id: "-2",
-      name: "Continue Watching",
-      parent_id: 0,
-      movies: allContinueWatchingMovies,
-      _movieCount: allContinueWatchingMovies.length,
-    };
-
-    // Normalize categories into our structure
-    const normalizedCategories = allCats.map((c) => ({
-      id: String(c.category_id || c.id),
-      name: c.category_name || c.name || `Cat ${c.category_id || c.id}`,
-      parent_id: c.parent_id || 0,
-      movies: [],
-      _movieCount: 0,
-    }));
-
-    categories = [
-      favoritesCategory,
-      continueWatchingCategory,
-      ...normalizedCategories,
-    ];
-
-    // Build map skeleton`
-    moviesByCategory = {};
-    categories.forEach((c) => (moviesByCategory[c.id] = []));
-
-    moviesByCategory["-1"] = allFavoritesMovies;
-    moviesByCategory["-2"] = allContinueWatchingMovies;
-
-    // Group movies
-    for (const m of allMovies) {
-      const cid = String(
-        m.category_id ||
-          (Array.isArray(m.category_ids) && m.category_ids[0]) ||
-          "-3"
-      );
-      if (!moviesByCategory[cid]) moviesByCategory[cid] = [];
-      moviesByCategory[cid].push(m);
+    if (isInContinueWatching) {
+      console.log("✅ Found continue watching movie:", m.name, m.stream_id);
     }
+    return isInContinueWatching;
+  });
 
-    // Attach to categories and compute counts
-    categories.forEach((c) => {
-      if (c.id === "-1" || c.id === "-2") return;
+  console.log(
+    "📺 Total Continue Watching Movies:",
+    allContinueWatchingMovies.length
+  );
 
-      c.movies = moviesByCategory[c.id] || [];
-      c._movieCount = (c.movies && c.movies.length) || 0;
-    });
+  const continueWatchingCategory = {
+    id: "-2",
+    name: "Continue Watching",
+    parent_id: 0,
+    movies: allContinueWatchingMovies,
+    _movieCount: allContinueWatchingMovies.length,
+  };
 
-    // If no selectedCategoryId, pick first with movies or first category
-    if (!selectedCategoryId) {
-      const withMovies = categories.find((c) => c._movieCount > 0);
-      selectedCategoryId = withMovies
-        ? withMovies.id
-        : categories[0]
-        ? categories[0].id
-        : null;
+  // Normalize categories into our structure
+  const normalizedCategories = allCats.map((c) => ({
+    id: String(c.category_id || c.id),
+    name: c.category_name || c.name || `Cat ${c.category_id || c.id}`,
+    parent_id: c.parent_id || 0,
+    movies: [],
+    _movieCount: 0,
+  }));
+
+  categories = [
+    favoritesCategory,
+    continueWatchingCategory,
+    ...normalizedCategories,
+  ];
+
+  // Build map skeleton
+  moviesByCategory = {};
+  categories.forEach((c) => (moviesByCategory[c.id] = []));
+
+  moviesByCategory["-1"] = allFavoritesMovies;
+  moviesByCategory["-2"] = allContinueWatchingMovies;
+
+  // Group movies
+  for (const m of allMovies) {
+    const cid = String(
+      m.category_id ||
+        (Array.isArray(m.category_ids) && m.category_ids[0]) ||
+        "-3"
+    );
+    if (!moviesByCategory[cid]) moviesByCategory[cid] = [];
+    moviesByCategory[cid].push(m);
+  }
+
+  // Attach to categories and compute counts
+  categories.forEach((c) => {
+    if (c.id === "-1" || c.id === "-2") return;
+
+    c.movies = moviesByCategory[c.id] || [];
+    c._movieCount = (c.movies && c.movies.length) || 0;
+  });
+
+  // ⭐ ALWAYS select 3rd category (index 2) on fresh load
+  if (!selectedCategoryId) {
+    // If we have at least 3 categories, select the 3rd one (index 2)
+    if (categories.length > 2) {
+      selectedCategoryId = categories[2].id;
+      console.log("✅ Auto-selected 3rd category:", categories[2].name);
+    } else {
+      // Fallback to first category if less than 3 categories exist
+      selectedCategoryId = categories[0] ? categories[0].id : null;
     }
   }
+}
 
 
 
@@ -2096,75 +2098,103 @@ if (currentSection === "categories") {
     document.addEventListener("keydown", keydownHandler);
     document.addEventListener("keyup", keyupHandler);
 
-    // Restore saved focus if returning from detail
-    const savedCatId = localStorage.getItem("moviesSelectedCategoryId");
-    const savedCatIndex = localStorage.getItem("moviesCategoryIndex");
-    const savedCardIndex = localStorage.getItem("moviesCardIndex");
+  // Restore saved focus if returning from detail
+const savedCatId = localStorage.getItem("moviesSelectedCategoryId");
+const savedCatIndex = localStorage.getItem("moviesCategoryIndex");
+const savedCardIndex = localStorage.getItem("moviesCardIndex");
 
-    console.log(
-      "🔄 Initializing Movies Page - savedCatId:",
-      savedCatId,
-      "savedCardIndex:",
-      savedCardIndex
-    );
+console.log(
+  "🔄 Initializing Movies Page - savedCatId:",
+  savedCatId,
+  "savedCardIndex:",
+  savedCardIndex
+);
 
-    const comingFromDashboard = !savedCatId && !savedCardIndex;
-    if (comingFromDashboard) {
-      // Coming from dashboard or fresh - start from beginning
-      console.log("🆕 Fresh start from dashboard");
+const comingFromDashboard = !savedCatId && !savedCardIndex;
+if (comingFromDashboard) {
+  // Coming from dashboard or fresh - start from beginning
+  console.log("🆕 Fresh start from dashboard");
 
-      if (!pageState) {
-        console.error("❌ pageState is undefined in initialization!");
-        return;
-      }
+  if (!pageState) {
+    console.error("❌ pageState is undefined in initialization!");
+    return;
+  }
 
+  // ⭐ ALWAYS start with 3rd category (index 2) - first regular category
+  const startCategoryIndex = 2; // Skip Favorites (0) and Continue Watching (1)
+  
+  // Set the selected category to the 3rd category
+  if (categories.length > startCategoryIndex) {
+    selectedCategoryId = categories[startCategoryIndex].id;
+    currentCategoryIndex = startCategoryIndex;
+    
+    // Update UI to show active category
+    renderCategoriesUI();
+    
+    // Render cards for this category
+    visibleCount = PAGE_SIZE;
+    renderCards();
+    
+    console.log("✅ Starting with category:", categories[startCategoryIndex].name);
+  } else {
+    // Fallback if not enough categories
+    selectedCategoryId = categories[0].id;
+    currentCategoryIndex = 0;
+  }
+
+  pageState.currentFocusIndex = 0;
+  pageState.currentCategoryIndex = startCategoryIndex;
+  pageState.currentSection = "movies";
+  pageState.lastFocusedCategory = startCategoryIndex;
+
+  // ⭐ Remove any stale focus classes
+  qsa(".movie-card").forEach((c) => c.classList.remove("focused"));
+  qsa(".movies-category-item").forEach((c) =>
+    c.classList.remove("focused")
+  );
+
+  setTimeout(() => {
+    // Check if the 3rd category has movies
+    const startCategory = categories[startCategoryIndex];
+    if (startCategory && startCategory.movies && startCategory.movies.length > 0) {
+      console.log("🎯 Setting focus to first card in 3rd category");
       pageState.currentFocusIndex = 0;
-      pageState.currentCategoryIndex = 0;
-      pageState.currentSection = "movies";
-      pageState.lastFocusedCategory = 0;
-
-      visibleCount = PAGE_SIZE;
-
-      // ⭐ Remove any stale focus classes
-      qsa(".movie-card").forEach((c) => c.classList.remove("focused"));
-      qsa(".movies-category-item").forEach((c) =>
-        c.classList.remove("focused")
-      );
-
-      setTimeout(() => {
-        console.log("🎯 Setting focus to first card (index 0)");
-        pageState.currentFocusIndex = 0; // Set again to be sure
-        setFocusOnCard(0);
-        console.log(
-          "✅ Focus set. currentFocusIndex is now:",
-          currentFocusIndex
-        );
-      }, 100);
+      currentFocusIndex = 0;
+      setFocusOnCard(0);
     } else {
-      // Coming from movie detail page - restore position
-      console.log("↩️ Restoring from detail page");
-      selectedCategoryId = String(savedCatId);
-      currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
-      currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
-      visibleCount = savedCardIndex
-        ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE)
-        : PAGE_SIZE;
-      renderCategoriesUI();
-      renderCards();
-      hideLoadingScreen();
-
-      setTimeout(() => {
-        if (savedCardIndex) {
-          console.log("🎯 Restoring focus to card:", savedCardIndex);
-          setFocusOnCard(Number(savedCardIndex));
-        } else {
-          setFocusOnCategory(currentCategoryIndex);
-        }
-      }, 80);
-      localStorage.removeItem("moviesSelectedCategoryId");
-      localStorage.removeItem("moviesCategoryIndex");
-      localStorage.removeItem("moviesCardIndex");
+      console.log("⚠️ 3rd category has no movies, focusing on category");
+      setFocusOnCategory(startCategoryIndex);
     }
+    console.log(
+      "✅ Focus set. currentFocusIndex is now:",
+      currentFocusIndex
+    );
+  }, 100);
+} else {
+  // Coming from movie detail page - restore position
+  console.log("↩️ Restoring from detail page");
+  selectedCategoryId = String(savedCatId);
+  currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 2; // Default to 3rd category
+  currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
+  visibleCount = savedCardIndex
+    ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE)
+    : PAGE_SIZE;
+  renderCategoriesUI();
+  renderCards();
+  hideLoadingScreen();
+
+  setTimeout(() => {
+    if (savedCardIndex) {
+      console.log("🎯 Restoring focus to card:", savedCardIndex);
+      setFocusOnCard(Number(savedCardIndex));
+    } else {
+      setFocusOnCategory(currentCategoryIndex);
+    }
+  }, 80);
+  localStorage.removeItem("moviesSelectedCategoryId");
+  localStorage.removeItem("moviesCategoryIndex");
+  localStorage.removeItem("moviesCardIndex");
+}
 
      const menuDots = document.querySelector('.menu-dots');
 if (menuDots) {

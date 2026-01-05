@@ -1,5 +1,6 @@
 let movieSortValue = localStorage.getItem("movieSortValue") || "default";
 let seriesSortValue = localStorage.getItem("seriesSortValue") || "default"; // Add this line
+let liveTvSortValue = localStorage.getItem("liveTvSortValue") || "default"; // ✅ Add this line
 
 let sidebarLinks = [];
 let selectedIndex = 0;
@@ -9,7 +10,6 @@ let globalShowContiueButton = false;
 function cleanupLivePlayer() {
   try {
     if (window.livePlayer) {
-      console.log("Disposing live player...");
 
       // Store player reference to avoid race conditions
       const currentPlayer = window.livePlayer;
@@ -131,19 +131,23 @@ function Sidebar({
 /* -------- Sorting Dialog -------- */
 function SortingDialog() {
   const showTopRated = localStorage.getItem("isLivePageOpen") == "true";
-  const currentPage = localStorage.getItem("currentPage");
+  const sidebarPage = localStorage.getItem("sidebarPage");
   
   // Get the appropriate sort value based on current page
-    let currentSortValue = "default";
-  if (currentPage === "moviesPage") {
+  let currentSortValue = "default";
+  if (sidebarPage === "moviesPage") {
     currentSortValue = localStorage.getItem("movieSortValue") || "default";
-  } else if (currentPage === "seriesPage") {
+  } else if (sidebarPage === "seriesPage") {
     currentSortValue = localStorage.getItem("seriesSortValue") || "default";
-  } else if (currentPage === "liveTvPage") {
-    currentSortValue = localStorage.getItem("liveTvSortValue") || "default"; // ✅ Add this
+  } else if (sidebarPage === "liveTvPage") {
+    currentSortValue = localStorage.getItem("liveTvSortValue") || "default";
   } else {
     currentSortValue = localStorage.getItem("movieSortValue") || "default";
   }
+  
+  // ✅ Trim and ensure it's a string
+  currentSortValue = String(currentSortValue).trim();
+
 
   return `
     <div class="sorting-overlay-dialog sorting-overlay-dialog-hidden" id="sortingDialog">
@@ -151,32 +155,22 @@ function SortingDialog() {
         <p class="sorting-title">Sorting Options</p>
         <div class="sorting-options">
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="default" ${
-              currentSortValue === "default" ? "checked" : ""
-            }> Default
+            <input type="radio" name="sorting" value="default" ${currentSortValue === "default" ? 'checked="checked"' : ""}> Default
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="az" ${
-              currentSortValue === "az" ? "checked" : ""
-            }> A - Z
+            <input type="radio" name="sorting" value="az" ${currentSortValue === "az" ? 'checked="checked"' : ""}> A - Z
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="za" ${
-              currentSortValue === "za" ? "checked" : ""
-            }> Z - A
+            <input type="radio" name="sorting" value="za" ${currentSortValue === "za" ? 'checked="checked"' : ""}> Z - A
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="recent" ${
-              currentSortValue === "recent" ? "checked" : ""
-            }> Recently Added
+            <input type="radio" name="sorting" value="recent" ${currentSortValue === "recent" ? 'checked="checked"' : ""}> Recently Added
           </label>
           ${
             !showTopRated
               ? `
             <label class="sorting-option">
-              <input type="radio" name="sorting" value="top" ${
-                currentSortValue === "top" ? "checked" : ""
-              }> Top Rated
+              <input type="radio" name="sorting" value="top" ${currentSortValue === "top" ? 'checked="checked"' : ""}> Top Rated
             </label>
           `
               : ""
@@ -221,6 +215,10 @@ function attachSortingDialogEvents() {
 
 /* -------- Sorting Dialog Functions -------- */
 function openSortingDialog() {
+  // Get the current page BEFORE updating dialog
+  const currentPage = localStorage.getItem("sidebarPage");
+  console.log("Opening sort dialog for page:", currentPage);
+  
   // Update the dialog first to reflect current PageOpen value
   updateSortingDialog();
 
@@ -230,8 +228,38 @@ function openSortingDialog() {
   dialog.classList.remove("sorting-overlay-dialog-hidden");
   localStorage.setItem("currentPage", "sortingDialog");
 
-  const firstOption = dialog.querySelector(".sorting-option input");
-  if (firstOption) firstOption.focus();
+  // ✅ ADD THIS: Programmatically ensure the correct radio is checked
+  const sidebarPage = localStorage.getItem("sidebarPage");
+  let savedSortValue = "default";
+  
+  if (sidebarPage === "moviesPage") {
+    savedSortValue = localStorage.getItem("movieSortValue") || "default";
+  } else if (sidebarPage === "seriesPage") {
+    savedSortValue = localStorage.getItem("seriesSortValue") || "default";
+  } else if (sidebarPage === "liveTvPage") {
+    savedSortValue = localStorage.getItem("liveTvSortValue") || "default";
+  }
+  
+  // Force check the correct radio button
+  const radioToCheck = dialog.querySelector(`input[type="radio"][value="${savedSortValue}"]`);
+  if (radioToCheck) {
+    // Uncheck all first
+    dialog.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.checked = false;
+    });
+    // Check the correct one
+    radioToCheck.checked = true;
+    console.log("✅ Programmatically checked radio:", savedSortValue);
+  }
+
+  // Focus on the checked radio button instead of first option
+  const checkedRadio = dialog.querySelector('input[type="radio"]:checked');
+  if (checkedRadio) {
+    checkedRadio.focus();
+  } else {
+    const firstOption = dialog.querySelector(".sorting-option input");
+    if (firstOption) firstOption.focus();
+  }
 }
 
 function closeSortingDialog() {
@@ -239,6 +267,9 @@ function closeSortingDialog() {
   if (!dialog) return;
 
   dialog.classList.add("sorting-overlay-dialog-hidden");
+  
+  // ✅ Clean up the origin tracker
+  localStorage.removeItem("sortingDialogOrigin");
 
   // return focus to sidebar after closing
   localStorage.setItem("currentPage", "sidebar");
@@ -252,9 +283,8 @@ function applySorting() {
   
   if (checked) {
     const sortValue = checked.value;
-    const currentPage = localStorage.getItem("sidebarPage"); // Get the page that opened sidebar
+    const currentPage = localStorage.getItem("sortingDialogOrigin") || localStorage.getItem("sidebarPage");
     
-    console.log("Applied sorting:", sortValue, "for page:", currentPage);
     
     // Save to appropriate localStorage key based on page
     if (currentPage === "moviesPage") {

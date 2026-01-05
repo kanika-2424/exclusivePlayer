@@ -376,11 +376,15 @@ categories = [favoritesCategory, continueWatchingCategory, ...normalizedCategori
       c._movieCount = (c.movies && c.movies.length) || 0;
     });
 
-    // If no selectedCategoryId, pick first with series or first category
-    if (!selectedCategoryId) {
-      const withSeries = categories.find(c => c._movieCount > 0);
-      selectedCategoryId = withSeries ? withSeries.id : (categories[0] ? categories[0].id : null);
-    }
+// ⭐ ALWAYS select 3rd category (index 2) on fresh load
+if (!selectedCategoryId) {
+  if (categories.length > 2) {
+    selectedCategoryId = categories[2].id;
+    console.log("✅ Auto-selected 3rd series category:", categories[2].name);
+  } else {
+    selectedCategoryId = categories[0] ? categories[0].id : null;
+  }
+}
   }
 
 
@@ -1804,54 +1808,69 @@ if (searchResults.length === 0) {
 
     console.log("🔄 Initializing Series Page - savedCatId:", savedCatId, "savedCardIndex:", savedCardIndex);
 
-    const comingFromDashboard = !savedCatId && !savedCardIndex;
-    if (comingFromDashboard) {
-      // Coming from dashboard or fresh - start from beginning
-      console.log("🆕 Fresh start from dashboard");
+  const comingFromDashboard = !savedCatId && !savedCardIndex;
 
-      if (!pageState) {
-        console.error("❌ pageState is undefined in initialization!");
-        return;
-      }
+if (comingFromDashboard) {
+  console.log("🆕 Fresh start from dashboard (Series)");
 
+  if (!pageState) {
+    console.error("❌ pageState is undefined in initialization!");
+    return;
+  }
+
+  const startCategoryIndex = 2; // ⭐ Skip Favorites & Continue Watching
+
+  if (categories.length > startCategoryIndex) {
+    selectedCategoryId = categories[startCategoryIndex].id;
+    currentCategoryIndex = startCategoryIndex;
+
+    renderCategoriesUI();
+
+    visibleCount = PAGE_SIZE;
+    renderCards();
+
+    console.log(
+      "✅ Starting with series category:",
+      categories[startCategoryIndex].name
+    );
+  } else {
+    selectedCategoryId = categories[0].id;
+    currentCategoryIndex = 0;
+  }
+
+  pageState.currentFocusIndex = 0;
+  pageState.currentCategoryIndex = startCategoryIndex;
+  pageState.currentSection = "series";
+  pageState.lastFocusedCategory = startCategoryIndex;
+
+  // 🧹 Remove stale focus
+  qsa(".movie-card").forEach(c => c.classList.remove("focused"));
+  qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
+
+  setTimeout(() => {
+    const startCategory = categories[startCategoryIndex];
+
+    if (
+      startCategory &&
+      startCategory.movies &&
+      startCategory.movies.length > 0
+    ) {
+      console.log("🎯 Setting focus to first series card");
+      currentFocusIndex = 0;
       pageState.currentFocusIndex = 0;
-      pageState.currentCategoryIndex = 0;
-      pageState.currentSection = "series";
-      pageState.lastFocusedCategory = 0;
-
-      visibleCount = PAGE_SIZE;
-      
-      // ⭐ Remove any stale focus classes
-      qsa(".movie-card").forEach(c => c.classList.remove("focused"));
-      qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
-      
-      setTimeout(() => {
-        console.log("🎯 Setting focus to first card (index 0)");
-        pageState.currentFocusIndex = 0; // Set again to be sure
-        setFocusOnCard(0);
-        console.log("✅ Focus set. currentFocusIndex is now:", currentFocusIndex);
-      }, 100);
+      setFocusOnCard(0);
     } else {
-      // Coming from series detail page - restore position
-      console.log("↩️ Restoring from detail page");
-      selectedCategoryId = String(savedCatId);
-      currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 0;
-      currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
-      visibleCount = savedCardIndex ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE) : PAGE_SIZE;
-      renderCategoriesUI();
-      renderCards();
-      setTimeout(() => {
-        if (savedCardIndex) {
-          console.log("🎯 Restoring focus to card:", savedCardIndex);
-          setFocusOnCard(Number(savedCardIndex));
-        } else {
-          setFocusOnCategory(currentCategoryIndex);
-        }
-      }, 80);
-      localStorage.removeItem("seriesSelectedCategoryId");
-      localStorage.removeItem("seriesCategoryIndex");
-      localStorage.removeItem("seriesCardIndex");
+      console.log("⚠️ 3rd category has no series, focusing category");
+      setFocusOnCategory(startCategoryIndex);
     }
+
+    console.log(
+      "✅ Focus set. currentFocusIndex:",
+      currentFocusIndex
+    );
+  }, 100);
+}
+
 
     const menuKeyHandler = (e) => {
   const currentPage = localStorage.getItem('currentPage');

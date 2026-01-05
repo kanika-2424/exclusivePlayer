@@ -1,7 +1,7 @@
 // ========================================
 // ////SOLUTION 1: On-Screen Console (RECOMMENDED for Tizen)
 // /////Add this at the TOP of your main JavaScript file
-// ////========================================
+// //// ========================================
 
 // // Create on-screen console for Tizen TV
 // window.TizenConsole = {

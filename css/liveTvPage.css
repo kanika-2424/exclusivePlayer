@@ -226,8 +226,8 @@
 }
 
 .sidebar-active {
-    background: rgba(55, 155, 254, 1);
-    border: 2px solid rgba(55, 155, 254, 1);
+    background: rgba(55, 155, 254, 1) !important;
+    border: 2px solid rgba(55, 155, 254, 1) !important;
 }
 
 .sidebar-item-name {
@@ -1879,3 +1879,18 @@ video {
 
 
 
+
+
+/* Also update focused state to not override active */
+.sidebar-item.sidebar-focused {
+    outline: 3px solid #0ea5e9;
+    outline-offset: 2px;
+}
+
+/* When both focused AND active */
+.sidebar-item.sidebar-active.sidebar-focused {
+    background: rgba(55, 155, 254, 1) !important;
+    border: 2px solid rgba(55, 155, 254, 1) !important;
+    outline: 3px solid #fbbf24;
+    outline-offset: 2px;
+}

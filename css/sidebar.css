@@ -148,6 +148,7 @@
 #sortingApplyBtn {
     background: #0ea5e9;
     color: white;
+    margin-left: 20px;
 }
 
 #sortingApplyBtn:focus,
