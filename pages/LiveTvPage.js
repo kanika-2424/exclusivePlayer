@@ -66,7 +66,6 @@ const LiveTvLoadingScreen = () => {
   return `
     <div class="livetv-loading-overlay" id="liveTvLoadingOverlay">
       <div class="loading-content">
-        <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
         <div class="spinner"></div>
         <div class="loading-text">Loading Live TV</div>
         <div class="loading-subtext">Please wait while we load your channels...</div>
@@ -111,192 +110,7 @@ function LiveTvPage() {
   }, 3000);
 
   // ===== HELPER: Get Filtered Categories =====
-  const getFilteredCategories = () => {
-    try {
-      const currentPlaylistName = JSON.parse(
-        localStorage.getItem("selectedPlaylist")
-      ).playlistName;
 
-      if (!currentPlaylistName) {
-        console.error("❌ No playlist name found");
-        return [];
-      }
-
-      const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-      if (!playlistsData) {
-        console.error("❌ No playlists data found");
-        return [];
-      }
-
-      const currentPlaylist = playlistsData.find(
-        (pl) => pl.playlistName === currentPlaylistName
-      );
-      if (!currentPlaylist) {
-        console.error("❌ Current playlist not found");
-        return [];
-      }
-
-      const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
-      const channelHistory = currentPlaylist.ChannelListLive || [];
-
-      // **CRITICAL: Get streams from multiple sources**
-      const streams =
-        window.currentAllStreams || allStreams || window.allLiveStreams || [];
-
-      console.log("🔍 Streams available:", streams.length);
-
-      if (streams.length === 0) {
-        console.warn("⚠️ No streams available in getFilteredCategories");
-      }
-
-      // **SAFE MAPPING**
-      const filteredCategories = (
-        categories ||
-        window.liveCategories ||
-        []
-      ).map((c) => {
-        let categoryChannels = [];
-
-        try {
-          categoryChannels =
-            streams.filter((s) => s.category_id === c.category_id) || [];
-
-          if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-            categoryChannels = categoryChannels.filter((ch) =>
-              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-            );
-          }
-        } catch (err) {
-          console.error("Error filtering category channels:", err);
-        }
-
-        return {
-          ...c,
-          channels: categoryChannels,
-        };
-      });
-
-      const allLiveStreams =
-        searchQuery.trim() && selectedCategoryId === "All"
-          ? streams.filter((ch) =>
-              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          : streams;
-
-      console.log("🔍 Processing favorites:", updatedFavorites.length);
-
-      // **SAFE FAVORITES MAPPING**
-      const favoritesChannels = (updatedFavorites || [])
-        .map((favItem) => {
-          try {
-            if (typeof favItem === "number") {
-              return (
-                streams.find((s) => s.stream_id === favItem) || {
-                  stream_id: favItem,
-                  name: "Unknown",
-                  stream_icon: "/assets/profile.png",
-                }
-              );
-            }
-            if (!favItem.stream_icon) {
-              const fullData = streams.find(
-                (s) => s.stream_id === favItem.stream_id
-              );
-              return fullData || favItem;
-            }
-            return favItem;
-          } catch (err) {
-            console.error("Error mapping favorite:", err, favItem);
-            return favItem;
-          }
-        })
-        .filter((ch) => {
-          if (!searchQuery.trim() || selectedCategoryId !== "favorites")
-            return true;
-          return (ch.name || "")
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
-        });
-
-      console.log("🔍 Processing history:", channelHistory.length);
-
-      // **SAFE HISTORY MAPPING**
-      const historyChannels = (channelHistory || [])
-        .map((histItem) => {
-          try {
-            if (typeof histItem === "number") {
-              return (
-                streams.find((s) => s.stream_id === histItem) || {
-                  stream_id: histItem,
-                  name: "Unknown",
-                  stream_icon: "/assets/profile.png",
-                }
-              );
-            }
-            if (!histItem.stream_icon) {
-              const fullData = streams.find(
-                (s) => s.stream_id === histItem.stream_id
-              );
-              return fullData || histItem;
-            }
-            return histItem;
-          } catch (err) {
-            console.error("Error mapping history item:", err, histItem);
-            return histItem;
-          }
-        })
-        .filter((ch) => {
-          if (!searchQuery.trim() || selectedCategoryId !== "channelHistory")
-            return true;
-          return (ch.name || "")
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
-        });
-
-    // Apply sorting to each category's channels
-const result = [
-  {
-    category_id: "All",
-    category_name: "All",
-    channels: applySortingToChannels(allLiveStreams || []),
-  },
-  {
-    category_id: "favorites",
-    category_name: "Favorites",
-    channels: applySortingToChannels(favoritesChannels || []),
-  },
-  {
-    category_id: "channelHistory",
-    category_name: "Channel History",
-    channels: applySortingToChannels(historyChannels || []),
-  },
-  ...filteredCategories.map(cat => ({
-    ...cat,
-    channels: applySortingToChannels(cat.channels || [])
-  })),
-];
-
-console.log("✅ getFilteredCategories result:", result.length, "categories");
-return result;
-
-      console.log(
-        "✅ getFilteredCategories result:",
-        result.length,
-        "categories"
-      );
-      return result;
-    } catch (error) {
-      console.error("❌ ERROR in getFilteredCategories:", error);
-      console.error("Stack:", error.stack);
-      return [
-        {
-          category_id: "All",
-          category_name: "All",
-          channels: [],
-        },
-      ];
-    }
-  };
 
   // ===== HELPER: Apply Sorting to Channels =====
 const applySortingToChannels = (channels) => {
@@ -372,9 +186,225 @@ let lockedCategories = new Set(); // Track which categories are locked
 
   let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
 let previousCategoryId = null; // Track previous category for re-locking
+let currentCategoryChunk = 1;
+const categoriesPerChunk = 20;
+let allCategoriesData = []; // Store all categories
+let isLoadingMoreChannels = false;
+let isLoadingMoreCategories = false;
 
+const getFilteredCategories = () => {
 
+   console.log("🔍 getFilteredCategories called");
+  console.log("📊 Current chunks - Categories:", currentCategoryChunk, "Channels:", currentChunk);
+  
+  
+  try {
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
 
+    if (!currentPlaylistName) {
+      console.error("❌ No playlist name found");
+      return [];
+    }
+
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    if (!playlistsData) {
+      console.error("❌ No playlists data found");
+      return [];
+    }
+
+    const currentPlaylist = playlistsData.find(
+      (pl) => pl.playlistName === currentPlaylistName
+    );
+    if (!currentPlaylist) {
+      console.error("❌ Current playlist not found");
+      return [];
+    }
+
+    const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
+    const channelHistory = currentPlaylist.ChannelListLive || [];
+
+    const streams =
+      window.currentAllStreams || allStreams || window.allLiveStreams || [];
+
+    console.log("🔍 Streams available:", streams.length);
+
+    if (streams.length === 0) {
+      console.warn("⚠️ No streams available in getFilteredCategories");
+    }
+
+    // **FILTER CATEGORIES**
+    const filteredCategories = (
+      categories ||
+      window.liveCategories ||
+      []
+    ).map((c) => {
+      let categoryChannels = [];
+
+      try {
+        categoryChannels =
+          streams.filter((s) => s.category_id === c.category_id) || [];
+
+        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+          categoryChannels = categoryChannels.filter((ch) =>
+            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+      } catch (err) {
+        console.error("Error filtering category channels:", err);
+      }
+
+      return {
+        ...c,
+        channels: categoryChannels,
+      };
+    });
+
+    const allLiveStreams =
+      searchQuery.trim() && selectedCategoryId === "All"
+        ? streams.filter((ch) =>
+            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : streams;
+
+    console.log("🔍 Processing favorites:", updatedFavorites.length);
+
+    const favoritesChannels = (updatedFavorites || [])
+      .map((favItem) => {
+        try {
+          if (typeof favItem === "number") {
+            return (
+              streams.find((s) => s.stream_id === favItem) || {
+                stream_id: favItem,
+                name: "Unknown",
+                stream_icon: "/assets/profile.png",
+              }
+            );
+          }
+          if (!favItem.stream_icon) {
+            const fullData = streams.find(
+              (s) => s.stream_id === favItem.stream_id
+            );
+            return fullData || favItem;
+          }
+          return favItem;
+        } catch (err) {
+          console.error("Error mapping favorite:", err, favItem);
+          return favItem;
+        }
+      })
+      .filter((ch) => {
+        if (!searchQuery.trim() || selectedCategoryId !== "favorites")
+          return true;
+        return (ch.name || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+      });
+
+    console.log("🔍 Processing history:", channelHistory.length);
+
+    const historyChannels = (channelHistory || [])
+      .map((histItem) => {
+        try {
+          if (typeof histItem === "number") {
+            return (
+              streams.find((s) => s.stream_id === histItem) || {
+                stream_id: histItem,
+                name: "Unknown",
+                stream_icon: "/assets/profile.png",
+              }
+            );
+          }
+          if (!histItem.stream_icon) {
+            const fullData = streams.find(
+              (s) => s.stream_id === histItem.stream_id
+            );
+            return fullData || histItem;
+          }
+          return histItem;
+        } catch (err) {
+          console.error("Error mapping history item:", err, histItem);
+          return histItem;
+        }
+      })
+      .filter((ch) => {
+        if (!searchQuery.trim() || selectedCategoryId !== "channelHistory")
+          return true;
+        return (ch.name || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+      });
+
+    const result = [
+      {
+        category_id: "All",
+        category_name: "All",
+        channels: applySortingToChannels(allLiveStreams || []),
+        totalChannels: allLiveStreams.length, // ADD THIS
+      },
+      {
+        category_id: "favorites",
+        category_name: "Favorites",
+        channels: applySortingToChannels(favoritesChannels || []),
+        totalChannels: favoritesChannels.length, // ADD THIS
+      },
+      {
+        category_id: "channelHistory",
+        category_name: "Channel History",
+        channels: applySortingToChannels(historyChannels || []),
+        totalChannels: historyChannels.length, // ADD THIS
+      },
+      ...filteredCategories.map(cat => ({
+        ...cat,
+        channels: applySortingToChannels(cat.channels || []),
+        totalChannels: cat.channels.length, // ADD THIS
+      })),
+    ];
+
+    // STORE ALL CATEGORIES
+    allCategoriesData = result;
+
+    console.log("✅ getFilteredCategories result:", result.length, "categories");
+    return result;
+
+  } catch (error) {
+    console.error("❌ ERROR in getFilteredCategories:", error);
+    console.error("Stack:", error.stack);
+    return [
+      {
+        category_id: "All",
+        category_name: "All",
+        channels: [],
+        totalChannels: 0,
+      },
+    ];
+  }
+};
+
+// ===== GET CHUNKED CHANNELS =====
+const getChunkedChannels = (allChannels, chunk, pageSize) => {
+  const startIdx = (chunk - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  return allChannels.slice(0, endIdx); // Return all channels up to current chunk
+};
+
+// ===== GET CHUNKED CATEGORIES =====
+const getChunkedCategories = (allCategories, chunk, pageSize) => {
+  const startIdx = (chunk - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  return allCategories.slice(0, endIdx);
+};
+
+// ===== CHECK IF MORE CHANNELS AVAILABLE =====
+const hasMoreChannelsAvailable = (allChannels, chunk, pageSize) => {
+  return allChannels.length > chunk * pageSize;
+};
+
+// 4. CHECK IF MORE CATEGORIES AVAILABLE
+const hasMoreCategoriesAvailable = (allCategories, chunk, pageSize) => {
+  return allCategories.length > chunk * pageSize;
+};
 
 
   const showAspectRatioButton = () => {
@@ -491,7 +521,7 @@ const categoryHasAdultContent = (categoryId) => {
       this.classes.forEach((cls) => videoElement.classList.remove(cls));
 
       // Add the selected class
-      videoElement.classList.add(this.classes[index]);
+      videoElement.classList.add(this.classes[index]);  
     },
 
     cycle(videoElement) {
@@ -1690,7 +1720,12 @@ const renderChannels = () => {
   }
 
   const allChannels = selectedCat.channels || [];
-  const channelsToShow = allChannels;
+  
+  // **USE CHUNKED LOADING**
+  const channelsToShow = getChunkedChannels(allChannels, currentChunk, pageSize);
+const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+
+  console.log(`📺 Showing ${channelsToShow.length} of ${allChannels.length} channels (chunk ${currentChunk})`);
 
   if (channelsToShow.length === 0) {
     channelGrid.innerHTML = `
@@ -1710,16 +1745,6 @@ const renderChannels = () => {
 
   const isHistoryView = selectedCategoryId === "channelHistory";
 
-  const selectedPlaylist =
-    JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const hasParentalPassword =
-    selectedPlaylist.parentalPassword &&
-    selectedPlaylist.parentalPassword.length > 0;
-
-  // Use DocumentFragment for better performance
-  const fragment = document.createDocumentFragment();
-  const tempDiv = document.createElement('div');
-  
   const channelCardsHTML = channelsToShow
     .map((ch) => {
       const isFav = favoritesList.some(
@@ -1766,9 +1791,12 @@ const renderChannels = () => {
     })
     .join("");
 
+  // **ADD LOADING INDICATOR IF MORE CHANNELS AVAILABLE**
+
+
   // Use requestAnimationFrame for smoother rendering on Tizen
   requestAnimationFrame(() => {
-    channelGrid.innerHTML = channelCardsHTML;
+    channelGrid.innerHTML = channelCardsHTML ;
     
     // Update scroll arrows after render
     setTimeout(() => {
@@ -1780,13 +1808,97 @@ const renderChannels = () => {
   });
 };
 
+// ===== LOAD MORE CHANNELS FUNCTION =====
+// ===== LOAD MORE CHANNELS FUNCTION =====
+const loadMoreChannels = () => {
+  if (isLoadingMoreChannels) {
+    console.log("⏳ Already loading channels...");
+    return;
+  }
+  
+  const filtered = getFilteredCategories();
+  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+  const allChannels = selectedCat ? selectedCat.channels || [] : [];
+  const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+  
+  if (!hasMore) {
+    console.log("✅ No more channels to load");
+    return;
+  }
+  
+  isLoadingMoreChannels = true;
+  currentChunk++;
+  
+  console.log(`📺 Loading chunk ${currentChunk} (${currentChunk * pageSize} channels)...`);
+  
+  // Show loading indicator
+
+  
+  // Small delay for TV performance
+  setTimeout(() => {
+    renderChannels();
+    isLoadingMoreChannels = false;
+    
+    // Maintain focus on current channel
+    const channels = qsa(".channel-card");
+    if (channels.length > focusedChannelIndex) {
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
+    }
+  }, 100);
+};
+
+// ===== SETUP SCROLL-BASED AUTO-LOADING =====
+const setupScrollAutoLoad = () => {
+  const channelGrid = qs(".channel-grid");
+  if (!channelGrid) return;
+  
+  let scrollTimeout;
+  
+  const handleScroll = () => {
+    if (isLoadingMoreChannels) return;
+    
+    clearTimeout(scrollTimeout);
+    
+    scrollTimeout = setTimeout(() => {
+      const filtered = getFilteredCategories();
+      const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+      const allChannels = selectedCat ? selectedCat.channels || [] : [];
+      const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+      
+      if (!hasMore) return;
+      
+      // Check if scrolled near the end (80% of scroll width)
+      const scrollLeft = channelGrid.scrollLeft;
+      const scrollWidth = channelGrid.scrollWidth;
+      const clientWidth = channelGrid.clientWidth;
+      const scrollPercentage = (scrollLeft + clientWidth) / scrollWidth;
+      
+      if (scrollPercentage > 0.8) {
+        console.log("🔄 Scroll detected near end - auto-loading...");
+        loadMoreChannels();
+      }
+    }, 200); // Debounce scroll events
+  };
+  
+  channelGrid.addEventListener('scroll', handleScroll);
+  
+  // Store reference for cleanup
+  window.channelGridScrollHandler = handleScroll;
+};
+
   // ===== RENDER SIDEBAR CATEGORIES =====
 const renderSidebarCategories = () => {
   const filtered = getFilteredCategories();
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
   const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
 
-  const categoriesHTML = filtered
+  // **USE CHUNKED LOADING FOR CATEGORIES**
+  const categoriesToShow = getChunkedCategories(filtered, currentCategoryChunk, categoriesPerChunk);
+const hasMore = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
+
+  console.log(`📁 Showing ${categoriesToShow.length} of ${filtered.length} categories (chunk ${currentCategoryChunk})`);
+
+  const categoriesHTML = categoriesToShow
     .map((c) => {
       const isActive = c.category_id === selectedCategoryId;
       const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
@@ -1824,6 +1936,38 @@ const renderSidebarCategories = () => {
       </div>
     `;
   }
+};
+
+// ===== LOAD MORE CATEGORIES FUNCTION =====
+const loadMoreCategories = () => {
+  if (isLoadingMoreCategories) {
+    console.log("⏳ Already loading categories...");
+    return;
+  }
+  
+  const filtered = allCategoriesData.length > 0 ? allCategoriesData : getFilteredCategories();
+  const hasMore = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
+  
+  if (!hasMore) {
+    console.log("✅ No more categories to load");
+    return;
+  }
+  
+  isLoadingMoreCategories = true;
+  currentCategoryChunk++;
+  
+  console.log(`📁 Loading category chunk ${currentCategoryChunk}...`);
+  
+  setTimeout(() => {
+    renderSidebarCategories();
+    isLoadingMoreCategories = false;
+    
+    // Maintain sidebar focus
+    const sidebarItems = qsa(".sidebar-item");
+    if (sidebarItems.length > focusedSidebarIndex) {
+      setSidebarFocus(focusedSidebarIndex);
+    }
+  }, 100);
 };
 
 
@@ -2046,7 +2190,8 @@ if (sidebarItem) {
   // Category is unlocked or has no adult content - switch to it
   selectedCategoryId = catId;
   previousCategoryId = catId; // Track current category
-  currentChunk = 1;
+    currentChunk = 1; // **RESET CHUNK**
+
   focusedChannelIndex = 0;
 
   renderChannels();
@@ -2812,6 +2957,11 @@ if (inSidebarSearch) {
     // Sidebar navigation
  // Sidebar navigation
 if (inSidebar) {
+
+    const filtered = getFilteredCategories();
+const hasMoreCats = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
+  
+
   // UP: Go back to sidebar search box or stay at first item
   if (isUp) {
     if (focusedSidebarIndex > 0) {
@@ -2828,16 +2978,23 @@ if (inSidebar) {
     return;
   }
 
-  // DOWN: Navigate sidebar items
   if (isDown) {
+    const sidebarItems = qsa(".sidebar-item");
+    
     if (focusedSidebarIndex < sidebarItems.length - 1) {
       focusedSidebarIndex++;
       setSidebarFocus(focusedSidebarIndex);
+      
+      // **AUTO-LOAD MORE CATEGORIES WHEN NEAR END**
+      const isNearEnd = focusedSidebarIndex >= sidebarItems.length - 3;
+      if (isNearEnd && hasMoreCats && !isLoadingMoreCategories) {
+        console.log("🔄 Near end of categories - auto-loading...");
+        loadMoreCategories();
+      }
     }
     e.preventDefault();
     return;
   }
-
   // RIGHT: Go back to channels - ALWAYS START FROM FIRST CHANNEL
   if (isRight) {
     inSidebar = false;
@@ -3212,13 +3369,20 @@ if (isDown) {
 }
     // CHANNEL GRID NAVIGATION
 // CHANNEL GRID NAVIGATION
+// CHANNEL GRID NAVIGATION
 if (inChannelGrid) {
-  const rows = 3; // Total rows
+  const rows = 3;
   const totalChannels = channels.length;
   
+  // **GET CATEGORY DATA FOR AUTO-LOADING**
+  const filtered = getFilteredCategories();
+  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+  const allChannels = selectedCat ? selectedCat.channels || [] : [];
+const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+  
   // Calculate current position
-  const currentRow = focusedChannelIndex % rows; // 0, 1, or 2
-  const currentCol = Math.floor(focusedChannelIndex / rows); // Which column
+  const currentRow = focusedChannelIndex % rows;
+  const currentCol = Math.floor(focusedChannelIndex / rows);
   
   if (isUp) {
     if (currentRow > 0) {
@@ -3226,7 +3390,6 @@ if (inChannelGrid) {
       focusedChannelIndex--;
       setFocus(channels, focusedChannelIndex, "channel-card-focused");
       
-      // Scroll into view
       const card = channels[focusedChannelIndex];
       if (card) {
         card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
@@ -3242,56 +3405,54 @@ if (inChannelGrid) {
     return;
   }
 
-if (isDown) {
-  const nextIndex = focusedChannelIndex + 1;
-  const nextRow = nextIndex % rows;
-  
-  // Check if next card exists and is below current card
-  if (nextIndex < totalChannels && nextRow > currentRow) {
-    // Move down within same column
-    focusedChannelIndex = nextIndex;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
+  if (isDown) {
+    const nextIndex = focusedChannelIndex + 1;
+    const nextRow = nextIndex % rows;
     
-    // Scroll into view
-    const card = channels[focusedChannelIndex];
-    if (card) {
-      card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-    }
-  } else {
-    // At bottom row - check if a channel is playing
-    const playingCard = qs(".channel-card-playing");
-    
-    if (playingCard) {
-      // Channel is playing - go to video player
-      inChannelGrid = false;
-      inVideoPlayer = true;
-      inPlayPauseBtn = false;
-      inAspectRatioBtn = false;
-      channels.forEach((c) => c.classList.remove("channel-card-focused"));
-      showAspectRatioButton();
-
-      const videoDiv = qs(".live-video-player-div");
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+    if (nextIndex < totalChannels && nextRow > currentRow) {
+      // Move down within same column
+      focusedChannelIndex = nextIndex;
+      setFocus(channels, focusedChannelIndex, "channel-card-focused");
       
-      if (videoDiv) {
-        videoDiv.classList.add("video-focused");
-        videoDiv.style.border = "3px solid #0ea5e9";
-        videoDiv.style.boxSizing = "border-box";
-        videoDiv.style.outline = "3px solid #0ea5e9";
-        videoDiv.style.outlineOffset = "-3px";
+      const card = channels[focusedChannelIndex];
+      if (card) {
+        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
       }
-      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-      if (aspectBtn) {
-        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-        aspectBtn.style.border = "none";
+    } else {
+      // At bottom row - check if channel is playing
+      const playingCard = qs(".channel-card-playing");
+      
+      if (playingCard) {
+        // Channel is playing - go to video player
+        inChannelGrid = false;
+        inVideoPlayer = true;
+        inPlayPauseBtn = false;
+        inAspectRatioBtn = false;
+        
+        channels.forEach((c) => c.classList.remove("channel-card-focused"));
+        showAspectRatioButton();
+
+        const videoDiv = qs(".live-video-player-div");
+        const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+        const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+        
+        if (videoDiv) {
+          videoDiv.classList.add("video-focused");
+          videoDiv.style.border = "3px solid #0ea5e9";
+          videoDiv.style.boxSizing = "border-box";
+          videoDiv.style.outline = "3px solid #0ea5e9";
+          videoDiv.style.outlineOffset = "-3px";
+        }
+        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+        if (aspectBtn) {
+          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "none";
+        }
       }
     }
-    // If no channel is playing, stay on current card (do nothing)
+    e.preventDefault();
+    return;
   }
-  e.preventDefault();
-  return;
-}
 
   if (isLeft) {
     const prevIndex = focusedChannelIndex - rows;
@@ -3301,7 +3462,6 @@ if (isDown) {
       focusedChannelIndex = prevIndex;
       setFocus(channels, focusedChannelIndex, "channel-card-focused");
       
-      // Scroll into view
       const card = channels[focusedChannelIndex];
       if (card) {
         card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
@@ -3318,6 +3478,14 @@ if (isDown) {
   }
 
   if (isRight) {
+    // **CHECK IF NEAR END - AUTO LOAD MORE**
+    const isNearEnd = focusedChannelIndex >= totalChannels - (rows * 2); // Load when 2 columns from end
+    
+    if (isNearEnd && hasMore && !isLoadingMoreChannels) {
+      console.log("🔄 Near end - auto-loading more channels...");
+      loadMoreChannels();
+    }
+    
     // FIRST go to favorite button of current card
     inChannelGrid = false;
     inFavoriteBtn = true;
@@ -3419,6 +3587,9 @@ if (hasParentalPassword) {
     // Render channels
     renderChannels();
 
+
+      setupScrollAutoLoad();
+
     // In setTimeout(() => { ... }, 0) block, after renderChannels():
 
     // Menu key handler
@@ -3486,6 +3657,12 @@ setTimeout(() => {
   if (channelGrid) {
     channelGrid.removeEventListener("scroll", window.updateScrollArrows);
   }
+
+     if (window.channelGridScrollHandler) {
+      channelGrid.removeEventListener("scroll", window.channelGridScrollHandler);
+      window.channelGridScrollHandler = null;
+    }
+  
 
         stopVideoControlsHideTimer();
 
