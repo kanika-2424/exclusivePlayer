@@ -68,7 +68,44 @@ const LiveTvLoadingScreen = () => {
       <div class="loading-content">
         <div class="spinner"></div>
         <div class="loading-text">Loading Live TV</div>
-        <div class="loading-subtext">Please wait while we load your channels...</div>
+        <div class="loading-subtext" id="loadingSubtext">Please wait while we load your channels...</div>
+        <div class="loading-progress" id="loadingProgress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// ===== CHANNEL GRID LOADING OVERLAY =====
+const ChannelGridLoadingOverlay = () => {
+  return `
+    <div class="channel-grid-loading-overlay" id="channelGridLoading">
+      <div class="channel-loading-content">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Channels</div>
+        <div class="loading-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="channelProgressFill"></div>
+          </div>
+          <div class="progress-text" id="channelProgressText">0%</div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+// ===== SIDEBAR LOADING OVERLAY =====
+// ===== SIDEBAR LOADING OVERLAY =====
+const SidebarLoadingOverlay = () => {
+  return `
+    <div class="sidebar-loading-overlay" id="sidebarLoading">
+      <div class="sidebar-loading-content">
+        <div class="loading-text-small">Loading Categories...</div>
+        <div class="loading-subtext-small">Please wait</div>
       </div>
     </div>
   `;
@@ -80,7 +117,48 @@ function LiveTvPage() {
   const allStreams = window.allLiveStreams || [];
   let videoControlsHideTimer = null; // Timer for auto-hiding video controls
 
+  let isPageFullyLoaded = false;
 
+  // ===== IMAGE PRELOADING FUNCTION =====
+const preloadChannelImages = (channels, onProgress, onComplete) => {
+  if (!channels || channels.length === 0) {
+    onComplete();
+    return;
+  }
+
+  const totalImages = channels.length;
+  let loadedCount = 0;
+  let errorCount = 0;
+
+  const imagePromises = channels.map((ch) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        loadedCount++;
+        const progress = Math.round((loadedCount / totalImages) * 100);
+        onProgress(progress, loadedCount, totalImages);
+        resolve();
+      };
+      
+      img.onerror = () => {
+        errorCount++;
+        loadedCount++;
+        const progress = Math.round((loadedCount / totalImages) * 100);
+        onProgress(progress, loadedCount, totalImages);
+        resolve(); // Still resolve on error
+      };
+      
+      // Set source to start loading
+      img.src = ch.stream_icon || '/assets/profile.png';
+    });
+  });
+
+  Promise.all(imagePromises).then(() => {
+    console.log(`✅ Preloaded ${loadedCount} images (${errorCount} errors)`);
+    onComplete();
+  });
+};
 
     // ===== LOADING HELPERS =====
   const showLoading = () => {
@@ -101,6 +179,26 @@ function LiveTvPage() {
       }, 500);
     }
   };
+
+
+  // ADD THIS NEW FUNCTION
+const updateLoadingProgress = (percentage, message) => {
+  const progressFill = document.getElementById("progressFill");
+  const progressText = document.getElementById("progressText");
+  const loadingSubtext = document.getElementById("loadingSubtext");
+  
+  if (progressFill) {
+    progressFill.style.width = percentage + "%";
+  }
+  
+  if (progressText) {
+    progressText.textContent = Math.round(percentage) + "%";
+  }
+  
+  if (loadingSubtext && message) {
+    loadingSubtext.textContent = message;
+  }
+};
 
 
   showLoading();
@@ -191,6 +289,8 @@ const categoriesPerChunk = 20;
 let allCategoriesData = []; // Store all categories
 let isLoadingMoreChannels = false;
 let isLoadingMoreCategories = false;
+
+let menuKeyHandler = null;
 
 const getFilteredCategories = () => {
 
@@ -1684,6 +1784,8 @@ const renderEPGList = (epgData) => {
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
+// ===== RENDER CHANNELS =====
+// ===== RENDER CHANNELS =====
 const renderChannels = () => {
   const filtered = getFilteredCategories();
 
@@ -1717,9 +1819,8 @@ const renderChannels = () => {
 
   const allChannels = selectedCat.channels || [];
   
-  // **USE CHUNKED LOADING**
   const channelsToShow = getChunkedChannels(allChannels, currentChunk, pageSize);
-const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+  const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
 
   console.log(`📺 Showing ${channelsToShow.length} of ${allChannels.length} channels (chunk ${currentChunk})`);
 
@@ -1757,7 +1858,6 @@ const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
           <img src="${ch.stream_icon}" 
                class="channel-logo" 
                alt="${ch.name}"
-               loading="lazy"
                onerror="this.src='/assets/profile.png'; this.onerror=null;" />
           <div class="channel-actions">
             <button class="favorite-btn">
@@ -1787,12 +1887,9 @@ const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
     })
     .join("");
 
-  // **ADD LOADING INDICATOR IF MORE CHANNELS AVAILABLE**
-
-
   // Use requestAnimationFrame for smoother rendering on Tizen
   requestAnimationFrame(() => {
-    channelGrid.innerHTML = channelCardsHTML ;
+    channelGrid.innerHTML = channelCardsHTML;
     
     // Update scroll arrows after render
     setTimeout(() => {
@@ -2025,6 +2122,27 @@ window.renderLiveTv = () => {
   // CLICK HANDLER
   // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
+
+      if (!isPageFullyLoaded) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // SHOW VISUAL FEEDBACK
+    const loadingSubtext = document.getElementById("loadingSubtext");
+    if (loadingSubtext) {
+      loadingSubtext.textContent = "Please wait - channels are still loading...";
+      loadingSubtext.style.color = "#fbbf24"; // Yellow color
+      
+      // Flash the text
+      loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
+      setTimeout(() => {
+        loadingSubtext.style.animation = "";
+      }, 500);
+    }
+    
+    console.log("⏳ Please wait - page is still loading...");
+    return;
+  }
     console.log("Click detected on:", e.target);
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
@@ -2165,6 +2283,7 @@ if (favBtn || isFavClick) {
 
   // Sidebar category click
 // Sidebar category click
+// Sidebar category click
 const sidebarItem = e.target.closest(".sidebar-item");
 if (sidebarItem) {
   const catId = sidebarItem.dataset.categoryId;
@@ -2185,22 +2304,70 @@ if (sidebarItem) {
   
   // Category is unlocked or has no adult content - switch to it
   selectedCategoryId = catId;
-  previousCategoryId = catId; // Track current category
-    currentChunk = 1; // **RESET CHUNK**
+  previousCategoryId = catId;
+  currentChunk = 1;
+
+  // **SHOW CHANNEL GRID LOADING OVERLAY**
+  const channelGrid = qs(".channel-grid");
+  if (channelGrid) {
+    channelGrid.innerHTML = ChannelGridLoadingOverlay();
+  }
 
   focusedChannelIndex = 0;
 
-  renderChannels();
-  renderSidebarCategories();
+  // **GET CHANNELS TO PRELOAD**
+  const filtered = getFilteredCategories();
+  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+  const allChannels = selectedCat ? selectedCat.channels || [] : [];
+  const channelsToPreload = getChunkedChannels(allChannels, currentChunk, pageSize);
 
-  setTimeout(() => {
-    const channels = qsa(".channel-card");
-    if (channels.length > 0) {
-      setFocus(channels, 0, "channel-card-focused");
-      inChannelGrid = true;
-      inSidebar = false;
+  // **PRELOAD NEW CATEGORY IMAGES**
+  preloadChannelImages(
+    channelsToPreload,
+    // Progress callback
+    (progress, loaded, total) => {
+      const channelProgressFill = document.getElementById("channelProgressFill");
+      const channelProgressText = document.getElementById("channelProgressText");
+      const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
+      
+      if (channelProgressFill) {
+        channelProgressFill.style.width = progress + "%";
+      }
+      
+      if (channelProgressText) {
+        channelProgressText.textContent = Math.round(progress) + "%";
+      }
+      
+      if (channelLoadingSubtext) {
+        // channelLoadingSubtext.textContent = `Loading images ${loaded}/${total}...`;
+      }
+    },
+    // Complete callback
+    () => {
+      renderChannels();
+      renderSidebarCategories();
+
+      // **REMOVE CHANNEL GRID LOADING OVERLAY**
+      const channelGridLoadingOverlay = document.getElementById("channelGridLoading");
+      if (channelGridLoadingOverlay) {
+        channelGridLoadingOverlay.style.opacity = "0";
+        channelGridLoadingOverlay.style.transition = "opacity 0.3s ease";
+        setTimeout(() => {
+          channelGridLoadingOverlay.remove();
+        }, 300);
+      }
+
+      setTimeout(() => {
+        const channels = qsa(".channel-card");
+        if (channels.length > 0) {
+          setFocus(channels, 0, "channel-card-focused");
+          inChannelGrid = true;
+          inSidebar = false;
+        }
+      }, 50);
     }
-  }, 50);
+  );
+  
   return;
 }
 
@@ -2304,6 +2471,31 @@ const stopVideoControlsHideTimer = () => {
 
   // KEY NAVIGATION
   function handleKeydown(e) {
+
+      // BLOCK ALL NAVIGATION UNTIL PAGE IS FULLY LOADED
+  if (!isPageFullyLoaded) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // SHOW VISUAL FEEDBACK
+    const loadingSubtext = document.getElementById("loadingSubtext");
+    if (loadingSubtext) {
+      loadingSubtext.textContent = "Please wait - channels are still loading...";
+      loadingSubtext.style.color = "#fbbf24"; // Yellow color
+      
+      // Flash the text
+      loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
+      setTimeout(() => {
+        loadingSubtext.style.animation = "";
+      }, 500);
+    }
+    
+    console.log("⏳ Please wait - page is still loading...");
+    return;
+  }
+  
+  
+
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
     const channels = qsa(".channel-card");
@@ -3500,201 +3692,268 @@ const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
 }
   }
 
-  // Setup event listeners
-  setTimeout(() => {
+setTimeout(() => {
     document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKeydown);
 
-     // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
- // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
-const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+    // Progress: 10%
+    updateLoadingProgress(10, "Initializing parental controls...");
 
-console.log("🔒 Parental password set:", hasParentalPassword);
-console.log("🔒 Password value:", selectedPlaylist.parentalPassword);
-
-if (hasParentalPassword) {
-  // Get all categories and check for adult content
-  const allCategories = categories || window.liveCategories || [];
-  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-  
-  console.log("🔍 Total streams:", streams.length);
-  console.log("🔍 Total categories:", allCategories.length);
-  
-  // Check each stream for adult content
-  let adultChannelsFound = 0;
-  streams.forEach(ch => {
-    if (isAdultContent(ch)) {
-      adultChannelsFound++;
-      console.log("🔞 Adult channel found:", ch.name, "Category:", ch.category_id);
-    }
-  });
-  
-  console.log("🔞 Total adult channels found:", adultChannelsFound);
-  
-  allCategories.forEach(cat => {
-    const categoryChannels = streams.filter(s => s.category_id === cat.category_id);
-    const hasAdult = categoryChannels.some(ch => isAdultContent(ch));
-    
-    if (hasAdult) {
-      lockedCategories.add(cat.category_id);
-      console.log("🔒 Locked category:", cat.category_name, "ID:", cat.category_id);
-    }
-  });
-  
-  // Also check "All" category
-  const hasAdultInAll = streams.some(ch => isAdultContent(ch));
-  if (hasAdultInAll) {
-    lockedCategories.add("All");
-    console.log("🔒 Locked category: All");
-  }
-  
-  // Check Favorites
-  const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
-  const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
-    pl => pl.playlistName === currentPlaylistName
-  );
-  const favoritesList = currentPlaylist.favoritesLiveTV || [];
-  
-  console.log("🔍 Checking favorites:", favoritesList.length);
-  
-  const favChannels = favoritesList.map(favItem => {
-    if (typeof favItem === "number") {
-      return streams.find(s => s.stream_id === favItem);
-    }
-    return favItem;
-  }).filter(Boolean);
-  
-  const hasAdultInFav = favChannels.some(ch => isAdultContent(ch));
-  if (hasAdultInFav) {
-    lockedCategories.add("favorites");
-    console.log("🔒 Locked category: Favorites");
-  }
-  
-  console.log("🔒 Total locked categories:", lockedCategories.size);
-  console.log("🔒 Locked category IDs:", Array.from(lockedCategories));
-} else {
-  console.log("⚠️ No parental password set - skipping category locking");
-}
-
-
-    renderSidebarCategories();
-
-    // Render channels
-    renderChannels();
-
-
-      setupScrollAutoLoad();
-
-    // In setTimeout(() => { ... }, 0) block, after renderChannels():
-
-    // Menu key handler
-    const menuKeyHandler = (e) => {
-      const currentPage = localStorage.getItem("currentPage");
-      if (currentPage !== "liveTvPage") return;
-
-      // Handle Menu/ContextMenu key
-      if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2") {
-        openSidebar("liveTvPage");
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener("keydown", menuKeyHandler);
-
-    // Menu dots click handler
-    const menuDots = document.querySelector(".menu-dots");
-    if (menuDots) {
-      menuDots.addEventListener("click", () => {
-        openSidebar("liveTvPage");
-      });
-    }
-
-    // Set initial focus on first channel
-   // Set initial focus on SIDEBAR SEARCH
-setTimeout(() => {
-  // Focus on sidebar search instead of channels
-  inSidebarSearch = true;
-  inChannelGrid = false;
-  inSidebar = false;
-  inHeaderSearch = false;
-  inEPG = false;
-  inVideoPlayer = false;
-  inFavoriteBtn = false;
-  inRemoveHistoryBtn = false;
-  
-  setSidebarSearchFocus(true);
-  
-  hideLoading();
-}, 100);
-
-    // document.querySelector("#sidebar-area").innerHTML =
-    //   SidebarCategories(categoriesData);
-
-    // Set initial focus
-    const channels = qsa(".channel-card");
-    if (channels.length > 0) {
-      setFocus(channels, 0, "channel-card-focused");
-      focusedChannelIndex = 0;
-      inChannelGrid = true;
-      inSidebar = false;
-      inSidebarSearch = false;
-      inHeaderSearch = false;
-      inEPG = false;
-      inVideoPlayer = false;
-    }
-
-    LiveTvPage.cleanup = function () {
-      document.removeEventListener("click", handleClick);
-      document.removeEventListener("keydown", handleKeydown);
-      document.removeEventListener("keydown", menuKeyHandler); // ADD THIS LINE
-
-        const channelGrid = qs(".channel-grid");
-  if (channelGrid) {
-    channelGrid.removeEventListener("scroll", window.updateScrollArrows);
-  }
-
-    
-  
-
-        stopVideoControlsHideTimer();
-
-
-      const modal = document.getElementById("passwordModalOverlay");
-      if (modal) {
-        modal.remove();
+        const sidebarArea = qs("#sidebar-area");
+      if (sidebarArea) {
+        sidebarArea.innerHTML = SidebarLoadingOverlay();
       }
 
-      // Dispose video player
-      disposeLivePlayer();
+    // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
+    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
 
-      // Call LiveVideoJsComponent cleanup if it exists
-      if (
-        typeof LiveVideoJsComponent !== "undefined" &&
-        typeof LiveVideoJsComponent.cleanup === "function"
-      ) {
-        try {
-          LiveVideoJsComponent.cleanup();
-        } catch (err) {
-          console.warn("LiveVideoJsComponent cleanup error:", err);
+    console.log("🔒 Parental password set:", hasParentalPassword);
+
+    if (hasParentalPassword) {
+      const allCategories = categories || window.liveCategories || [];
+      const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
+      
+      console.log("🔍 Total streams:", streams.length);
+      console.log("🔍 Total categories:", allCategories.length);
+      
+      let adultChannelsFound = 0;
+      streams.forEach(ch => {
+        if (isAdultContent(ch)) {
+          adultChannelsFound++;
         }
+      });
+      
+      console.log("🔞 Total adult channels found:", adultChannelsFound);
+      
+      allCategories.forEach(cat => {
+        const categoryChannels = streams.filter(s => s.category_id === cat.category_id);
+        const hasAdult = categoryChannels.some(ch => isAdultContent(ch));
+        
+        if (hasAdult) {
+          lockedCategories.add(cat.category_id);
+        }
+      });
+      
+      const hasAdultInAll = streams.some(ch => isAdultContent(ch));
+      if (hasAdultInAll) {
+        lockedCategories.add("All");
       }
+      
+      const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
+      const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
+        pl => pl.playlistName === currentPlaylistName
+      );
+      const favoritesList = currentPlaylist.favoritesLiveTV || [];
+      
+      const favChannels = favoritesList.map(favItem => {
+        if (typeof favItem === "number") {
+          return streams.find(s => s.stream_id === favItem);
+        }
+        return favItem;
+      }).filter(Boolean);
+      
+      const hasAdultInFav = favChannels.some(ch => isAdultContent(ch));
+      if (hasAdultInFav) {
+        lockedCategories.add("favorites");
+      }
+    }
 
-      // Fallback cleanup for window.livePlayer
-      if (window.livePlayer) {
-        try {
-          window.livePlayer.dispose();
-        } catch {}
-        window.livePlayer = null;
-      }
-    };
+    // Progress: 20%
+    updateLoadingProgress(20, "Loading categories...");
+    
+    setTimeout(() => {
+      // **SHOW SIDEBAR LOADING OVERLAY**
+      const sidebarArea = qs("#sidebar-area");
+    if (sidebarArea) {
+    sidebarArea.innerHTML = `
+      <div class="sidebar-loading-overlay" id="sidebarLoading">
+        <div class="sidebar-loading-content">
+          <div class="loading-text-small">Preparing Categories...</div>
+          <div class="loading-subtext-small">Loading channels first</div>
+        </div>
+      </div>
+    `;
+  }
+  
+      
+      setTimeout(() => {
+      
+        
+        // Progress: 30%
+        updateLoadingProgress(30, "Preparing channels...");
+        
+        setTimeout(() => {
+          // **SHOW CHANNEL GRID LOADING OVERLAY**
+          const channelGrid = qs(".channel-grid");
+          if (channelGrid) {
+            channelGrid.innerHTML = ChannelGridLoadingOverlay();
+          }
+          
+          // **GET CHANNELS TO PRELOAD**
+          const filtered = getFilteredCategories();
+          let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+          if (!selectedCat) {
+            selectedCat = filtered[0];
+            selectedCategoryId = selectedCat.category_id;
+          }
+          
+          const allChannels = selectedCat.channels || [];
+          const channelsToPreload = getChunkedChannels(allChannels, currentChunk, pageSize);
+          
+          console.log(`🖼️ Preloading ${channelsToPreload.length} channel images...`);
+          
+          // Progress: 40%
+          updateLoadingProgress(40, `Preloading images (0/${channelsToPreload.length})...`);
+          
+          // **UPDATE CHANNEL GRID OVERLAY PROGRESS**
+          const updateChannelGridProgress = (progress, loaded, total) => {
+            const channelProgressFill = document.getElementById("channelProgressFill");
+            const channelProgressText = document.getElementById("channelProgressText");
+            const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
+            
+            if (channelProgressFill) {
+              channelProgressFill.style.width = progress + "%";
+            }
+            
+            if (channelProgressText) {
+              channelProgressText.textContent = Math.round(progress) + "%";
+            }
+            
+            if (channelLoadingSubtext) {
+              // channelLoadingSubtext.textContent = `Loading images ${loaded}/${total}...`;
+            }
+          };
+          
+          // **PRELOAD IMAGES BEFORE RENDERING**
+          preloadChannelImages(
+            channelsToPreload,
+            // Progress callback
+            (progress, loaded, total) => {
+              const adjustedProgress = 40 + Math.round(progress * 0.4); // 40% to 80%
+              updateLoadingProgress(
+                adjustedProgress, 
+                `Loading channel images (${loaded}/${total})...`
+              );
+              
+              // Also update channel grid overlay
+              updateChannelGridProgress(progress, loaded, total);
+            },
+            // Complete callback
+            () => {
+              console.log("✅ All images preloaded!");
+              
+              // Progress: 80%
+              updateLoadingProgress(80, "Rendering channels...");
+              
+              // Update channel grid overlay
+              const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
+              // if (channelLoadingSubtext) {
+              //   channelLoadingSubtext.textContent = "Rendering channels...";
+              // }
+              
+              setTimeout(() => {
+                // Now render channels (images already cached)
+                renderChannels();
+
+                    setTimeout(() => {
+        renderSidebarCategories();
+        console.log("✅ Sidebar categories rendered");
+      }, 100);
+
+                
+                // **REMOVE CHANNEL GRID LOADING OVERLAY**
+                const channelGridLoadingOverlay = document.getElementById("channelGridLoading");
+                if (channelGridLoadingOverlay) {
+                  channelGridLoadingOverlay.style.opacity = "0";
+                  channelGridLoadingOverlay.style.transition = "opacity 0.3s ease";
+                  setTimeout(() => {
+                    channelGridLoadingOverlay.remove();
+                  }, 300);
+                }
+                
+                // Progress: 90%
+                updateLoadingProgress(90, "Setting up navigation...");
+                
+                setTimeout(() => {
+                  setupScrollAutoLoad();
+
+                  // Menu key handler
+                   menuKeyHandler = (e) => {
+                    if (!isPageFullyLoaded) return;
+                    
+                    const currentPage = localStorage.getItem("currentPage");
+                    if (currentPage !== "liveTvPage") return;
+
+                    if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2") {
+                      openSidebar("liveTvPage");
+                      e.preventDefault();
+                    }
+                  };
+
+                  document.addEventListener("keydown", menuKeyHandler);
+
+                  const menuDots = document.querySelector(".menu-dots");
+                  if (menuDots) {
+                    menuDots.addEventListener("click", () => {
+                      if (!isPageFullyLoaded) return;
+                      openSidebar("liveTvPage");
+                    });
+                  }
+
+                  // Progress: 95%
+                  updateLoadingProgress(95, "Almost ready...");
+
+                  // ENABLE NAVIGATION
+                  setTimeout(() => {
+                    const sidebarItems = qsa(".sidebar-item");
+                    const channels = qsa(".channel-card");
+                    
+                    console.log("✅ Rendered:", sidebarItems.length, "categories,", channels.length, "channels");
+                    
+                    if (sidebarItems.length > 0 || channels.length > 0) {
+                      // Progress: 100%
+                      updateLoadingProgress(100, "Ready!");
+                      
+                      setTimeout(() => {
+                        isPageFullyLoaded = true;
+                        
+                        inSidebarSearch = true;
+                        inChannelGrid = false;
+                        inSidebar = false;
+                        inHeaderSearch = false;
+                        inEPG = false;
+                        inVideoPlayer = false;
+                        inFavoriteBtn = false;
+                        inRemoveHistoryBtn = false;
+                        
+                        setSidebarSearchFocus(true);
+                        
+                        hideLoading();
+                        
+                        console.log("🎮 Page fully loaded - navigation enabled");
+                      }, 500);
+                    } else {
+                      console.error("❌ No content rendered - keeping page locked");
+                      updateLoadingProgress(100, "Error loading content. Please refresh.");
+                    }
+                  }, 300);
+                }, 200);
+              }, 200);
+            }
+          );
+        }, 300);
+      }, 300);
+    }, 300);
+
+    // Rest of your code (search handlers, cleanup, etc.)...
     // ===== SEARCH INPUT HANDLER =====
     const headerSearchInput = qs(".search-input");
     if (headerSearchInput) {
       headerSearchInput.addEventListener("input", (e) => {
+        if (!isPageFullyLoaded) return;
         searchQuery = e.target.value;
         currentChunk = 1;
-
         renderChannels();
       });
     }
@@ -3702,6 +3961,7 @@ setTimeout(() => {
     const sidebarSearchInput = qs(".sidebar-search-input");
     if (sidebarSearchInput) {
       sidebarSearchInput.addEventListener("input", (e) => {
+        if (!isPageFullyLoaded) return;
         const query = e.target.value.toLowerCase();
         const filtered = getFilteredCategories();
 
@@ -3714,13 +3974,20 @@ setTimeout(() => {
           sidebarItems.innerHTML = matchingCategories
             .map((c) => {
               const isActive = c.category_id === selectedCategoryId;
+              const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+              const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+              const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+              const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+              
               return `
-              <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" 
-                   data-category-id="${c.category_id}">
-                <span class="sidebar-item-name">${c.category_name}</span>
-                <span class="sidebar-item-count">${
-                  c.channels ? c.channels.length : 0
-                }</span>
+              <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+                   data-category-id="${c.category_id}"
+                   data-has-adult="${hasAdultContent}">
+                <span class="sidebar-item-name">
+                  <span class="sidebar-text">${c.category_name}</span>
+                  ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+                </span>
+                <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
               </div>
             `;
             })
@@ -3728,6 +3995,49 @@ setTimeout(() => {
         }
       });
     }
+    
+    LiveTvPage.cleanup = function () {
+      isPageFullyLoaded = false;
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("keydown", handleKeydown);
+    
+        if (menuKeyHandler) {
+    document.removeEventListener("keydown", menuKeyHandler);
+    menuKeyHandler = null; // Reset reference
+  }
+
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.removeEventListener("scroll", window.updateScrollArrows);
+      }
+
+      stopVideoControlsHideTimer();
+
+      const modal = document.getElementById("passwordModalOverlay");
+      if (modal) {
+        modal.remove();
+      }
+
+      disposeLivePlayer();
+
+      if (
+        typeof LiveVideoJsComponent !== "undefined" &&
+        typeof LiveVideoJsComponent.cleanup === "function"
+      ) {
+        try {
+          LiveVideoJsComponent.cleanup();
+        } catch (err) {
+          console.warn("LiveVideoJsComponent cleanup error:", err);
+        }
+      }
+
+      if (window.livePlayer) {
+        try {
+          window.livePlayer.dispose();
+        } catch {}
+        window.livePlayer = null;
+      }
+    };
   }, 0);
 
 

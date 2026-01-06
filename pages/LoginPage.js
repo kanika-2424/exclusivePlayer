@@ -460,7 +460,7 @@ try {
 
       <div class="input-group">
         <img class="nameicon" src="/assets/name.png" alt="name" />
-        <input type="text" placeholder="Any Name" autocomplete="off"  value="op">
+        <input type="text" placeholder="Any Name" autocomplete="off"  value="ss">
       </div>
 
       <div class="input-group">

@@ -3,7 +3,7 @@
 // /////Add this at the TOP of your main JavaScript file
 // //// ========================================
 
-// // Create on-screen console for Tizen TV
+// Create on-screen console for Tizen TV
 // window.TizenConsole = {
 //   logs: [],
 //   maxLogs: 20,
@@ -109,10 +109,10 @@
 //   }
 // };
 
-// // Initialize on-screen console
+// ///// Initialize on-screen console
 // window.TizenConsole.init();
 
-// //Add keyboard shortcut to toggle console (INFO button = keyCode 457)
+///////// Add keyboard shortcut to toggle console (INFO button = keyCode 457)
 
 
 window.onload = function () {
@@ -183,6 +183,13 @@ window.onload = function () {
     console.log("Settings page active - main.js ignoring key");
     return; // Don't handle keys, let SettingsPage handle them
   }
+
+    if (e.key === "XF86Exit" && typeof tizen !== "undefined") {
+    const app = tizen.application.getCurrentApplication();
+    if (app) app.exit();
+  }
+
+
     // Don't allow exit on dashboard (your previous logic)
     if (currentPage !== "dashboard") {
       if (e.key === "XF86Exit" && typeof tizen !== "undefined") {

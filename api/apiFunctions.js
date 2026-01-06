@@ -85,7 +85,7 @@ async function loginApi(
   //  let alldns = JSON.parse(localStorage.getItem("all_dns")) || [];
  
 
-  // const defaultDns = "http://nubiatv.live/"
+  // const defaultDns = "http://live.roomba.tv/"
     const defaultDns = "http://whole.motorcycles/";
 
   //  let alldns = JSON.parse(localStorage.getItem("all_dns")) || [];

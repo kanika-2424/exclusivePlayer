@@ -14,6 +14,9 @@ function DashboardPage() {
       document.querySelector(".logout-icon")      // 6
     ].filter(el => el);
 
+    let modalFocusableItems = [];
+let isModalOpen = false;
+let modalFocusIndex = 0;
     let focusIndex = 0;
 
     // --- FOCUS HELPERS -------------------------------------------------------
@@ -29,6 +32,59 @@ function DashboardPage() {
 
     // Set initial focus
     addFocus(focusableItems[0]);
+
+
+    // --- MODAL HELPERS -------------------------------------------------------
+function showExitModal() {
+  const modal = document.getElementById("exit-modal");
+  if (!modal) return;
+  
+  modal.classList.remove("hidden");
+  isModalOpen = true;
+  
+  // Get modal buttons
+  modalFocusableItems = [
+    document.querySelector(".exit-yes-btn"),
+    document.querySelector(".exit-no-btn")
+  ].filter(el => el);
+  
+  modalFocusIndex = 0;
+  
+  // Remove focus from dashboard items
+  removeFocus(focusableItems[focusIndex]);
+  
+  // Focus on Yes button
+  addFocus(modalFocusableItems[0]);
+}
+
+function hideExitModal() {
+  const modal = document.getElementById("exit-modal");
+  if (!modal) return;
+  
+  modal.classList.add("hidden");
+  isModalOpen = false;
+  
+  // Remove focus from modal buttons
+  if (modalFocusableItems[modalFocusIndex]) {
+    removeFocus(modalFocusableItems[modalFocusIndex]);
+  }
+  
+  // Restore focus to dashboard
+  addFocus(focusableItems[focusIndex]);
+}
+
+function exitApp() {
+  // Clear all localStorage if needed
+  localStorage.clear();
+  
+  // Close the window/app
+  if (window.close) {
+    window.close();
+  }
+  
+  // For web apps that can't close, redirect to a blank page
+  window.location.href = "about:blank";
+}
 
     // --- CLICK HANDLER -------------------------------------------------------
     function handleClick(e) {
@@ -109,178 +165,239 @@ function DashboardPage() {
     }
 
     // --- KEYBOARD / REMOTE HANDLER -------------------------------------------
-    function handleKeydown(e) {
-      if (localStorage.getItem("currentPage") !== "dashboard") return;
+function handleKeydown(e) {
+  if (localStorage.getItem("currentPage") !== "dashboard") return;
 
+  console.log("🎮 Dashboard handleKeydown:", {
+    key: e.key,
+    code: e.code,
+    keyCode: e.keyCode,
+    which: e.which,
+    isModalOpen: isModalOpen
+  });
 
-        console.log("🎮 Dashboard keydown:", e.key); 
-
-        
-      const current = focusableItems[focusIndex];
-
-      // MOVE DOWN
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        
-        // Live TV (0) → Account (3)
-        if (focusIndex === 0) {
-          removeFocus(current);
-          focusIndex = 3;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Movies (1) → Settings (4)
-        else if (focusIndex === 1) {
-          removeFocus(current);
-          focusIndex = 4;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Series (2) → List Users (5)
-        else if (focusIndex === 2) {
-          removeFocus(current);
-          focusIndex = 5;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Any bottom row item → Logout (6)
-       
-
-        else if (focusIndex === 6) {
-          removeFocus(current);
-          focusIndex = 0;
-          addFocus(focusableItems[focusIndex]);
-        }
-
-       
-      }
-
-      // MOVE UP
-      else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        
-        // Account (3) → Live TV (0)
-        if (focusIndex === 3) {
-          removeFocus(current);
-          focusIndex = 0;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Settings (4) → Movies (1)
-        else if (focusIndex === 4) {
-          removeFocus(current);
-          focusIndex = 1;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // List Users (5) → Series (2)
-        else if (focusIndex === 5) {
-          removeFocus(current);
-          focusIndex = 2;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Logout (6) → Account (3)
-        // else if (focusIndex === 6) {
-        // //   removeFocus(current);
-        // //   focusIndex = 3;
-        // //   addFocus(focusableItems[focusIndex]);
-        // // }
-
-         else if (focusIndex === 0) {
-          removeFocus(current);
-          focusIndex = 6;
-          addFocus(focusableItems[focusIndex]);
-        }
-         else if (focusIndex === 1) {
-          removeFocus(current);
-          focusIndex = 6;
-          addFocus(focusableItems[focusIndex]);
-        }
-         else if (focusIndex === 2) {
-          removeFocus(current);
-          focusIndex = 6;
-          addFocus(focusableItems[focusIndex]);
-        }
-      }
-
-      // MOVE RIGHT
-    // MOVE RIGHT
-else if (e.key === "ArrowRight") {
-  e.preventDefault();
-
-  // Live TV (0) → Movies (1)
-  if (focusIndex === 0) {
-    removeFocus(current);
-    focusIndex = 1;
-    addFocus(focusableItems[focusIndex]);
-  }
-  // Movies (1) → Series (2)
-  else if (focusIndex === 1) {
-    removeFocus(current);
-    focusIndex = 2;
-    addFocus(focusableItems[focusIndex]);
-  }
-
-    else if (focusIndex === 2) {
-    removeFocus(current);
-    focusIndex = 3;
-    addFocus(focusableItems[focusIndex]);
-  }
-
-  // Account (3) → Settings (4)
-  else if (focusIndex === 3) {
-    removeFocus(current);
-    focusIndex = 4;
-    addFocus(focusableItems[focusIndex]);
-  }
-  // Settings (4) → List Users (5)
-  else if (focusIndex === 4) {
-    removeFocus(current);
-    focusIndex = 5;
-    addFocus(focusableItems[focusIndex]);
-  }
-
-}
-
-      // MOVE LEFT
-      else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        
-        // Movies (1) → Live TV (0)
-        if (focusIndex === 1) {
-          removeFocus(current);
-          focusIndex = 0;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Series (2) → Movies (1)
-        else if (focusIndex === 2) {
-          removeFocus(current);
-          focusIndex = 1;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Settings (4) → Account (3)
-        else if (focusIndex === 4) {
-          removeFocus(current);
-          focusIndex = 3;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // List Users (5) → Settings (4)
-        else if (focusIndex === 5) {
-          removeFocus(current);
-          focusIndex = 4;
-          addFocus(focusableItems[focusIndex]);
-        }
-        // Logout (6) → List Users (5)
-        else if (focusIndex === 6) {
-          removeFocus(current);
-          focusIndex = 5;
-          addFocus(focusableItems[focusIndex]);
-        }
-      }
-
-      // ENTER to activate
-      else if (e.key === "Enter") {
-        e.preventDefault();
-        if (focusableItems[focusIndex]) {
-          focusableItems[focusIndex].click();
-        }
+  // --- HANDLE MODAL NAVIGATION ---
+  if (isModalOpen) {
+    console.log("📱 Modal is open, handling modal navigation");
+    
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.keyCode === 37 || e.keyCode === 39) {
+      e.preventDefault();
+      removeFocus(modalFocusableItems[modalFocusIndex]);
+      modalFocusIndex = modalFocusIndex === 0 ? 1 : 0;
+      addFocus(modalFocusableItems[modalFocusIndex]);
+      console.log("Modal focus moved to:", modalFocusIndex);
+    }
+    else if (e.key === "Enter" || e.keyCode === 13) {
+      e.preventDefault();
+      console.log("Enter pressed on modal button:", modalFocusIndex);
+      
+      if (modalFocusIndex === 0) {
+        console.log("🚪 Exiting app...");
+        exitApp();
+      } else {
+        console.log("❌ Closing modal...");
+        hideExitModal();
       }
     }
+    else if (e.key === "Escape" || e.key === "Backspace" || e.key === "Back" || 
+             e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 10009) {
+      e.preventDefault();
+      console.log("Back pressed, closing modal");
+      hideExitModal();
+    }
+    
+    return;
+  }
+
+  // --- HANDLE DASHBOARD NAVIGATION ---
+  const current = focusableItems[focusIndex];
+
+  // ⚠️ CRITICAL FIX: Check keyCode/which FIRST before e.key
+  const exitKeyCodes = [27, 8, 461, 10009, 10182];
+  const exitKeys = ["Escape", "Backspace", "Back", "Exit", "XF86Back", "BrowserBack", "GoBack"];
+  const exitCodes = ["Escape", "Backspace", "BrowserBack"];
+
+  const isExitKey = 
+    exitKeyCodes.includes(e.keyCode) ||
+    exitKeyCodes.includes(e.which) ||
+    exitKeys.includes(e.key) ||
+    exitCodes.includes(e.code);
+
+  if (isExitKey) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("🚨 EXIT KEY DETECTED! keyCode:", e.keyCode, "key:", e.key);
+    showExitModal();
+    return;
+  }
+
+  // MOVE DOWN
+  if (e.key === "ArrowDown" || e.keyCode === 40) {
+    e.preventDefault();
+    
+    if (focusIndex === 0) {
+      removeFocus(current);
+      focusIndex = 3;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 1) {
+      removeFocus(current);
+      focusIndex = 4;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 2) {
+      removeFocus(current);
+      focusIndex = 5;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 6) {
+      removeFocus(current);
+      focusIndex = 0;
+      addFocus(focusableItems[focusIndex]);
+    }
+  }
+
+  // MOVE UP
+  else if (e.key === "ArrowUp" || e.keyCode === 38) {
+    e.preventDefault();
+    
+    if (focusIndex === 3) {
+      removeFocus(current);
+      focusIndex = 0;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 4) {
+      removeFocus(current);
+      focusIndex = 1;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 5) {
+      removeFocus(current);
+      focusIndex = 2;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 0) {
+      removeFocus(current);
+      focusIndex = 6;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 1) {
+      removeFocus(current);
+      focusIndex = 6;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 2) {
+      removeFocus(current);
+      focusIndex = 6;
+      addFocus(focusableItems[focusIndex]);
+    }
+  }
+
+  // MOVE RIGHT
+  else if (e.key === "ArrowRight" || e.keyCode === 39) {
+    e.preventDefault();
+
+    if (focusIndex === 0) {
+      removeFocus(current);
+      focusIndex = 1;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 1) {
+      removeFocus(current);
+      focusIndex = 2;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 2) {
+      removeFocus(current);
+      focusIndex = 3;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 3) {
+      removeFocus(current);
+      focusIndex = 4;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 4) {
+      removeFocus(current);
+      focusIndex = 5;
+      addFocus(focusableItems[focusIndex]);
+    }
+  }
+
+  // MOVE LEFT
+  else if (e.key === "ArrowLeft" || e.keyCode === 37) {
+    e.preventDefault();
+    
+    if (focusIndex === 1) {
+      removeFocus(current);
+      focusIndex = 0;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 2) {
+      removeFocus(current);
+      focusIndex = 1;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 4) {
+      removeFocus(current);
+      focusIndex = 3;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 5) {
+      removeFocus(current);
+      focusIndex = 4;
+      addFocus(focusableItems[focusIndex]);
+    }
+    else if (focusIndex === 6) {
+      removeFocus(current);
+      focusIndex = 5;
+      addFocus(focusableItems[focusIndex]);
+    }
+  }
+
+  // ENTER to activate
+  else if (e.key === "Enter" || e.keyCode === 13) {
+    e.preventDefault();
+    if (focusableItems[focusIndex]) {
+      focusableItems[focusIndex].click();
+    }
+  }
+}
+
+
+// Special handler for Tizen EXIT button (keyCode 10182)
+function handleTizenExit(e) {
+  if (localStorage.getItem("currentPage") !== "dashboard") return;
+  
+  console.log("🔴 Tizen EXIT handler:", e.keyCode);
+  
+  if (e.keyCode === 10182 || e.which === 10182) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    console.log("🚨 EXIT BUTTON (10182) DETECTED!");
+    
+    if (isModalOpen) {
+      hideExitModal();
+    } else {
+      showExitModal();
+    }
+  }
+}
+
+// Register this FIRST with capture phase
+document.addEventListener("keydown", handleTizenExit, true);
+
+// Then register normal handler
+document.addEventListener("click", handleClick);
+document.addEventListener("keydown", handleKeydown);
+
+// Update cleanup
+DashboardPage.cleanup = function () {
+  document.removeEventListener("keydown", handleTizenExit, true);
+  document.removeEventListener("click", handleClick);
+  document.removeEventListener("keydown", handleKeydown);
+};
 
     // --- REGISTER EVENTS -----------------------------------------------------
     document.addEventListener("click", handleClick);
@@ -411,6 +528,18 @@ if (
         <div class="footer-left">Expiration :    ${formatUnixDate(expDate) || 'N/A'}</div>
         <div class="footer-right">Logged in : ${playlistName}</div>
     </footer>
+
+     <div id="exit-modal" class="exit-modal hidden">
+        <div class="exit-modal-content">
+            <h2 class="exit-modal-title">Exit Application</h2>
+            <p class="exit-modal-text">Do you want to exit the app?</p>
+            <div class="exit-modal-buttons">
+                <button class="exit-btn exit-yes-btn dashboard-focused">Yes</button>
+                <button class="exit-btn exit-no-btn">No</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 `;
 }
