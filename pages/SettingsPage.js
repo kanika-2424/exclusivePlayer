@@ -20,6 +20,10 @@ function SettingsPage() {
     let isRightPanelActive = false;
   window.isOnClearButton = false; // NEW: Track if we're on Clear button
 
+  
+    const PASSWORD_DISPLAY_DURATION = 1000; // 2 seconds in milliseconds
+
+
     let rightPanelItems = [];
 
     function updateRightPanelItems() {
@@ -105,9 +109,27 @@ if (e.target.id === 'clearParentalBtn' ||
   
   // If there are unsaved input values, just clear the inputs without affecting storage
   if (hasInputValues) {
-    if (input1) input1.value = "";
-    if (input2) input2.value = "";
-    
+   if (input1) {
+    input1.value = "";
+    delete input1.dataset.actualValue; // ADD THIS LINE
+  }
+  if (input2) {
+    input2.value = "";
+    delete input2.dataset.actualValue; // ADD THIS LINE
+  }
+  
+    if (SettingsPage.passwordTimeouts) {
+    if (SettingsPage.passwordTimeouts.timeout1.current) {
+      clearTimeout(SettingsPage.passwordTimeouts.timeout1.current);
+      SettingsPage.passwordTimeouts.timeout1.current = null;
+    }
+    if (SettingsPage.passwordTimeouts.timeout2.current) {
+      clearTimeout(SettingsPage.passwordTimeouts.timeout2.current);
+      SettingsPage.passwordTimeouts.timeout2.current = null;
+    }
+  }
+  
+
     // Reset eye icons
     const eyeIcons = document.querySelectorAll('#parentalSettingsOptions .eye-icon');
     eyeIcons.forEach(eye => {
@@ -771,20 +793,78 @@ if (addPlaylistBtn) {
   };
 }
 
-    function togglePasswordVisibility(input, eyeIcon) {
-      if (input.type === "password") {
-        input.type = "text";
-        eyeIcon.classList.remove("fa-eye");
-        eyeIcon.classList.add("fa-eye-slash");
-      } else {
-        input.type = "password";
-        eyeIcon.classList.remove("fa-eye-slash");
-        eyeIcon.classList.add("fa-eye");
+   function togglePasswordVisibility(input, eyeIcon) {
+  if (input.type === "password") {
+    input.type = "text";
+    eyeIcon.classList.remove("fa-eye");
+    eyeIcon.classList.add("fa-eye-slash");
+  } else {
+    input.type = "password";
+    eyeIcon.classList.remove("fa-eye-slash");
+    eyeIcon.classList.add("fa-eye");
+  }
+}
+
+// ADD THIS NEW FUNCTION:
+// 🔴 Function to temporarily show password character then auto-hide
+function showPasswordCharacterTemporarily(input, timeoutRef, lastTimeRef) {
+  if (!input) return;
+  
+  // Clear any existing timeout for this input
+  if (timeoutRef.current) {
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  }
+  
+  // Get the current value
+  const currentValue = input.value;
+  const currentLength = currentValue.length;
+  
+  // Store the last character temporarily
+  const lastChar = currentLength > 0 ? currentValue[currentLength - 1] : '';
+  
+  // Temporarily show the last character
+  if (currentLength > 0) {
+    const maskedValue = '•'.repeat(currentLength - 1) + lastChar;
+    
+    // Store actual value
+    input.dataset.actualValue = currentValue;
+    
+    // Show masked value with last character visible
+    input.value = maskedValue;
+    input.type = "text";
+    
+    console.log("👁️ Last character visible:", lastChar);
+  }
+  
+  // Update last typed time
+  lastTimeRef.current = Date.now();
+  
+  // Set timeout to fully hide after 2 seconds
+  timeoutRef.current = setTimeout(() => {
+    const timeSinceLastType = Date.now() - lastTimeRef.current;
+    
+    if (timeSinceLastType >= PASSWORD_DISPLAY_DURATION) {
+      // Restore actual value
+      if (input.dataset.actualValue) {
+        input.value = input.dataset.actualValue;
       }
+      
+      // Hide password
+      input.type = "password";
+      
+      console.log("🔒 Password fully hidden");
+      timeoutRef.current = null;
+    } else {
+      // Reschedule if user is still typing
+      const remainingTime = PASSWORD_DISPLAY_DURATION - timeSinceLastType;
+      showPasswordCharacterTemporarily(input, timeoutRef, lastTimeRef);
     }
+  }, PASSWORD_DISPLAY_DURATION);
+}
 
 
-    // Populate parental password fields on page load
+// Populate parental password fields on page load
 const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
 if (selectedPlaylist.parentalPassword) {
   setTimeout(() => {
@@ -797,6 +877,107 @@ if (selectedPlaylist.parentalPassword) {
     }
   }, 100);
 }
+
+// ADD THIS NEW CODE:
+// 🔴 Setup password auto-hide for both inputs
+setTimeout(() => {
+  const input1 = document.getElementById('parentalPassword1');
+  const input2 = document.getElementById('parentalPassword2');
+  
+  // Create timeout references as objects so they can be passed by reference
+  const timeout1 = { current: null };
+  const timeout2 = { current: null };
+  const lastTime1 = { current: 0 };
+  const lastTime2 = { current: 0 };
+  
+  if (input1) {
+    // Store original value handling
+    let actualValue1 = input1.value;
+    
+    input1.addEventListener('input', (e) => {
+      // Update actual value from dataset or current value
+      if (input1.type === 'text' && input1.dataset.actualValue) {
+        actualValue1 = input1.dataset.actualValue;
+      } else {
+        actualValue1 = input1.value;
+      }
+      
+      // Update last typed time
+      lastTime1.current = Date.now();
+      
+      // Show last character temporarily
+      showPasswordCharacterTemporarily(input1, timeout1, lastTime1);
+    });
+    
+    input1.addEventListener('focus', () => {
+      console.log("👁️ Password 1 input focused");
+    });
+    
+    input1.addEventListener('blur', () => {
+      // Clear timeout when losing focus
+      if (timeout1.current) {
+        clearTimeout(timeout1.current);
+        timeout1.current = null;
+      }
+      
+      // Restore actual value and hide
+      if (input1.dataset.actualValue) {
+        input1.value = input1.dataset.actualValue;
+        delete input1.dataset.actualValue;
+      }
+      input1.type = "password";
+      
+      console.log("🔒 Password 1 hidden (blur)");
+    });
+  }
+  
+  if (input2) {
+    // Store original value handling
+    let actualValue2 = input2.value;
+    
+    input2.addEventListener('input', (e) => {
+      // Update actual value from dataset or current value
+      if (input2.type === 'text' && input2.dataset.actualValue) {
+        actualValue2 = input2.dataset.actualValue;
+      } else {
+        actualValue2 = input2.value;
+      }
+      
+      // Update last typed time
+      lastTime2.current = Date.now();
+      
+      // Show last character temporarily
+      showPasswordCharacterTemporarily(input2, timeout2, lastTime2);
+    });
+    
+    input2.addEventListener('focus', () => {
+      console.log("👁️ Password 2 input focused");
+    });
+    
+    input2.addEventListener('blur', () => {
+      // Clear timeout when losing focus
+      if (timeout2.current) {
+        clearTimeout(timeout2.current);
+        timeout2.current = null;
+      }
+      
+      // Restore actual value and hide
+      if (input2.dataset.actualValue) {
+        input2.value = input2.dataset.actualValue;
+        delete input2.dataset.actualValue;
+      }
+      input2.type = "password";
+      
+      console.log("🔒 Password 2 hidden (blur)");
+    });
+  }
+  
+  // Store cleanup references
+  SettingsPage.passwordTimeouts = {
+    timeout1,
+    timeout2
+  };
+}, 200);
 
     // Initialize saved stream format selection
  
@@ -878,6 +1059,16 @@ if (selectedPlaylist.parentalPassword) {
     document.addEventListener("keydown", settingsKeydownHandler);
 
     SettingsPage.cleanup = function () {
+
+        if (SettingsPage.passwordTimeouts) {
+    if (SettingsPage.passwordTimeouts.timeout1.current) {
+      clearTimeout(SettingsPage.passwordTimeouts.timeout1.current);
+    }
+    if (SettingsPage.passwordTimeouts.timeout2.current) {
+      clearTimeout(SettingsPage.passwordTimeouts.timeout2.current);
+    }
+  }
+
       document.removeEventListener("click", handleSettingsClick);
       document.removeEventListener("click", handleRightPanelClick);
       document.removeEventListener("keydown", settingsKeydownHandler);
