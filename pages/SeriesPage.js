@@ -1888,32 +1888,37 @@ document.addEventListener('keydown', menuKeyHandler);
     // Expand toggle button
     const expandBtn = qs("#expandBtn");
     const sidebar = qs(".movies-sidebar");
-    if (expandBtn) {
-      expandBtnClickHandler = () => {
-        isExpanded = !isExpanded;
-        const wrapper = qs(".movies-categories-wrapper");
-        if (wrapper) wrapper.classList.toggle("expanded", isExpanded);
-        if (sidebar) sidebar.classList.toggle("expanded", isExpanded);
-        expandBtn.classList.toggle("rotated", isExpanded);
-        expandBtn.textContent = isExpanded ? "⌃" : "⌄";
-        
-        const searchInput = qs(".search-category-input");
-        const hasSearchText = searchInput && searchInput.value.trim().length > 0;
-        
-        if (!hasSearchText && sidebar) {
-            sidebar.classList.remove("filtering");
-        }
-        
-        if (currentSection === "categories") {
-          setFocusOnCategory(currentCategoryIndex);
-        } else if (currentSection === "expand") {
-          setFocusOnExpandBtn();
-        }
-      };
-      
-      expandBtn.removeEventListener("click", expandBtnClickHandler);
-      expandBtn.addEventListener("click", expandBtnClickHandler);
+     if (expandBtn) {
+  expandBtnClickHandler = () => {
+    isExpanded = !isExpanded;
+
+    
+    const wrapper = qs(".movies-categories-wrapper");
+    if (wrapper) wrapper.classList.toggle("expanded", isExpanded);
+
+    if (sidebar) sidebar.classList.toggle("expanded", isExpanded);
+
+    // 🔥 ONLY toggle class
+    expandBtn.classList.toggle("rotated", isExpanded);
+
+    const searchInput = qs(".search-category-input");
+    const hasSearchText =
+      searchInput && searchInput.value.trim().length > 0;
+
+    if (!hasSearchText && sidebar) {
+      sidebar.classList.remove("filtering");
     }
+
+    if (currentSection === "categories") {
+      setFocusOnCategory(currentCategoryIndex);
+    } else if (currentSection === "expand") {
+      setFocusOnExpandBtn();
+    }
+  };
+
+  expandBtn.removeEventListener("click", expandBtnClickHandler);
+  expandBtn.addEventListener("click", expandBtnClickHandler);
+}
 
     // Search input
     const searchEl = qs(".search-category-input");
@@ -2171,7 +2176,25 @@ window.renderSeries = () => {
             <!-- categories injected here -->
           </div>
 
-          <div class="category-toggle-btn" id="expandBtn">⌄</div>
+          <div class="category-toggle-btn" id="expandBtn" tabindex="0">
+  <svg
+    class="expand-icon"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <!-- Down arrow -->
+    <path
+      d="M12 5V19M12 19L5 12M12 19L19 12"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
       </div>
   </div>
 
