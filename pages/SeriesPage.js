@@ -1369,10 +1369,7 @@ else if (currentSection === "categories") {
       return;
     }
 
-    function blurAllInputs() {
-      const inputs = document.querySelectorAll("input");
-      inputs.forEach(inp => inp.blur());
-    }
+
 
     /* ---------- RIGHT ---------- */
     if (isRight) {
@@ -1454,11 +1451,6 @@ else if (currentSection === "categories") {
         }
 
         setFocusOnCard(currentFocusIndex + 1);
-        e.preventDefault();
-        return;
-      } else if (currentSection === "expand") {
-        // from expand button → go to series
-        setFocusOnCard(0);
         e.preventDefault();
         return;
       }
