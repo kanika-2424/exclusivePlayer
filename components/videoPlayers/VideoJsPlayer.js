@@ -154,6 +154,11 @@ episodeId: episodeId.toString(),
   // 🔴 Track if user manually paused
   let userManuallyPaused = false;
 
+  let areControlsVisible = false;
+
+// 🔴 Timer for auto-hiding controls
+let controlsHideTimeout = null;
+
   // Format time function
   function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return "0:00:00";
@@ -421,6 +426,56 @@ function showAspectRatioOverlay(label) {
       overlay.classList.add('hidden');
     }, 300);
   }, 2000);
+}
+
+// Fallback aspect ratio overlay function
+function showAspectRatioOverlay(label) {
+  // ... existing code ...
+}
+
+// ADD THIS NEW FUNCTION:
+// 🔴 Function to show all controls
+function showAllControls() {
+  const controlsBar = document.querySelector(".custom-video-controls");
+  const titleBar = document.querySelector(".video-title-bar");
+  
+  if (controlsBar && titleBar) {
+    controlsBar.classList.remove("hidden");
+    titleBar.style.display = "flex";
+    areControlsVisible = true;
+    
+    // Focus on play/pause by default
+    setTimeout(() => focusPlayPause(), 100);
+    
+    // Clear existing timeout
+    if (controlsHideTimeout) {
+      clearTimeout(controlsHideTimeout);
+    }
+    
+    // Auto-hide after 5 seconds if video is playing
+    if (player && !player.paused()) {
+      controlsHideTimeout = setTimeout(() => {
+        hideAllControls();
+      }, 5000);
+    }
+    
+    console.log("✅ Controls shown");
+  }
+}
+
+// 🔴 Function to hide all controls
+function hideAllControls() {
+  const controlsBar = document.querySelector(".custom-video-controls");
+  const titleBar = document.querySelector(".video-title-bar");
+  
+  if (controlsBar && titleBar && !player.paused()) {
+    controlsBar.classList.add("hidden");
+    titleBar.style.display = "none";
+    areControlsVisible = false;
+    unfocusAll();
+    
+    console.log("✅ Controls hidden");
+  }
 }
 
 
@@ -736,24 +791,29 @@ function focusAspectRatio() {
       goBack();
     });
 
-    player.on("playing", () => {
-      if (!errorActive) {
-        loadingEl.classList.add("hidden");
-        controlsBar.classList.add("hidden");
-        titleBar.style.display = "none";
-        
-        // Only show play overlay if we're not seeking
-        if (!isSeekBarDragging && !player.seeking()) {
-          showOverlay("play");
-        }
-        
-        // Remove focus when playing
-        unfocusAll();
-        
-        // Reset manual pause flag when video starts playing
-        userManuallyPaused = false;
-      }
-    });
+   player.on("playing", () => {
+  if (!errorActive) {
+    loadingEl.classList.add("hidden");
+    
+    // MODIFIED: Hide controls when playing
+    if (areControlsVisible) {
+      controlsBar.classList.add("hidden");
+      titleBar.style.display = "none";
+      areControlsVisible = false;
+    }
+    
+    // Only show play overlay if we're not seeking
+    if (!isSeekBarDragging && !player.seeking()) {
+      showOverlay("play");
+    }
+    
+    // Remove focus when playing
+    unfocusAll();
+    
+    // Reset manual pause flag when video starts playing
+    userManuallyPaused = false;
+  }
+});
 
       // Add loadeddata event
   player.on("loadeddata", () => {
@@ -762,25 +822,28 @@ function focusAspectRatio() {
 
 
 
-    player.on("pause", () => {
-      // Don't show pause UI if video is still loading/buffering
-      if (!errorActive && !loadingEl.classList.contains("hidden")) {
-        return;
-      }
-      
-      // Always show pause overlay when paused, even during seeking
-      if (!errorActive) {
-        controlsBar.classList.remove("hidden");
-        titleBar.style.display = "flex";
-        showOverlay("pause");
-        setTimeout(() => focusPlayPause(), 100);
-        
-        // Mark that user manually paused (unless it's from seeking)
-        if (!player.seeking()) {
-          userManuallyPaused = true;
-        }
-      }
-    });
+player.on("pause", () => {
+  // Don't show pause UI if video is still loading/buffering
+  if (!errorActive && !loadingEl.classList.contains("hidden")) {
+    return;
+  }
+  
+  // MODIFIED: Always show controls when paused
+  if (!errorActive) {
+    showAllControls(); // Use the new function
+    showOverlay("pause");
+    
+    // Clear auto-hide timeout when paused
+    if (controlsHideTimeout) {
+      clearTimeout(controlsHideTimeout);
+    }
+    
+    // Mark that user manually paused (unless it's from seeking)
+    if (!player.seeking()) {
+      userManuallyPaused = true;
+    }
+  }
+});
 
     // Error handling
     player.on("error", () => {
@@ -1109,6 +1172,7 @@ localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
 
       // 🔴 UPDATED: Aspect ratio button navigation logic
  // 🔴 UPDATED: Aspect ratio button navigation logic
+// 🔴 UPDATED: Aspect ratio button navigation logic
 if (isAspectRatioFocused) {
   console.log("🔵 Key pressed while aspect ratio focused:", e.key, "KeyCode:", e.keyCode);
   
@@ -1121,62 +1185,17 @@ if (isAspectRatioFocused) {
       e.preventDefault();
       e.stopPropagation();
       return;
+    
+    // ADD THIS CASE:
+    case "ArrowDown":
+      console.log("⬇️ Hiding controls from aspect ratio");
+      hideAllControls();
+      e.preventDefault();
+      e.stopPropagation();
+      return;
       
     case "Enter":
-      console.log("✅ Enter pressed on aspect ratio button - cycling ratio");
-      
-      const videoEl = document.querySelector("#videojs-player-tag_html5_api");
-      const overlay = document.getElementById('aspectRatioOverlay');
-      
-      console.log("📺 Video element found:", !!videoEl);
-      console.log("📺 Overlay found:", !!overlay);
-      
-      if (videoEl) {
-        // Manual aspect ratio cycling
-        let newRatio = '16:9';
-        
-        if (videoEl.classList.contains('video-aspect-169')) {
-          videoEl.classList.remove('video-aspect-169');
-          videoEl.classList.add('video-aspect-43');
-          newRatio = '4:3';
-        } else if (videoEl.classList.contains('video-aspect-43')) {
-          videoEl.classList.remove('video-aspect-43');
-          videoEl.classList.add('video-aspect-235');
-          newRatio = '2.35:1';
-        } else if (videoEl.classList.contains('video-aspect-235')) {
-          videoEl.classList.remove('video-aspect-235');
-          videoEl.classList.add('video-aspect-169');
-          newRatio = '16:9';
-        } else {
-          // Default to 16:9
-          videoEl.classList.add('video-aspect-169');
-          newRatio = '16:9';
-        }
-        
-        console.log("✅ Changed aspect ratio to:", newRatio);
-        
-        // Show overlay
-        if (overlay) {
-          overlay.textContent = `Aspect Ratio: ${newRatio}`;
-          overlay.classList.remove('hidden');
-          overlay.classList.add('show');
-          
-          setTimeout(() => {
-            overlay.classList.remove('show');
-            setTimeout(() => {
-              overlay.classList.add('hidden');
-            }, 300);
-          }, 2000);
-        }
-        
-        // Show toast notification
-        if (typeof Toaster !== 'undefined') {
-          // Toaster.showToast("success", `Aspect Ratio: ${newRatio}`);
-        }
-      } else {
-        console.error("❌ Video element not found");
-      }
-      
+      // ... existing Enter key code ...
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -1195,11 +1214,22 @@ if (isAspectRatioFocused) {
       break;
   }
   
-  // Prevent event from bubbling when aspect ratio is focused
   e.preventDefault();
   e.stopPropagation();
   return;
 }
+
+  if (!areControlsVisible && !isPlayPauseFocused && !isSeekBarFocused && !isAspectRatioFocused) {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        console.log("📺 Showing controls with", e.key);
+        showAllControls();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }
+
+
 
       // 🔴 UPDATED: Seek bar navigation logic
       if (isSeekBarFocused) {
@@ -1300,6 +1330,17 @@ if (isAspectRatioFocused) {
           case "ArrowDown":
             // Move focus to seek bar
             focusSeekBar();
+
+             if (controlsHideTimeout) {
+        clearTimeout(controlsHideTimeout);
+      }
+      if (!player.paused()) {
+        controlsHideTimeout = setTimeout(() => {
+          hideAllControls();
+        }, 5000);
+      }
+
+
             e.preventDefault();
             break;
             
@@ -1462,6 +1503,13 @@ if (isAspectRatioFocused) {
         console.warn("Event listener removal error:", err);
       }
 
+
+        if (controlsHideTimeout) {
+    clearTimeout(controlsHideTimeout);
+    controlsHideTimeout = null;
+  }
+
+
       // Reset tracking variables
       isSeekBarDragging = false;
       wasPlayingBeforeSeek = false;
@@ -1469,6 +1517,8 @@ if (isAspectRatioFocused) {
       isPlayPauseFocused = true;
       isAspectRatioFocused = false;
       userManuallyPaused = false;
+        areControlsVisible = false; // ADD THIS
+
 
       // Store player reference to avoid race conditions
       const currentPlayer = player;

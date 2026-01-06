@@ -156,15 +156,15 @@
   margin-bottom: 20px;
 }
 
-.clear-parental-btn {
-  color: #999;
-  cursor: pointer;
-  font-size: 14px;
+.clear-parental-btn{
+  margin-left: 20px;
 }
 
 .clear-parental-btn:hover,
 .clear-focused {
-  color: var(--gold);
+  background-color: #1E90FF;
+  transform: scale(1.05);
+  border: white 2px solid;
 }
 
 .parental-input-group {
@@ -238,4 +238,16 @@
 .add-user-focused {
   transform: scale(1.1);
   box-shadow: 0 0 15px rgba(231, 161, 1, 0.6);
+}
+
+.parental-buttons-container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+}
+
+.parental-buttons-container .settings-save-btn {
+    flex: 1;
+    max-width: 200px;
 }

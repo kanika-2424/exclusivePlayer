@@ -18,6 +18,7 @@ function SettingsPage() {
   setTimeout(() => {
     let rightPanelFocusIndex = 0;
     let isRightPanelActive = false;
+  window.isOnClearButton = false; // NEW: Track if we're on Clear button
 
     let rightPanelItems = [];
 
@@ -26,14 +27,15 @@ function SettingsPage() {
                              document.querySelector('.settings-options-container:not([style*="display: none"])');
       
       if (activeContainer) {
-        if (activeContainer.id === 'parentalSettingsOptions') {
-          const clearBtn = activeContainer.querySelector('.clear-parental-btn');
-          const inputs = Array.from(activeContainer.querySelectorAll('.parental-input'));
-          const eyeIcons = Array.from(activeContainer.querySelectorAll('.eye-icon'));
-          const saveBtn = activeContainer.querySelector('.settings-save-btn');
-          
-          rightPanelItems = [clearBtn, ...inputs, ...eyeIcons, saveBtn].filter(el => el !== null);
-        } else {
+   if (activeContainer.id === 'parentalSettingsOptions') {
+  const inputs = Array.from(activeContainer.querySelectorAll('.parental-input'));
+  const saveBtn = activeContainer.querySelector('.settings-save-btn.parental-save-btn');
+  const clearBtn = activeContainer.querySelector('.clear-parental-btn');
+  
+  // NEW: Only inputs and save button in vertical navigation
+  // Clear button will be accessed horizontally from Save button
+  rightPanelItems = [...inputs, saveBtn].filter(el => el !== null);
+}else {
           rightPanelItems = [
             ...activeContainer.querySelectorAll('.option-item'),
             activeContainer.querySelector('.settings-save-btn')
@@ -60,17 +62,17 @@ function SettingsPage() {
       if (rightPanelItems[rightPanelFocusIndex]) {
         const focusedEl = rightPanelItems[rightPanelFocusIndex];
         
-        if (focusedEl.classList.contains('settings-save-btn')) {
-          focusedEl.classList.add('setting-btn-focused');
-        } else if (focusedEl.classList.contains('parental-input')) {
-          focusedEl.classList.add('parental-input-focused');
-        } else if (focusedEl.classList.contains('eye-icon')) {
-          focusedEl.classList.add('eye-focused');
-        } else if (focusedEl.classList.contains('clear-parental-btn')) {
-          focusedEl.classList.add('clear-focused');
-        } else {
-          focusedEl.classList.add('option-focused');
-        }
+     if (focusedEl.classList.contains('clear-parental-btn')) {
+  focusedEl.classList.add('clear-focused');
+} else if (focusedEl.classList.contains('settings-save-btn')) {
+  focusedEl.classList.add('setting-btn-focused');
+} else if (focusedEl.classList.contains('parental-input')) {
+  focusedEl.classList.add('parental-input-focused');
+} else if (focusedEl.classList.contains('eye-icon')) {
+  focusedEl.classList.add('eye-focused');
+} else {
+  focusedEl.classList.add('option-focused');
+}
       }
     }
 
@@ -85,53 +87,93 @@ function SettingsPage() {
         return;
       }
 
-      if (e.target.id === 'clearParentalBtn' || e.target.classList.contains('clear-parental-btn')) {
-        const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+if (e.target.id === 'clearParentalBtn' || 
+    e.target.classList.contains('clear-parental-btn') ||
+    (e.target.closest && e.target.closest('.clear-parental-btn'))) {
+  
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  
+  if (!selectedPlaylist.playlistName) {
+    Toaster.showToast("error", "No playlist selected");
+    return;
+  }
 
-        // if (selectedPlaylist.parentalPassword) {
-        //   const input1 = document.getElementById('parentalPassword1');
-        //   const input2 = document.getElementById('parentalPassword2');
-          
-        //   if (input1 && input2) {
-        //     input1.value = selectedPlaylist.parentalPassword;
-        //     input2.value = selectedPlaylist.parentalPassword;
-        //   }
-        // }
-        
-        if (!selectedPlaylist.playlistName) {
-          Toaster.showToast("error", "No playlist selected");
-          return;
-        }
+  // Get input values
+  const input1 = document.getElementById('parentalPassword1');
+  const input2 = document.getElementById('parentalPassword2');
+  const hasInputValues = (input1 && input1.value.trim()) || (input2 && input2.value.trim());
+  
+  // If there are unsaved input values, just clear the inputs without affecting storage
+  if (hasInputValues) {
+    if (input1) input1.value = "";
+    if (input2) input2.value = "";
+    
+    // Reset eye icons
+    const eyeIcons = document.querySelectorAll('#parentalSettingsOptions .eye-icon');
+    eyeIcons.forEach(eye => {
+      eye.classList.remove("fa-eye-slash");
+      eye.classList.add("fa-eye");
+    });
+    
+    // Reset input types to password
+    if (input1) input1.type = "password";
+    if (input2) input2.type = "password";
+    
+    Toaster.showToast("success", "Input fields cleared");
+    return;
+  }
 
-        try {
-          selectedPlaylist.parentalPassword = "";
-          localStorage.setItem('selectedPlaylist', JSON.stringify(selectedPlaylist));
-          
-        const playlists = JSON.parse(localStorage.getItem('playlistsData')) || [];
-const playlistIndex = playlists.findIndex(p => p.playlistName === selectedPlaylist.playlistName);
+  // If no input values, clear the saved password from storage
+  if (!selectedPlaylist.parentalPassword || selectedPlaylist.parentalPassword === "") {
+    Toaster.showToast("error", "No saved password to clear");
+    return;
+  }
 
-if (playlistIndex !== -1) {
-  playlists[playlistIndex].parentalPassword = "";
-  localStorage.setItem('playlistsData', JSON.stringify(playlists));
+  try {
+    // Clear password from selectedPlaylist
+    selectedPlaylist.parentalPassword = "";
+    localStorage.setItem('selectedPlaylist', JSON.stringify(selectedPlaylist));
+    
+    // Clear password from playlistsData
+    const playlists = JSON.parse(localStorage.getItem('playlistsData')) || [];
+    const playlistIndex = playlists.findIndex(p => p.playlistName === selectedPlaylist.playlistName);
+
+    if (playlistIndex !== -1) {
+      playlists[playlistIndex].parentalPassword = "";
+      localStorage.setItem('playlistsData', JSON.stringify(playlists));
+    }
+
+    // Clear input fields
+    if (input1) input1.value = "";
+    if (input2) input2.value = "";
+    
+    // Reset eye icons
+    const eyeIcons = document.querySelectorAll('#parentalSettingsOptions .eye-icon');
+    eyeIcons.forEach(eye => {
+      eye.classList.remove("fa-eye-slash");
+      eye.classList.add("fa-eye");
+    });
+    
+    // Reset input types
+    if (input1) input1.type = "password";
+    if (input2) input2.type = "password";
+
+    // Reset the flag
+    window.isOnClearButton = false;
+    
+    // Return focus to Save button
+    const saveBtn = document.querySelector('.parental-save-btn');
+    if (saveBtn) {
+      saveBtn.classList.add('setting-btn-focused');
+    }
+
+    Toaster.showToast("success", "Parental Password Removed from Storage");
+  } catch (error) {
+    console.error('Error clearing password:', error);
+    Toaster.showToast("error", "Failed to clear password");
+  }
+  return;
 }
-
-          const inputs = document.querySelectorAll('.parental-input');
-          inputs.forEach(input => input.value = "");
-          
-          const eyeIcons = document.querySelectorAll('#parentalSettingsOptions .eye-icon');
-          eyeIcons.forEach(eye => {
-            eye.classList.remove("fa-eye-slash");
-            eye.classList.add("fa-eye");
-          });
-          inputs.forEach(input => input.type = "password");
-
-          Toaster.showToast("success", "Parental Password Removed");
-        } catch (error) {
-          console.error('Error clearing password:', error);
-          Toaster.showToast("error", "Failed to clear password");
-        }
-        return;
-      }
       
       if (target && target.classList.contains('option-item')) {
         const parentContainer = target.closest('.settings-options-container');
@@ -369,111 +411,276 @@ if (playlistIndex !== -1) {
     function settingsKeydownHandler(e) {
       if (localStorage.getItem("currentPage") !== "settingsPage") return;
 
-      // ArrowRight - Move to right panel
-      if (e.key === "ArrowRight") {
-        const focusedCard = settingsFocusableItems[settingsFocusIndex];
-        if (focusedCard.classList.contains('stream-card') || 
-            focusedCard.classList.contains('time-format-card') ||
-            focusedCard.classList.contains('parental-control-card')) {
-          isRightPanelActive = true;
-          rightPanelFocusIndex = 0;
-          
-          updateRightPanelItems();
-          settingsUpdateFocus(); // Update left panel to border focus
-          updateRightPanelFocus();
-          e.preventDefault();
-          return;
-        }
-      }
 
-      // ArrowLeft - Move back to left panel
-      if (e.key === "ArrowLeft" && isRightPanelActive) {
-        isRightPanelActive = false;
-        
-        // Remove all focus from right panel
-        rightPanelItems.forEach((el) => {
-          if (el) {
-            el.classList.remove('setting-btn-focused');
-            el.classList.remove('option-focused');
-            el.classList.remove('parental-input-focused');
-            el.classList.remove('eye-focused');
-            el.classList.remove('clear-focused');
-          }
-        });
-        
-        settingsUpdateFocus(); // Update left panel to background focus
-        e.preventDefault();
-        return;
-      }
+       e.stopPropagation();
+
+
+      // ArrowRight - Move to right panel
+   // ArrowRight - Move to right panel
+if (e.key === "ArrowRight" && !isRightPanelActive) {
+  console.log("ArrowRight: Moving from left to right panel");
+  const focusedCard = settingsFocusableItems[settingsFocusIndex];
+  if (focusedCard.classList.contains('stream-card') || 
+      focusedCard.classList.contains('time-format-card') ||
+      focusedCard.classList.contains('parental-control-card')) {
+    isRightPanelActive = true;
+    rightPanelFocusIndex = 0; // NEW: Always start at first item (first input for parental control)
+    
+    updateRightPanelItems();
+    settingsUpdateFocus(); // Update left panel to border focus
+    updateRightPanelFocus();
+    
+    // NEW: Auto-focus first input if it's parental control
+    if (focusedCard.classList.contains('parental-control-card')) {
+      setTimeout(() => {
+        const firstInput = document.getElementById('parentalPassword1');
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+    }
+    
+    e.preventDefault();
+    return;
+  }
+}
+
+    
 
       // Handle navigation in right panel
-      if (isRightPanelActive) {
-        if (e.key === "ArrowDown") {
-          // Before changing rightPanelFocusIndex
-if (document.activeElement && document.activeElement.tagName === "INPUT") {
-  document.activeElement.blur();
-}
+    // Handle navigation in right panel
+if (isRightPanelActive) {
 
-          rightPanelFocusIndex++;
-          if (rightPanelFocusIndex >= rightPanelItems.length) {
-            rightPanelFocusIndex = rightPanelItems.length - 1;
-          }
-          updateRightPanelFocus();
-          e.preventDefault();
-          return;
-        }
+    console.log("Right panel is active, key:", e.key);
+  e.stopPropagation(); // NEW: Stop propagation when in right panel
+  
 
-        if (e.key === "ArrowUp") {
-          // Before changing rightPanelFocusIndex
-if (document.activeElement && document.activeElement.tagName === "INPUT") {
-  document.activeElement.blur();
-}
 
-          rightPanelFocusIndex--;
-          if (rightPanelFocusIndex < 0) {
-            rightPanelFocusIndex = 0;
-          }
-          updateRightPanelFocus();
-          e.preventDefault();
-          return;
-        }
+  if (e.key === "ArrowDown") {
+    // Before changing rightPanelFocusIndex
+    if (document.activeElement && document.activeElement.tagName === "INPUT") {
+      document.activeElement.blur();
+    }
 
-       if (e.key === "Enter") {
-          const focusedEl = rightPanelItems[rightPanelFocusIndex];
-          
-          if (focusedEl) {
-            if (focusedEl.classList.contains('clear-parental-btn')) {
-              focusedEl.click();
-            }
-            else if (focusedEl.classList.contains('eye-icon')) {
-              focusedEl.click();
-            }
-           else if (focusedEl.classList.contains('parental-input')) {
-  const input = focusedEl;
+    rightPanelFocusIndex++;
+    if (rightPanelFocusIndex >= rightPanelItems.length) {
+      rightPanelFocusIndex = rightPanelItems.length - 1;
+    }
+    updateRightPanelFocus();
+    e.preventDefault();
+    return;
+  }
 
-  // 🔥 Critical for Tizen: force previous input to release IME
-  document.activeElement && document.activeElement.blur();
-
-  setTimeout(() => {
-    input.focus();
-
-    // Move cursor to end (IME-safe)
-    try {
-      const len = input.value.length;
-      input.setSelectionRange(len, len);
-    } catch (e) {}
-
-  }, 200); // 200ms is safer for older TVs
-}
-
-            else {
-              focusedEl.click();
-            }
-          }
-          e.preventDefault();
-          return;
-        }
+if (e.key === "ArrowUp") {
+  console.log("ArrowUp in right panel, isOnClearButton:", window.isOnClearButton);
+  
+  // NEW: If on Clear button, move back to 2nd input
+  if (window.isOnClearButton) {
+    const parentContainer = document.getElementById('parentalSettingsOptions');
+    const clearBtn = parentContainer.querySelector('.clear-parental-btn');
+    
+    console.log("Moving from Clear to 2nd input via ArrowUp");
+    
+    if (clearBtn) {
+      // Remove focus from Clear button
+      clearBtn.classList.remove('clear-focused');
+      
+      // Clear the flag FIRST
+      window.isOnClearButton = false;
+      
+      // Find the 2nd input (last input) in rightPanelItems
+      const inputs = rightPanelItems.filter(item => 
+        item && item.classList.contains('parental-input')
+      );
+      
+      if (inputs.length > 0) {
+        // Get the last input (2nd input)
+        const lastInput = inputs[inputs.length - 1];
+        rightPanelFocusIndex = rightPanelItems.indexOf(lastInput);
+      } else {
+        // Fallback to last item if no inputs found
+        rightPanelFocusIndex = rightPanelItems.length - 1;
       }
+      
+      // Update focus to show 2nd input as focused
+      updateRightPanelFocus();
+    }
+    
+    e.preventDefault();
+    return;
+  }
+  
+  // Original ArrowUp logic for normal navigation
+  // Before changing rightPanelFocusIndex
+  if (document.activeElement && document.activeElement.tagName === "INPUT") {
+    document.activeElement.blur();
+  }
+
+  rightPanelFocusIndex--;
+  if (rightPanelFocusIndex < 0) {
+    rightPanelFocusIndex = 0;
+  }
+  updateRightPanelFocus();
+  e.preventDefault();
+  return;
+}
+  // NEW: ArrowRight - Navigate from Save to Clear button (horizontal navigation)
+// ArrowRight - Navigate from Save to Clear button (horizontal navigation)
+if (e.key === "ArrowRight") {
+  console.log("ArrowRight pressed in right panel");
+  console.log("Current focus index:", rightPanelFocusIndex);
+  console.log("Right panel items:", rightPanelItems);
+  
+  const focusedEl = rightPanelItems[rightPanelFocusIndex];
+  console.log("Focused element:", focusedEl);
+  
+  // Only allow right navigation if on Save Password button
+  if (focusedEl && (focusedEl.classList.contains('parental-save-btn') || focusedEl.classList.contains('settings-save-btn'))) {
+    console.log("On Save button, looking for Clear button");
+    
+    const parentContainer = document.getElementById('parentalSettingsOptions');
+    
+    if (parentContainer && parentContainer.style.display !== 'none') {
+      const clearBtn = parentContainer.querySelector('.clear-parental-btn');
+      console.log("Clear button found:", clearBtn);
+      
+      if (clearBtn) {
+        // Remove focus from Save button
+        focusedEl.classList.remove('setting-btn-focused');
+        
+        // Add focus to Clear button
+        clearBtn.classList.add('clear-focused');
+        
+        // Store that we're on Clear button
+        window.isOnClearButton = true;
+        
+        console.log("Moved to Clear button");
+      }
+      
+      e.preventDefault();
+      return;
+    }
+  }
+  
+  e.preventDefault();
+  return;
+}
+
+  // NEW: ArrowLeft handler - Navigate from Clear back to Save, or back to left panel
+// ArrowLeft handler - Navigate from Clear back to Save, or back to left panel
+if (e.key === "ArrowLeft") {
+  console.log("ArrowLeft pressed, isOnClearButton:", window.isOnClearButton);
+  
+  // Check if we're on the Clear button
+  if (window.isOnClearButton) {
+    const parentContainer = document.getElementById('parentalSettingsOptions');
+    const clearBtn = parentContainer.querySelector('.clear-parental-btn');
+    
+    console.log("Moving from Clear to Save via ArrowLeft");
+    
+    if (clearBtn) {
+      // Remove focus from Clear button
+      clearBtn.classList.remove('clear-focused');
+      
+      // Clear the flag FIRST
+      window.isOnClearButton = false;
+      
+      // Find the Save button index in rightPanelItems
+      rightPanelFocusIndex = rightPanelItems.findIndex(item => 
+        item && (item.classList.contains('parental-save-btn') || item.classList.contains('settings-save-btn'))
+      );
+      
+      // If not found, default to last item
+      if (rightPanelFocusIndex === -1) {
+        rightPanelFocusIndex = rightPanelItems.length - 1;
+      }
+      
+      // Update focus to show Save button as focused
+      updateRightPanelFocus();
+    }
+    
+    e.preventDefault();
+    return;
+  }
+  
+  // If not on Clear button, move back to left panel
+  isRightPanelActive = false;
+  window.isOnClearButton = false; // Reset flag
+  
+  // Remove all focus from right panel
+  rightPanelItems.forEach((el) => {
+    if (el) {
+      el.classList.remove('setting-btn-focused');
+      el.classList.remove('option-focused');
+      el.classList.remove('parental-input-focused');
+      el.classList.remove('eye-focused');
+      el.classList.remove('clear-focused');
+    }
+  });
+  
+  // Also remove focus from Clear button if it exists
+  const clearBtn = document.querySelector('.clear-parental-btn');
+  if (clearBtn) {
+    clearBtn.classList.remove('clear-focused');
+  }
+  
+  settingsUpdateFocus(); // Update left panel to background focus
+  e.preventDefault();
+  return;
+}
+
+ if (e.key === "Enter") {
+  console.log("Enter pressed, isOnClearButton:", window.isOnClearButton);
+  
+  // Check if we're on Clear button
+  if (window.isOnClearButton) {
+    const parentContainer = document.getElementById('parentalSettingsOptions');
+    const clearBtn = parentContainer.querySelector('.clear-parental-btn');
+    
+    console.log("Clicking Clear button");
+    
+    if (clearBtn) {
+      clearBtn.click();
+    }
+    
+    e.preventDefault();
+    return;
+  }
+  
+  const focusedEl = rightPanelItems[rightPanelFocusIndex];
+  
+  if (focusedEl) {
+    if (focusedEl.classList.contains('clear-parental-btn')) {
+      focusedEl.click();
+    }
+    else if (focusedEl.classList.contains('eye-icon')) {
+      focusedEl.click();
+    }
+    else if (focusedEl.classList.contains('parental-input')) {
+      const input = focusedEl;
+
+      // 🔥 Critical for Tizen: force previous input to release IME
+      document.activeElement && document.activeElement.blur();
+
+      setTimeout(() => {
+        input.focus();
+
+        // Move cursor to end (IME-safe)
+        try {
+          const len = input.value.length;
+          input.setSelectionRange(len, len);
+        } catch (e) {}
+
+      }, 200); // 200ms is safer for older TVs
+    }
+    else {
+      focusedEl.click();
+    }
+  }
+  e.preventDefault();
+  return;
+}
+}
 
       if (e.key === "ArrowDown") {
         if (settingsFocusIndex == settingsFocusableItems.length - 1) {
@@ -796,7 +1003,10 @@ if (selectedPlaylist.parentalPassword) {
                         </div>
                     </div>
                     
-                    <button class="settings-save-btn">Save Password</button>
+                       <div class="parental-buttons-container">
+    <button class="settings-save-btn parental-save-btn">Save</button>
+    <button class="settings-save-btn clear-parental-btn" id="clearParentalBtn">Clear</button>
+</div>
                 </div>
             </div>
        

@@ -177,6 +177,12 @@ window.onload = function () {
   document.addEventListener("keydown", (e) => {
     const currentPage = localStorage.getItem("currentPage");
 
+
+
+      if (currentPage === "settingsPage") {
+    console.log("Settings page active - main.js ignoring key");
+    return; // Don't handle keys, let SettingsPage handle them
+  }
     // Don't allow exit on dashboard (your previous logic)
     if (currentPage !== "dashboard") {
       if (e.key === "XF86Exit" && typeof tizen !== "undefined") {
