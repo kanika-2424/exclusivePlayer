@@ -344,8 +344,8 @@ fmMt327ssg==</DigestValue>
 </Reference>
 <Reference URI="main.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>wJmQFSMloEphOKX4h22GTQycR7tnrjmsdPgavXuptRmEu/jmB7jln+QryCJrRiCgMMwSZ1FTlr+P
-BbXVWMii5Q==</DigestValue>
+<DigestValue>ByZMORzqsi6MHINsK7Nz4KtzDcbiyAljw5skxIoVyiyOz4Va5L+00Wh8CZCwafSKPuDpNNgB2xHg
+dQTZBtFoiQ==</DigestValue>
 </Reference>
 <Reference URI="pages%2FAccountPage.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -442,11 +442,11 @@ QY10fG1EWQ==</DigestValue>
 </Reference>
 </SignedInfo>
 <SignatureValue>
-xZc/KtgIhLdhRCI8U3TG8c9WJnwLsKpJF85wct//AUIK3upXfqZYWJoTP7XdqAQIL9RZCrafr7ta
-0q291IXhfW3HUxr/zLK0VUgeH4Z//lQ0eoI7pY0xEXzlcQOjf1Rm/kNMSoieOLbQVzB4qMUMAcKy
-nLPM/ziAZlzyy4cb7VJk0jJGMlot6FSM21n0QFtMhKGEzDMIttNzuIYppCWiE514nzx8pPd8HXh6
-odXrn5Rch0AP0DN6HNMRsTWToXJHeeH45ClWZwEC8ZIoK9eWpeeoUgCPLo6HtLRBVx69Md4RxF7C
-mWdmkkpmADSwVbb/FG8ETdhjNg/ShjIMslyI/g==
+vRY6qxeWBnqsZi8pXPS8XlFDvjNLxxoPth8+YqVpq4aanqwGoXf7PFaZHt88R6/738oNhuTtMQdn
+8l+cHPx/sJW2H4MIJZxXM6oZRIzC9rrob4gpdOPDfoDiRpF1cy1PK14VTOW2ocDFBGG7NcxYJXD3
+x2rX0mwIuKapq3hBdajcuTwxRAobQfCigAUZMeArjAO/awvh6bYnTufQtFcLZXW5YV/pM5Pe0rmQ
+3wvrJ13Sb83IW4n+t4EC6405UFBJaUDMpn5fi2KDp3SI88bHvxozC1dl3gTY9hXXd9i8XXJb4ESS
+7A3S3t+isB4qd9Nmwxi1sxqn9B7sBeZKZdJKKg==
 </SignatureValue>
 <KeyInfo>
 <X509Data>
