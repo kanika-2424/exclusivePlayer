@@ -403,8 +403,8 @@ if (isLogin && selectedPlaylist) {
 
     // Show login screen (default)
     console.log("🔑 No login state, showing login page");
-    localStorage.setItem("currentPage", "login");
-    Router.showPage("login");
+    localStorage.setItem("currentPage", "dashboard");
+    Router.showPage("dashboard");
 
   }, 100); // Small delay to ensure splash shows
 
@@ -425,10 +425,25 @@ if (isLogin && selectedPlaylist) {
 
 function formatTime(date, format = null) {
   // Get format from parameter, or from selectedPlaylist, or from localStorage, or default to 12hrs
-  const timeFormat = format || 
-                     JSON.parse(localStorage.getItem("selectedPlaylist")).timeFormat || 
-                     localStorage.getItem("selectedTimeFormat") || 
-                     "12hrs";
+  let timeFormat = format;
+  
+  if (!timeFormat) {
+    // Try to get from selectedPlaylist
+    try {
+      const selectedPlaylistRaw = localStorage.getItem("selectedPlaylist");
+      if (selectedPlaylistRaw) {
+        const selectedPlaylist = JSON.parse(selectedPlaylistRaw);
+        timeFormat = selectedPlaylist.timeFormat;
+      }
+    } catch (e) {
+      console.warn("Failed to parse selectedPlaylist for timeFormat:", e);
+    }
+  }
+  
+  // Fallback to localStorage or default
+  if (!timeFormat) {
+    timeFormat = localStorage.getItem("selectedTimeFormat") || "12hrs";
+  }
   
   if (timeFormat === "24hrs") {
     // 24-hour format: HH:mm
