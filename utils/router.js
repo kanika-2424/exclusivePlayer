@@ -40,23 +40,32 @@ const Router = {
         break;
         
 
-        case 'playlist-page':
-      case 'playlist':
-      case 'playlist-page':
-        pageElement = document.getElementById('playlist-page');
-        pageElement.innerHTML = ListPlaylistPage();
-        this.currentPage = 'Playlist';
-        localStorage.setItem('currentPage', 'playlist');
-        break;
-
+     case 'playlist-page':
+case 'playlist':
+  // ✅ Don't render playlist if we're in initial load state
+  if (localStorage.getItem("isInitialLoad") === "true" || 
+      localStorage.getItem("isLoading") === "true") {
+    console.log("⏸️ Blocking playlist navigation during initial load");
+    return;
+  }
+  pageElement = document.getElementById('playlist-page');
+  pageElement.innerHTML = ListPlaylistPage();
+  this.currentPage = 'Playlist';
+  localStorage.setItem('currentPage', 'playlist');
+  break;
         
-      case 'dashboard':
-      case 'dashboard-page':
-        pageElement = document.getElementById('dashboard-page');
-        pageElement.innerHTML = DashboardPage();
-        this.currentPage = 'Dashboard';
-        localStorage.setItem('currentPage', 'dashboard');
-        break;
+    case 'dashboard':
+case 'dashboard-page':
+  // ✅ Don't render dashboard if still loading
+  if (localStorage.getItem("isLoading") === "true") {
+    console.log("⏳ Still loading, skipping dashboard render");
+    return;
+  }
+  pageElement = document.getElementById('dashboard-page');
+  pageElement.innerHTML = DashboardPage();
+  this.currentPage = 'Dashboard';
+  localStorage.setItem('currentPage', 'dashboard');
+  break;
         
       case 'live-tv':
       case 'liveTv':

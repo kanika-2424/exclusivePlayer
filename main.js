@@ -117,8 +117,84 @@
 ///////// Add keyboard shortcut to toggle console (INFO button = keyCode 457)
 
 
-window.onload = function () {
+function restoreFromPersistentStorage() {
+  return new Promise((resolve) => {
+    if (typeof tizen === "undefined") {
+      console.log("⚠️ Not Tizen, skipping restore");
+      resolve(false);
+      return;
+    }
 
+    try {
+      tizen.filesystem.resolve(
+        'wgt-private',
+        function (dir) {
+          try {
+            const file = dir.resolve('appdata.json');
+
+            file.openStream(
+              'r',
+              function (fs) {
+                try {
+                  const content = fs.read(file.fileSize);
+                  fs.close();
+
+                  const data = JSON.parse(content);
+
+                  console.log("🔁 Restored persistent data:", data);
+
+                  if (data.isLogin) {
+                    localStorage.setItem("isLogin", data.isLogin);
+                  }
+                  if (data.selectedPlaylist) {
+                    localStorage.setItem("selectedPlaylist", data.selectedPlaylist);
+                  }
+                  if (data.currentPlaylistData) {
+                    localStorage.setItem("currentPlaylistData", data.currentPlaylistData);
+                  }
+                  if (data.playlistsData) {
+                    localStorage.setItem("playlistsData", data.playlistsData);
+                  }
+
+                  resolve(true);
+                } catch (e) {
+                  console.error("❌ Failed parsing persistent data", e);
+                  resolve(false);
+                }
+              },
+              function (err) {
+                console.log("ℹ️ No persistent stream yet");
+                resolve(false);
+              },
+              'UTF-8'
+            );
+          } catch (e) {
+            console.log("ℹ️ No persistent file found");
+            resolve(false);
+          }
+        },
+        function (err) {
+          console.error("❌ wgt-private resolve failed", err);
+          resolve(false);
+        }
+      );
+    } catch (e) {
+      console.error("❌ Persistent restore error", e);
+      resolve(false);
+    }
+  });
+}
+
+
+window.onload = async function () {
+
+  localStorage.setItem("isInitialLoad", "true");
+
+
+    await restoreFromPersistentStorage();
+
+  console.log("🔐 isLogin:--------------", localStorage.getItem("isLogin"));
+  console.log("📦 selectedPlaylist:", localStorage.getItem("selectedPlaylist"));
 
     // window.TizenConsole.init();
 
@@ -246,9 +322,27 @@ Toaster(); // Initialize Toaster
 
 if (isLogin && selectedPlaylist) {
 
-  showLoader();
+
+      localStorage.removeItem("isInitialLoad");
+  localStorage.setItem("isLoading", "true");
+
+
+    const allPages = document.querySelectorAll('.page');
+  allPages.forEach(page => {
+    page.style.display = 'none';
+    page.innerHTML = ''; // Clear any content
+  });
+
   // User already logged in with playlist
   console.log("✅ User is logged in, loading dashboard...");
+    showLoader();
+
+
+   const loadingOverlay = document.getElementById("loading-overlay");
+  if (loadingOverlay) {
+    loadingOverlay.classList.remove("hidden");
+  }
+  
 
   // Restore full playlist data including parentalPassword
   const allPlaylists = JSON.parse(localStorage.getItem('playlistsData')) || [];
@@ -264,11 +358,7 @@ if (isLogin && selectedPlaylist) {
     selectedPlaylist = restoredPlaylist;
   }
   
-  // Show loading overlay
-  const loadingOverlay = document.getElementById("loading-overlay");
-  if (loadingOverlay) {
-    loadingOverlay.classList.remove("hidden");
-  }
+
   
   resetLoadingPercentage();
   updateLoadingPercentage(10, "Restoring session...");
@@ -317,6 +407,8 @@ if (isLogin && selectedPlaylist) {
 
           hideLoader(); 
           resetLoadingPercentage();
+            localStorage.removeItem("isLoading");
+localStorage.removeItem("isInitialLoad");
           
           // Set current page and navigate to dashboard
           localStorage.setItem("currentPage", "dashboard");
@@ -349,10 +441,16 @@ if (isLogin && selectedPlaylist) {
           // Only log out as last resort
           localStorage.removeItem("isLogin");
           localStorage.removeItem("currentPlaylistData");
+            localStorage.removeItem("isLoading");
+            localStorage.removeItem("isInitialLoad"); // ✅ ADD THIS
+
+
           if (loadingOverlay) {
             loadingOverlay.classList.add("hidden");
           }
           resetLoadingPercentage();
+          localStorage.removeItem("isInitialLoad"); // ✅ ADD THIS
+
           Router.showPage("login");
         }
       }
@@ -491,9 +589,10 @@ const LoadingScreen = () => {
   return `
     <div class="livetv-loading-overlay" id="LoadingOverlay">
       <div class="loading-content">
+      <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
         <div class="spinner"></div>
-        <div class="loading-text">Loading Dashboard</div>
-        <div class="loading-subtext">Please wait while we load your dashboard...</div>
+        <div class="loading-text">Loading</div>
+        <div class="loading-subtext">Please wait while we load your content...</div>
       </div>
     </div>
   `;
@@ -502,10 +601,21 @@ const LoadingScreen = () => {
 function showLoader() {
   if (document.getElementById("LoadingOverlay")) return;
 
+  // ✅ Add loading class to body
+  document.body.classList.add('loading');
+  
   document.body.insertAdjacentHTML(
     "beforeend",
     LoadingScreen()
   );
+}
+
+function hideLoader() {
+  const loader = document.getElementById("LoadingOverlay");
+  if (loader) loader.remove();
+  
+  // ✅ Remove loading class from body
+  document.body.classList.remove('loading');
 }
 
 function hideLoader() {

@@ -5,16 +5,24 @@ function ListPlaylistPage() {
   let playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
   let enterDownFocusIndex = null;
 
-
-    // CHECK IF USER IS ALREADY LOGGED IN - Redirect to dashboard
+  // CHECK IF USER IS ALREADY LOGGED IN - Redirect to dashboard
   const isLogin = localStorage.getItem("isLogin") === "true";
   const selectedPlaylist = localStorage.getItem("selectedPlaylist");
+  const isInitialLoad = localStorage.getItem("isInitialLoad") === "true";
+  const isLoading = localStorage.getItem("isLoading") === "true";
   
-  if (isLogin && selectedPlaylist) {
+  // ✅ PREVENT REDIRECT during initial app load - let main.js handle it
+  if (isLogin && selectedPlaylist && !isInitialLoad && !isLoading) {
     console.log("✅ User already logged in, redirecting to dashboard...");
     localStorage.setItem("currentPage", "dashboard");
     Router.showPage("dashboard");
     return "";
+  }
+
+  // ✅ If we're in initial load, just return empty - main.js will handle navigation
+  if (isInitialLoad || isLoading) {
+    console.log("⏸️ Initial load or loading in progress, returning empty");
+    return '<div style="display:none;"></div>';
   }
 
   if (playlistsData.length === 0) {

@@ -9,6 +9,78 @@ const castImageUrl = "https://image.tmdb.org/t/p/w500";
 
 let currentAnimationId = null;
 
+
+// ✅ ADD THIS FUNCTION HERE
+function saveToPersistentStorage() {
+  console.log("💾 Saving login state to persistent storage...");
+  
+  if (typeof tizen === "undefined") {
+    console.log("⚠️ Not on Tizen TV, skipping persistent storage");
+    return;
+  }
+  
+  try {
+    const dataToSave = {
+      isLogin: localStorage.getItem("isLogin"),
+      selectedPlaylist: localStorage.getItem("selectedPlaylist"),
+      currentPlaylistData: localStorage.getItem("currentPlaylistData"),
+      playlistsData: localStorage.getItem("playlistsData")
+    };
+    
+    console.log("📊 Data to save:", {
+      hasLogin: !!dataToSave.isLogin,
+      hasPlaylist: !!dataToSave.selectedPlaylist,
+      hasData: !!dataToSave.currentPlaylistData
+    });
+    
+    tizen.filesystem.resolve('wgt-private', 
+      function(dir) {
+        try {
+          // Try to delete old file first
+          try {
+            const oldFile = dir.resolve('appdata.json');
+            oldFile.deleteFile();
+            console.log("🗑️ Old persistent file deleted");
+          } catch(e) {
+            console.log("ℹ️ No old file to delete");
+          }
+          
+          // Create new file
+          const file = dir.createFile('appdata.json');
+          if (!file) {
+            console.error("❌ Failed to create file");
+            return;
+          }
+          
+          file.openStream('w', 
+            function(fs) {
+              try {
+                const jsonString = JSON.stringify(dataToSave);
+                fs.write(jsonString);
+                fs.close();
+                console.log("✅ Login state saved to persistent storage!");
+                console.log("📝 Saved", jsonString.length, "characters");
+              } catch(writeErr) {
+                console.error("❌ Failed to write data:", writeErr);
+              }
+            },
+            function(err) {
+              console.error("❌ Failed to open stream:", err);
+            },
+            'UTF-8'
+          );
+        } catch(createErr) {
+          console.error("❌ Failed to create file:", createErr);
+        }
+      },
+      function(err) {
+        console.error("❌ Could not resolve wgt-private:", err);
+      }
+    );
+  } catch(e) {
+    console.error("❌ Tizen filesystem error:", e);
+  }
+}
 function resetLoadingPercentage() {
   const progressElement = document.getElementById("loading-progress");
   if (!progressElement) return;
@@ -226,8 +298,12 @@ async function loginApi(
             }
             
             setTimeout(() => {
-              localStorage.setItem("isLogin", true);
+              localStorage.setItem("isLogin", "true");
               localStorage.setItem("currentPage", "dashboard");
+
+                saveToPersistentStorage();
+
+
               loadingOverlay.classList.add("hidden");
               disableKeyBlock();
               resetLoadingPercentage();
@@ -361,8 +437,12 @@ async function loginApi(
             success = true;
             
             setTimeout(() => {
-              localStorage.setItem("isLogin", true);
+              localStorage.setItem("isLogin", "true");
               localStorage.setItem("currentPage", "dashboard");
+
+                saveToPersistentStorage();
+
+                
               loadingOverlay.classList.add("hidden");
               disableKeyBlock();
               resetLoadingPercentage();

@@ -1,6 +1,13 @@
 
 
 function DashboardPage() {
+
+
+   if (localStorage.getItem("isLoading") === "true") {
+    return '<div style="display:none;"></div>';
+  }
+  
+  
   setTimeout(() => {
 
     // Collect all focusable elements in navigation order
@@ -75,7 +82,7 @@ function hideExitModal() {
 
 function exitApp() {
   // Clear all localStorage if needed
-  localStorage.clear();
+
   
   // Close the window/app
   if (window.close) {
