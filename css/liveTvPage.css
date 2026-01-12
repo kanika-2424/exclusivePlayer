@@ -1758,33 +1758,9 @@ video {
   padding: 60px 40px;
   border-radius: 16px;
   max-width: 600px;
-  animation: fadeIn 0.3s ease;
-  -webkit-animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    -webkit-transform: scale(0.9);
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    -webkit-transform: scale(1);
-    transform: scale(1);
-  }
-}
 
-@-webkit-keyframes fadeIn {
-  from {
-    opacity: 0;
-    -webkit-transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    -webkit-transform: scale(1);
-  }
-}
 
 /* Sidebar locked state */
 .sidebar-item {
@@ -1915,7 +1891,6 @@ video {
   height: 100%;
   background: linear-gradient(90deg, #0ea5e9, #3b82f6);
   width: 0%;
-  transition: width 0.3s ease;
   border-radius: 10px;
 }
 
@@ -1940,17 +1915,17 @@ video {
 
 .channel-image-loading {
   opacity: 0.5;
-  animation: pulse 1.5s ease-in-out infinite;
+  /* animation: pulse 1.5s ease-in-out infinite; */
 }
 
-@keyframes pulse {
+/* @keyframes pulse {
   0%, 100% {
     opacity: 0.5;
   }
   50% {
     opacity: 0.8;
   }
-}
+} */
 
 /* Channel Grid Loading Overlay */
 .channel-grid-loading-overlay {
@@ -2013,7 +1988,6 @@ video {
   height: 100%;
   background: linear-gradient(90deg, #0ea5e9, #06b6d4);
   width: 0%;
-  transition: width 0.3s ease;
 }
 
 .channel-grid-loading-overlay .progress-text {
@@ -2113,4 +2087,13 @@ video {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.channel-grid {
+  scroll-behavior: auto !important; /* Disable smooth scroll for performance */
+}
+
+.channel-card {
+  will-change: transform; /* GPU acceleration hint */
+  transform: translateZ(0); /* Force GPU rendering */
 }

@@ -20,7 +20,7 @@ function ListPlaylistPage() {
   }
 
   // ✅ If we're in initial load, just return empty - main.js will handle navigation
-  if (isInitialLoad || isLoading) {
+  if ( isLoading) {
     console.log("⏸️ Initial load or loading in progress, returning empty");
     return '<div style="display:none;"></div>';
   }

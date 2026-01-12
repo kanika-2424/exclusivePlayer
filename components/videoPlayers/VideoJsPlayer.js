@@ -419,18 +419,12 @@ function showAspectRatioOverlay(label) {
   overlay.classList.remove('hidden');
   overlay.classList.add('show');
   
-  // Hide after 2 seconds
   setTimeout(() => {
     overlay.classList.remove('show');
     setTimeout(() => {
       overlay.classList.add('hidden');
     }, 300);
   }, 2000);
-}
-
-// Fallback aspect ratio overlay function
-function showAspectRatioOverlay(label) {
-  // ... existing code ...
 }
 
 // ADD THIS NEW FUNCTION:
@@ -1195,7 +1189,60 @@ if (isAspectRatioFocused) {
       return;
       
     case "Enter":
-      // ... existing Enter key code ...
+      case "Enter":
+      console.log("✅ Enter pressed on aspect ratio button - cycling ratio");
+      
+      const videoEl = document.querySelector("#videojs-player-tag_html5_api");
+      const overlay = document.getElementById('aspectRatioOverlay');
+      
+      console.log("📺 Video element found:", !!videoEl);
+      console.log("📺 Overlay found:", !!overlay);
+      
+      if (videoEl) {
+        // Manual aspect ratio cycling
+        let newRatio = '16:9';
+        
+        if (videoEl.classList.contains('video-aspect-169')) {
+          videoEl.classList.remove('video-aspect-169');
+          videoEl.classList.add('video-aspect-43');
+          newRatio = '4:3';
+        } else if (videoEl.classList.contains('video-aspect-43')) {
+          videoEl.classList.remove('video-aspect-43');
+          videoEl.classList.add('video-aspect-235');
+          newRatio = '2.35:1';
+        } else if (videoEl.classList.contains('video-aspect-235')) {
+          videoEl.classList.remove('video-aspect-235');
+          videoEl.classList.add('video-aspect-169');
+          newRatio = '16:9';
+        } else {
+          // Default to 16:9
+          videoEl.classList.add('video-aspect-169');
+          newRatio = '16:9';
+        }
+        
+        console.log("✅ Changed aspect ratio to:", newRatio);
+        
+        // Show overlay
+        if (overlay) {
+          overlay.textContent = `Aspect Ratio: ${newRatio}`;
+          overlay.classList.remove('hidden');
+          overlay.classList.add('show');
+          
+          setTimeout(() => {
+            overlay.classList.remove('show');
+            setTimeout(() => {
+              overlay.classList.add('hidden');
+            }, 300);
+          }, 2000);
+        }
+        
+        // Show toast notification
+        if (typeof Toaster !== 'undefined') {
+          // Toaster.showToast("success", `Aspect Ratio: ${newRatio}`);
+        }
+      } else {
+        console.error("❌ Video element not found");
+      }
       e.preventDefault();
       e.stopPropagation();
       return;

@@ -293,21 +293,32 @@ function updatePlayPauseIcon(isPlaying) {
   
 
   // Function to update aspect ratio button visibility
-  function updateAspectRatioButtonVisibility() {
-    const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
-    const loadingEl = document.querySelector(".live-video-loader");
-    const errorEl = document.querySelector(".live-video-error");
+function updateAspectRatioButtonVisibility() {
+  const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
+  const loadingEl = document.querySelector(".live-video-loader");
+  const errorEl = document.querySelector(".live-video-error");
+  
+  if (aspectRatioBtn) {
+    // Check if in fullscreen
+    const isFs = !!(document.fullscreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.msFullscreenElement);
     
-    if (aspectRatioBtn) {
-      // Hide aspect ratio button when loader is visible or error is visible
-      if (loadingEl && !loadingEl.classList.contains("hidden") || 
-          errorEl && !errorEl.classList.contains("hidden")) {
-        aspectRatioBtn.style.display = 'none';
-      } else {
-        aspectRatioBtn.style.display = 'block';
-      }
+    // Only show if in fullscreen AND no loader/error
+    const shouldShow = isFs && 
+                       (!loadingEl || loadingEl.classList.contains("hidden")) && 
+                       (!errorEl || errorEl.classList.contains("hidden"));
+    
+    if (shouldShow) {
+      aspectRatioBtn.style.display = 'block';
+      aspectRatioBtn.style.opacity = '1';
+    } else {
+      aspectRatioBtn.style.display = 'none';
+      aspectRatioBtn.style.opacity = '0';
     }
   }
+}
 
   console.log(srcUrl, "srcUrl");
 
@@ -455,13 +466,32 @@ fp.on("resume", () => {
           });
         }
 
-        const handleFullscreenChange = () => {
-          const channelNameEl = document.querySelector(".live-channel-name");
-          const liveBadgeEl = document.querySelector(".live-badge");
-          const isFs = window.livePlayer.isFullscreen();
-          if (channelNameEl) channelNameEl.style.display = isFs ? "none" : "flex";
-          if (liveBadgeEl) liveBadgeEl.style.display = "flex";
-        };
+   const handleFullscreenChange = () => {
+  const techEl = document.querySelector(".vjs-tech");
+  const channelNameEl = document.querySelector(".live-channel-name");
+  const liveBadgeEl = document.querySelector(".live-badge");
+  const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
+  
+  // Check fullscreen status
+  const isFs = !!(document.fullscreenElement || 
+                  document.webkitFullscreenElement || 
+                  document.mozFullScreenElement || 
+                  document.msFullscreenElement);
+  
+  if (channelNameEl) channelNameEl.style.display = isFs ? "none" : "flex";
+  if (liveBadgeEl) liveBadgeEl.style.display = "flex";
+  
+  // Show/hide aspect ratio button based on fullscreen ONLY
+  if (aspectRatioBtn) {
+    if (isFs) {
+      aspectRatioBtn.style.display = "block";
+      aspectRatioBtn.style.opacity = "1";
+    } else {
+      aspectRatioBtn.style.display = "none";
+      aspectRatioBtn.style.opacity = "0";
+    }
+  }
+};
         fp.on("fullscreen", handleFullscreenChange);
         document.addEventListener("fullscreenchange", handleFullscreenChange);
         handleFullscreenChange();
@@ -797,7 +827,7 @@ if (aspectRatioButton) {
 return `
   <div class="live-video-player live-video-player-div" style="width:100%; height:100%;">
     <!-- Aspect Ratio Button -->
-    <div class="videojs-aspect-ratio-div">
+   <div class="videojs-aspect-ratio-div" style="display: none !important;">
       <button id="videojs-aspect-ratio" class="videojs-aspect-ratio-btn">
         <i class="fa-solid fa-compress"></i> Aspect Ratio
       </button>

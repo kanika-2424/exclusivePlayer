@@ -507,19 +507,27 @@ const hasMoreCategoriesAvailable = (allCategories, chunk, pageSize) => {
 };
 
 
-  const showAspectRatioButton = () => {
+const showAspectRatioButton = () => {
   const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
   if (aspectRatioDiv) {
-    aspectRatioDiv.style.display = "block";
-    aspectRatioDiv.style.opacity = "1";
-    aspectRatioDiv.style.transition = "opacity 0.3s ease";
+    // Check fullscreen status using multiple APIs
+    const isFs = !!(document.fullscreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.msFullscreenElement);
+    
+    if (isFs) {
+      aspectRatioDiv.style.display = "block";
+      aspectRatioDiv.style.opacity = "1";
+      aspectRatioDiv.style.transition = "opacity 0.3s ease";
+    } else {
+      aspectRatioDiv.style.display = "none";
+      aspectRatioDiv.style.opacity = "0";
+    }
   }
 };
 
 
-  // Add this at the TOP of your LiveTvPage function (after the state variables)
-
-  // ===== CHECK IF CONTENT IS 18+ =====
   // ===== CHECK IF CONTENT IS 18+ =====
   const isAdultContent = (channelData) => {
     if (!channelData) return false;
@@ -744,7 +752,6 @@ const categoryHasAdultContent = (categoryId) => {
 
   // Helper to set focus on channel cards
   const setFocus = (list, idx, cls) => {
-    removeAllFocus(); // ADD THIS LINE
 
     list.forEach((el) => el.classList.remove(cls));
     if (list[idx]) {
@@ -755,7 +762,6 @@ const categoryHasAdultContent = (categoryId) => {
 
   // Helper to set focus on sidebar
   const setSidebarFocus = (idx) => {
-    removeAllFocus(); // ADD THIS LINE
 
     const list = qsa(".sidebar-item");
     list.forEach((el) => el.classList.remove("sidebar-focused"));
@@ -768,7 +774,6 @@ const categoryHasAdultContent = (categoryId) => {
   // Helper to set focus on sidebar search box
 // Helper to set focus on sidebar search box
 const setSidebarSearchFocus = (active) => {
-  removeAllFocus(); // ADD THIS LINE
 
   const searchBox = qs(".sidebar-search-box");
   const searchInput = qs(".sidebar-search-input");
@@ -784,7 +789,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on header search box
   const setHeaderSearchFocus = (active) => {
-    removeAllFocus(); // ADD THIS LINE
 
     const searchBox = qs(".search-container");
     const searchInput = qs(".search-input");
@@ -799,7 +803,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on epg
   const setEPGFocus = (idx) => {
-    removeAllFocus(); // ADD THIS LINE
 
     const list = qsa(".epg-item");
     list.forEach((el) => el.classList.remove("epg-focused"));
@@ -811,7 +814,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on favorite button
   const setFavoriteBtnFocus = (active) => {
-    removeAllFocus(); // ADD THIS LINE
 
     const channels = qsa(".channel-card");
     const card = channels[focusedChannelIndex];
@@ -829,7 +831,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on remove history button
   const setRemoveHistoryBtnFocus = (active) => {
-    removeAllFocus(); // ADD THIS LINE
 
     const channels = qsa(".channel-card");
     const card = channels[focusedChannelIndex];
@@ -1306,6 +1307,25 @@ const verifyPasswordForCategory = () => {
       console.error("❌ Player error:", e);
     });
 
+
+
+        const handleFullscreenChange = () => {
+      const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+      if (aspectRatioDiv) {
+        const isFs = document.fullscreenElement || 
+                     document.webkitFullscreenElement || 
+                     document.mozFullScreenElement || 
+                     document.msFullscreenElement;
+        
+        aspectRatioDiv.style.display = isFs ? "block" : "none";
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+    
     // Rest of your play/pause button handlers...
     if (playPauseBtn) {
       const playIcon = playPauseBtn.querySelector("i");
@@ -1439,6 +1459,7 @@ if (videoContainer) {
 
     console.log("✅ Channel playback initiated");
   };
+
 
   window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
     const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
@@ -1858,6 +1879,7 @@ const renderChannels = () => {
           <img src="${ch.stream_icon}" 
                class="channel-logo" 
                alt="${ch.name}"
+               loading="lazy"
                onerror="this.src='/assets/profile.png'; this.onerror=null;" />
           <div class="channel-actions">
             <button class="favorite-btn">
@@ -2395,10 +2417,18 @@ const showVideoControls = () => {
     playPauseBtn.style.transition = "opacity 0.3s ease";
   }
   
+  // Only show aspect ratio button if in fullscreen
   if (aspectRatioDiv) {
-    aspectRatioDiv.style.display = "block";
-    aspectRatioDiv.style.opacity = "1";
-    aspectRatioDiv.style.transition = "opacity 0.3s ease";
+    const isFs = document.fullscreenElement || 
+                 document.webkitFullscreenElement || 
+                 document.mozFullScreenElement || 
+                 document.msFullscreenElement;
+    
+    if (isFs) {
+      aspectRatioDiv.style.display = "block";
+      aspectRatioDiv.style.opacity = "1";
+      aspectRatioDiv.style.transition = "opacity 0.3s ease";
+    }
   }
   
   // Always restart auto-hide timer
@@ -2874,8 +2904,16 @@ if (inVideoPlayer) {
     return;
   }
 
-  if (isDown) {
+
+   const isFs = !!(document.fullscreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.msFullscreenElement);
+
+
+  if (isDown && isFs) {
     // Go to aspect ratio button
+
     inPlayPauseBtn = false;
     inAspectRatioBtn = true;
     if (playPauseBtn) playPauseBtn.classList.remove("focused");
@@ -2942,19 +2980,19 @@ if (inVideoPlayer) {
     return;
   }
 
-  if (isDown) {
-    inAspectRatioBtn = false;
-    inEPG = true;
-    stopVideoControlsHideTimer(); // Stop timer when leaving video controls
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedEPGIndex = 0;
-    const epgItems = qsa(".epg-item");
-    if (epgItems.length) {
-      epgItems[0].classList.add("epg-focused");
-    }
-    e.preventDefault();
-    return;
-  }
+  // if (isDown) {
+  //   inAspectRatioBtn = false;
+  //   inEPG = true;
+  //   stopVideoControlsHideTimer(); // Stop timer when leaving video controls
+  //   if (aspectBtn) aspectBtn.style.border = "none";
+  //   focusedEPGIndex = 0;
+  //   const epgItems = qsa(".epg-item");
+  //   if (epgItems.length) {
+  //     epgItems[0].classList.add("epg-focused");
+  //   }
+  //   e.preventDefault();
+  //   return;
+  // }
 
   if (isEnter) {
     toggleAspectRatio();
@@ -3665,9 +3703,9 @@ const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
     return;
   }
 
-  if (isRight) {
+if (isRight) {
     // **CHECK IF NEAR END - AUTO LOAD MORE**
-    const isNearEnd = focusedChannelIndex >= totalChannels - (rows * 2); // Load when 2 columns from end
+    const isNearEnd = focusedChannelIndex >= totalChannels - (rows * 2);
     
     if (isNearEnd && hasMore && !isLoadingMoreChannels) {
       console.log("🔄 Near end - auto-loading more channels...");
@@ -3677,7 +3715,13 @@ const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
     // FIRST go to favorite button of current card
     inChannelGrid = false;
     inFavoriteBtn = true;
-    channels.forEach((c) => c.classList.remove("channel-card-focused"));
+    
+    // Only remove focus from the current card, not everything
+    const currentCard = channels[focusedChannelIndex];
+    if (currentCard) {
+      currentCard.classList.remove("channel-card-focused");
+    }
+    
     setFavoriteBtnFocus(true);
     e.preventDefault();
     return;
