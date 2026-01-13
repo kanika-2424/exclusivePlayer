@@ -3803,7 +3803,9 @@ setTimeout(() => {
 
 
       // Add fullscreen change listener to detect exit
-const fullscreenExitHandler = () => {
+// Add fullscreen change listener to detect exit
+// Store handler globally so cleanup can access it
+let fullscreenExitHandler = () => {
   const isFs = !!(document.fullscreenElement || 
                   document.webkitFullscreenElement || 
                   document.mozFullScreenElement || 
@@ -4136,65 +4138,65 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
       });
     }
     
-    LiveTvPage.cleanup = function () {
-      isPageFullyLoaded = false;
-      document.removeEventListener("click", handleClick);
-      document.removeEventListener("keydown", handleKeydown);
-    
+ LiveTvPage.cleanup = function () {
+  isPageFullyLoaded = false;
+  document.removeEventListener("click", handleClick);
+  document.removeEventListener("keydown", handleKeydown);
 
-       // NEW: Remove fullscreen exit handler
-  document.removeEventListener("fullscreenchange", fullscreenExitHandler);
-  document.removeEventListener("webkitfullscreenchange", fullscreenExitHandler);
-  document.removeEventListener("mozfullscreenchange", fullscreenExitHandler);
-  document.removeEventListener("msfullscreenchange", fullscreenExitHandler);
-  
-
-    window.liveTvPageState = null;
-
-        if (menuKeyHandler) {
-    document.removeEventListener("keydown", menuKeyHandler);
-    menuKeyHandler = null; // Reset reference
+  // Remove fullscreen exit handler
+  if (fullscreenExitHandler) {
+    document.removeEventListener("fullscreenchange", fullscreenExitHandler);
+    document.removeEventListener("webkitfullscreenchange", fullscreenExitHandler);
+    document.removeEventListener("mozfullscreenchange", fullscreenExitHandler);
+    document.removeEventListener("msfullscreenchange", fullscreenExitHandler);
+    fullscreenExitHandler = null; // Clean up reference
   }
 
+  window.liveTvPageState = null;
 
-    document.removeEventListener("fullscreenchange", globalFullscreenHandler);
-  document.removeEventListener("webkitfullscreenchange", globalFullscreenHandler);
-  document.removeEventListener("mozfullscreenchange", globalFullscreenHandler);
-  document.removeEventListener("msfullscreenchange", globalFullscreenHandler);
+  if (menuKeyHandler) {
+    document.removeEventListener("keydown", menuKeyHandler);
+    menuKeyHandler = null;
+  }
 
+  // REMOVED: These lines referenced undefined globalFullscreenHandler
+  // document.removeEventListener("fullscreenchange", globalFullscreenHandler);
+  // document.removeEventListener("webkitfullscreenchange", globalFullscreenHandler);
+  // document.removeEventListener("mozfullscreenchange", globalFullscreenHandler);
+  // document.removeEventListener("msfullscreenchange", globalFullscreenHandler);
 
-      const channelGrid = qs(".channel-grid");
-      if (channelGrid) {
-        channelGrid.removeEventListener("scroll", window.updateScrollArrows);
-      }
+  const channelGrid = qs(".channel-grid");
+  if (channelGrid) {
+    channelGrid.removeEventListener("scroll", window.updateScrollArrows);
+  }
 
-      stopVideoControlsHideTimer();
+  stopVideoControlsHideTimer();
 
-      const modal = document.getElementById("passwordModalOverlay");
-      if (modal) {
-        modal.remove();
-      }
+  const modal = document.getElementById("passwordModalOverlay");
+  if (modal) {
+    modal.remove();
+  }
 
-      disposeLivePlayer();
+  disposeLivePlayer();
 
-      if (
-        typeof LiveVideoJsComponent !== "undefined" &&
-        typeof LiveVideoJsComponent.cleanup === "function"
-      ) {
-        try {
-          LiveVideoJsComponent.cleanup();
-        } catch (err) {
-          console.warn("LiveVideoJsComponent cleanup error:", err);
-        }
-      }
+  if (
+    typeof LiveVideoJsComponent !== "undefined" &&
+    typeof LiveVideoJsComponent.cleanup === "function"
+  ) {
+    try {
+      LiveVideoJsComponent.cleanup();
+    } catch (err) {
+      console.warn("LiveVideoJsComponent cleanup error:", err);
+    }
+  }
 
-      if (window.livePlayer) {
-        try {
-          window.livePlayer.dispose();
-        } catch {}
-        window.livePlayer = null;
-      }
-    };
+  if (window.livePlayer) {
+    try {
+      window.livePlayer.dispose();
+    } catch {}
+    window.livePlayer = null;
+  }
+};
   }, 0);
 
 

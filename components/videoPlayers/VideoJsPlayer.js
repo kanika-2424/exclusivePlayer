@@ -1,5 +1,12 @@
 function VideoJsPlayer(poster = "") {
 
+    console.log("🎬 VideoJsPlayer initialized");
+  console.log("📦 from:", localStorage.getItem("from"));
+  console.log("📦 selectedSeriesId:", localStorage.getItem("selectedSeriesId"));
+  console.log("📦 selectedEpisodeId:", localStorage.getItem("selectedEpisodeId"));
+  console.log("📦 currentPage:", localStorage.getItem("currentPage"));
+
+
    if (typeof videojs === 'undefined') {
     console.error("❌ Video.js library not loaded!");
     alert("Video player library not available. Please refresh the page.");
@@ -854,10 +861,20 @@ player.on("pause", () => {
       if (errorDialog) errorDialog.classList.remove("hidden");
     });
 
-  function goBack() {
+ function goBack() {
+  // ✅ SAVE SERIES ID BEFORE ANY CLEANUP
+  const fromValue = localStorage.getItem("from");
+  const seriesId = localStorage.getItem("selectedSeriesId");
+  const episodeId = localStorage.getItem("selectedEpisodeId");
+  
+  console.log("🔙 Going back - From:", fromValue, "Series ID:", seriesId, "Episode ID:", episodeId);
+  
   if (fromValue === "series") {
-    const episodeId = localStorage.getItem("selectedEpisodeId");
     localStorage.setItem("lastPlayedEpisodeId", episodeId);
+    // ✅ ENSURE lastPlayedEpisode key is set for scrolling
+    if (seriesId && episodeId) {
+      localStorage.setItem(`lastPlayedEpisode_${seriesId}`, episodeId);
+    }
   }
   
   const currentPlayer = player;
@@ -888,16 +905,16 @@ player.on("pause", () => {
         const currentEpisodeId = localStorage.getItem("selectedEpisodeId");
         const seriesEpisodes = JSON.parse(localStorage.getItem("seriesEpisodesData")) || {};
         const currentSeason = localStorage.getItem("selectedSeason") || "1";
+        const currentSeriesId = localStorage.getItem("selectedSeriesId"); // ✅ GET SERIES ID
         
         const seasonEpisodes = seriesEpisodes[currentSeason] || [];
         const currentEpisodeIndex = seasonEpisodes.findIndex(ep => ep.id.toString() === currentEpisodeId);
         
         if (currentEpisodeIndex !== -1 && currentEpisodeIndex < seasonEpisodes.length - 1) {
           const nextEpisodeId = seasonEpisodes[currentEpisodeIndex + 1].id;
-       localStorage.setItem(`lastPlayedEpisode_${seriesId}`, nextEpisodeId.toString());
-
+          localStorage.setItem(`lastPlayedEpisode_${currentSeriesId}`, nextEpisodeId.toString());
         } else {
-localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
+          localStorage.removeItem(`lastPlayedEpisode_${currentSeriesId}`);
         }
         
         removeEpisodeFromContinueWatching(currentEpisodeId);
@@ -910,7 +927,6 @@ localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
           );
         }
       } else if (fromValue === "movie") {
-        // Remove completed movie from continue watching
         removeItemFromHistoryById(
           localStorage.getItem("selectedMovieId"),
           "continueWatchingMovies"
@@ -922,7 +938,7 @@ localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
     else if (resumeTime > 5 && !isVideoCompleted) {
       console.log("💾 Saving resume time:", resumeTime);
       
-      // Save progress using the new helper function
+      // Save progress using the helper function
       saveCurrentProgress(currentPlayer, playingItemData, fromValue);
     }
 
@@ -954,18 +970,35 @@ localStorage.removeItem(`lastPlayedEpisode_${seriesId}`);
     }
   }
 
-  // Navigate back to appropriate page
+  // ✅ UPDATED: Navigate back to appropriate page
   if (fromValue === "movie") {
+    console.log("🎬 Returning to movie detail page");
     localStorage.setItem("currentPage", "moviesDetailPage");
     if (typeof Router !== "undefined" && Router.showPage) {
       Router.showPage("movieDetail");
     }
-  } else {
+  } else if (fromValue === "series") {
+    console.log("📺 Returning to series detail page");
+    // ✅ ENSURE SERIES ID IS PRESERVED
+    if (!localStorage.getItem("selectedSeriesId") && seriesId) {
+      localStorage.setItem("selectedSeriesId", seriesId);
+    }
     localStorage.setItem("currentPage", "seriesDetailPage");
     if (typeof Router !== "undefined" && Router.showPage) {
       Router.showPage("seriesDetail");
     }
+  } else {
+    // ✅ FALLBACK: If no "from" value, go to home
+    console.log("🏠 No 'from' value, returning to home");
+    localStorage.setItem("currentPage", "homePage");
+    if (typeof Router !== "undefined" && Router.showPage) {
+      Router.showPage("home");
+    }
   }
+  
+  // ✅ CLEANUP: Reset body styles
+  document.body.style.backgroundImage = "none";
+  document.body.style.backgroundColor = "black";
 }
 
     // Helper function to remove completed episode from continue watching

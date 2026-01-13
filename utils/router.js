@@ -149,7 +149,7 @@ case 'videoJsPlayer':
       case 'series':
       case 'series-page':
       case 'seriesPage':
-        case 'seriesDetail':
+        // case 'seriesDetail':
         pageElement = document.getElementById('series-page');
         pageElement.innerHTML = SeriesPage();
         this.currentPage = 'Series';
@@ -162,6 +162,8 @@ case 'videoJsPlayer':
       case 'series-detail':
       case 'series-detail-page':
       case 'seriesDetailPage':
+        case 'seriesDetail':
+
         pageElement = document.getElementById('series-detail-page');
         // Show loading state
         pageElement.innerHTML = `

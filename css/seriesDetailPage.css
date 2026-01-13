@@ -338,7 +338,7 @@ margin-right: 8px;
   transform: translateX(-50%);
   height: calc(100% + var(--cast-dropdown-height, 0px) + 6px);
   border-radius: 22px;
-  border: 3px solid white;
+  /* border: 3px solid white; */
   pointer-events: none;
   z-index: 998;
   width: 100vw /* Full width minus padding */
@@ -548,8 +548,7 @@ margin-right: 8px;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 12px;
+  /* border-radius: 12px; */
   z-index: 1;
   pointer-events: none;
 }
