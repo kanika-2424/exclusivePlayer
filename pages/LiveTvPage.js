@@ -690,47 +690,48 @@ const categoryHasAdultContent = (categoryId) => {
 
 
   // Add this function after SimpleVideoPlayer:
-  const toggleAspectRatio = () => {
-    // Try to find video element from different player types
-    let videoEl = document.getElementById("live-video-player") || // SimpleVideoPlayer
-                  document.querySelector("#live-videojs-player_html5_api") || // LiveVideoJsComponent
-                  document.querySelector("#flowplayer-live video") || // FlowLivePlayerComponent
-                  document.querySelector(".flowplayer .fp-engine"); // Flowplayer engine
-    
-    // If still not found, try to get from window.livePlayer
-    if (!videoEl && window.livePlayer) {
-      if (window.livePlayer._fp) {
-        // Flowplayer
-        videoEl = document.querySelector(".flowplayer .fp-engine");
-      } else {
-        // Video.js
-        videoEl = window.livePlayer.el().querySelector("video");
-      }
+// Add this function after SimpleVideoPlayer:
+const toggleAspectRatio = () => {
+  // Try to find video element from different player types
+  let videoEl = document.getElementById("live-video-player") || // SimpleVideoPlayer
+                document.querySelector("#live-videojs-player_html5_api") || // LiveVideoJsComponent
+                document.querySelector("#flowplayer-live video") || // FlowLivePlayerComponent
+                document.querySelector(".flowplayer .fp-engine"); // Flowplayer engine
+  
+  // If still not found, try to get from window.livePlayer
+  if (!videoEl && window.livePlayer) {
+    if (window.livePlayer._fp) {
+      // Flowplayer
+      videoEl = document.querySelector(".flowplayer .fp-engine");
+    } else {
+      // Video.js
+      videoEl = window.livePlayer.el().querySelector("video");
     }
+  }
 
-    if (!videoEl || !window.VideoAspectRatio) {
-      console.warn("Video element or VideoAspectRatio not found");
-      return;
+  if (!videoEl || !window.VideoAspectRatio) {
+    console.warn("Video element or VideoAspectRatio not found");
+    return;
+  }
+
+  // Cycle to next aspect ratio
+  const newLabel = window.VideoAspectRatio.cycle(videoEl);
+
+  // Update button label if it exists
+  const aspectBtn = document.querySelector(".aspect-ratio-btn") || 
+                    document.querySelector("#videojs-aspect-ratio");
+  if (aspectBtn) {
+    const aspectLabel = aspectBtn.querySelector(".aspect-label");
+    if (aspectLabel && newLabel) {
+      aspectLabel.textContent = newLabel;
     }
+  }
 
-    // Cycle to next aspect ratio
-    const newLabel = window.VideoAspectRatio.cycle(videoEl);
+  // Show large overlay notification in center of screen
+  window.VideoAspectRatio.showOverlay(newLabel);
 
-    // Update button label if it exists
-    const aspectBtn = document.querySelector(".aspect-ratio-btn") || 
-                      document.querySelector("#videojs-aspect-ratio");
-    if (aspectBtn) {
-      const aspectLabel = aspectBtn.querySelector(".aspect-label");
-      if (aspectLabel && newLabel) {
-        aspectLabel.textContent = newLabel;
-      }
-    }
-
-    // Show large overlay notification in center of screen
-    window.VideoAspectRatio.showOverlay(newLabel);
-
-    console.log("✅ Aspect ratio changed to:", newLabel);
-  };
+  console.log("✅ Aspect ratio changed to:", newLabel);
+};
 
   // ===== HELPER: Get Filtered Categories =====
   // ===== HELPER: Get Filtered Categories =====
@@ -2417,17 +2418,21 @@ const showVideoControls = () => {
     playPauseBtn.style.transition = "opacity 0.3s ease";
   }
   
-  // Only show aspect ratio button if in fullscreen
+  // CRITICAL: Check fullscreen status before showing
   if (aspectRatioDiv) {
-    const isFs = document.fullscreenElement || 
-                 document.webkitFullscreenElement || 
-                 document.mozFullScreenElement || 
-                 document.msFullscreenElement;
+    const isFs = !!(document.fullscreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.msFullscreenElement);
     
     if (isFs) {
       aspectRatioDiv.style.display = "block";
       aspectRatioDiv.style.opacity = "1";
       aspectRatioDiv.style.transition = "opacity 0.3s ease";
+    } else {
+      // Force hide if not in fullscreen
+      aspectRatioDiv.style.display = "none";
+      aspectRatioDiv.style.opacity = "0";
     }
   }
   
@@ -2441,7 +2446,6 @@ window.showVideoControls = showVideoControls;
 // Start timer to auto-hide video controls after 3 seconds
 // Start timer to auto-hide video controls after 3 seconds
 const startVideoControlsHideTimer = () => {
-  // Clear any existing timer
   if (videoControlsHideTimer) {
     clearTimeout(videoControlsHideTimer);
     videoControlsHideTimer = null;
@@ -2462,7 +2466,6 @@ const startVideoControlsHideTimer = () => {
       }
     }
     
-    // Only hide if video is playing
     if (isPlaying) {
       const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
       const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
@@ -2475,12 +2478,24 @@ const startVideoControlsHideTimer = () => {
         }, 300);
       }
       
+      // CRITICAL: Only hide aspect ratio if in fullscreen
       if (aspectRatioDiv) {
-        aspectRatioDiv.style.opacity = "0";
-        aspectRatioDiv.style.transition = "opacity 0.3s ease";
-        setTimeout(() => {
+        const isFs = !!(document.fullscreenElement || 
+                        document.webkitFullscreenElement || 
+                        document.mozFullScreenElement || 
+                        document.msFullscreenElement);
+        
+        if (isFs) {
+          aspectRatioDiv.style.opacity = "0";
+          aspectRatioDiv.style.transition = "opacity 0.3s ease";
+          setTimeout(() => {
+            aspectRatioDiv.style.display = "none";
+          }, 300);
+        } else {
+          // Force hide immediately if not fullscreen
           aspectRatioDiv.style.display = "none";
-        }, 300);
+          aspectRatioDiv.style.opacity = "0";
+        }
       }
     }
     
@@ -2994,12 +3009,22 @@ if (inVideoPlayer) {
   //   return;
   // }
 
-  if (isEnter) {
+ if (isEnter) {
+  // Check fullscreen before allowing toggle
+  const isFs = !!(document.fullscreenElement || 
+                  document.webkitFullscreenElement || 
+                  document.mozFullScreenElement || 
+                  document.msFullscreenElement);
+  
+  if (isFs) {
     toggleAspectRatio();
     showVideoControls(); // Show controls and restart timer
-    e.preventDefault();
-    return;
+  } else {
+    console.log("🚫 Aspect ratio blocked - not in fullscreen");
   }
+  e.preventDefault();
+  return;
+}
 }
 
     // HEADER SEARCH BOX NAVIGATION
@@ -3736,6 +3761,50 @@ if (isRight) {
 }
   }
 
+
+
+  // Listen for focus request after fullscreen exit
+  document.addEventListener('focusVideoAfterFullscreen', () => {
+    console.log("📺 Focusing video box after fullscreen exit with aspect ratio change");
+    
+    // Set navigation state to video player
+    inVideoPlayer = true;
+    inChannelGrid = false;
+    inSidebar = false;
+    inSidebarSearch = false;
+    inHeaderSearch = false;
+    inEPG = false;
+    inFavoriteBtn = false;
+    inRemoveHistoryBtn = false;
+    inAspectRatioBtn = false;
+    inPlayPauseBtn = false;
+    
+    // Remove all focus
+    const channels = document.querySelectorAll(".channel-card");
+    channels.forEach((c) => c.classList.remove("channel-card-focused", "channel-card-selected"));
+    
+    const sidebarItems = document.querySelectorAll(".sidebar-item");
+    sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
+    
+    // Focus on video player
+    const videoDiv = document.querySelector(".live-video-player-div");
+    const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
+    
+    if (videoDiv) {
+      videoDiv.classList.add("video-focused");
+      videoDiv.style.border = "3px solid #0ea5e9";
+      videoDiv.style.boxSizing = "border-box";
+      videoDiv.style.outline = "3px solid #0ea5e9";
+      videoDiv.style.outlineOffset = "-3px";
+    }
+    
+    if (playPauseBtn) {
+      playPauseBtn.style.border = "4px solid #0ea5e9";
+    }
+    
+    console.log("✅ Video box focused successfully");
+  });
+
 setTimeout(() => {
     document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKeydown);
@@ -4049,6 +4118,13 @@ setTimeout(() => {
     document.removeEventListener("keydown", menuKeyHandler);
     menuKeyHandler = null; // Reset reference
   }
+
+
+    document.removeEventListener("fullscreenchange", globalFullscreenHandler);
+  document.removeEventListener("webkitfullscreenchange", globalFullscreenHandler);
+  document.removeEventListener("mozfullscreenchange", globalFullscreenHandler);
+  document.removeEventListener("msfullscreenchange", globalFullscreenHandler);
+
 
       const channelGrid = qs(".channel-grid");
       if (channelGrid) {
