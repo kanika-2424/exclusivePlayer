@@ -486,13 +486,12 @@ if (aspectRatioBtn) {
           });
         }
 
-       const handleFullscreenChange = () => {
+   const handleFullscreenChange = () => {
   const techEl = document.querySelector(".vjs-tech");
   const channelNameEl = document.querySelector(".live-channel-name");
   const liveBadgeEl = document.querySelector(".live-badge");
   const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
   
-  // Check fullscreen status
   const isFs = !!(document.fullscreenElement || 
                   document.webkitFullscreenElement || 
                   document.mozFullScreenElement || 
@@ -501,28 +500,41 @@ if (aspectRatioBtn) {
   if (channelNameEl) channelNameEl.style.display = isFs ? "none" : "flex";
   if (liveBadgeEl) liveBadgeEl.style.display = "flex";
   
-  // CRITICAL: Force aspect ratio button visibility based on fullscreen
+  // CRITICAL: Control aspect ratio button visibility
   if (aspectRatioBtn) {
     if (isFs) {
       aspectRatioBtn.style.display = "block";
       aspectRatioBtn.style.opacity = "1";
       aspectRatioBtn.style.visibility = "visible";
     } else {
-      // Force hide with visibility
       aspectRatioBtn.style.display = "none";
       aspectRatioBtn.style.opacity = "0";
       aspectRatioBtn.style.visibility = "hidden";
       
-      // If aspect ratio was used, focus on video when exiting fullscreen
+      // NEW: If aspect ratio was used, update LiveTvPage state
       if (window._aspectRatioWasUsed) {
         setTimeout(() => {
-          // Trigger custom event for LiveTvPage to handle focus
-          const focusEvent = new CustomEvent('focusVideoAfterFullscreen');
-          document.dispatchEvent(focusEvent);
+          // Set LiveTvPage navigation state
+          if (window.liveTvPageState) {
+            window.liveTvPageState.inAspectRatioBtn = false;
+            window.liveTvPageState.inPlayPauseBtn = true;
+            window.liveTvPageState.inVideoPlayer = false;
+            
+            // Focus play/pause button
+            const playPauseBtn = document.querySelector(".play-pause-btn") || 
+                                document.querySelector("#live-play-pause-btn");
+            if (playPauseBtn) {
+              playPauseBtn.classList.add("focused");
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              playPauseBtn.style.border = "3px solid #0ea5e9";
+            }
+            
+            console.log("✅ Focus moved to play/pause button after fullscreen exit");
+          }
           
           // Reset flag
           window._aspectRatioWasUsed = false;
-          console.log("📺 Focus requested on video box after fullscreen exit");
         }, 300);
       }
     }
@@ -668,16 +680,17 @@ if (aspectRatioBtn) {
             }
           });
         }
-
-     const handleFullscreenChange = () => {
+const handleFullscreenChange = () => {
   const techEl = document.querySelector(".vjs-tech");
   const channelNameEl = document.querySelector(".live-channel-name");
   const liveBadgeEl = document.querySelector(".live-badge");
   const aspectRatioBtn = document.querySelector(".videojs-aspect-ratio-div");
   
-  const isFs = window.livePlayer.isFullscreen();
+  const isFs = !!(document.fullscreenElement || 
+                  document.webkitFullscreenElement || 
+                  document.mozFullScreenElement || 
+                  document.msFullscreenElement);
   
-  // Do not force tech element height; let Video.js/Tizen handle it
   if (channelNameEl) channelNameEl.style.display = isFs ? "none" : "flex";
   if (liveBadgeEl) liveBadgeEl.style.display = "flex";
   
@@ -692,16 +705,30 @@ if (aspectRatioBtn) {
       aspectRatioBtn.style.opacity = "0";
       aspectRatioBtn.style.visibility = "hidden";
       
-      // If aspect ratio was used, focus on video when exiting fullscreen
+      // NEW: If aspect ratio was used, update LiveTvPage state
       if (window._aspectRatioWasUsed) {
         setTimeout(() => {
-          // Trigger custom event for LiveTvPage to handle focus
-          const focusEvent = new CustomEvent('focusVideoAfterFullscreen');
-          document.dispatchEvent(focusEvent);
+          // Set LiveTvPage navigation state
+          if (window.liveTvPageState) {
+            window.liveTvPageState.inAspectRatioBtn = false;
+            window.liveTvPageState.inPlayPauseBtn = true;
+            window.liveTvPageState.inVideoPlayer = false;
+            
+            // Focus play/pause button
+            const playPauseBtn = document.querySelector(".play-pause-btn") || 
+                                document.querySelector("#live-play-pause-btn");
+            if (playPauseBtn) {
+              playPauseBtn.classList.add("focused");
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              playPauseBtn.style.border = "3px solid #0ea5e9";
+            }
+            
+            console.log("✅ Focus moved to play/pause button after fullscreen exit");
+          }
           
           // Reset flag
           window._aspectRatioWasUsed = false;
-          console.log("📺 Focus requested on video box after fullscreen exit");
         }, 300);
       }
     }

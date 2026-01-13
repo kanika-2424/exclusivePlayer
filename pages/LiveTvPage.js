@@ -251,6 +251,22 @@ const applySortingToChannels = (channels) => {
   const allFavoritesLiveTV = currentPlaylist.favoritesLiveTV || [];
 
   // ===== STATE VARIABLES =====
+
+  // ===== GLOBAL STATE FOR CROSS-COMPONENT ACCESS =====
+window.liveTvPageState = {
+  inChannelGrid: true,
+  inVideoPlayer: false,
+  inSidebar: false,
+  inSidebarSearch: false,
+  inHeaderSearch: false,
+  inEPG: false,
+  inAspectRatioBtn: false,
+  inPlayPauseBtn: false,
+  inFavoriteBtn: false,
+  inRemoveHistoryBtn: false,
+  isMenuDotsActive: false
+};
+
   let selectedCategoryId = "All"; // Currently selected category
   let focusedChannelIndex = 0;
   let focusedCategoryIndex = 0;
@@ -2810,6 +2826,7 @@ if (inVideoPlayer) {
   }
 
   if (isDown) {
+    
     // Go to play/pause button
     inVideoPlayer = false;
     inPlayPauseBtn = true;
@@ -2898,6 +2915,21 @@ if (inVideoPlayer) {
 
   // Show controls on any navigation
   showVideoControls();
+   const isFs = !!(document.fullscreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.msFullscreenElement);
+if (!isFs && window._justExitedFullscreen) {
+    // Clear the flag
+    window._justExitedFullscreen = false;
+    
+    // Ensure focus is on play/pause button
+    if (playPauseBtn) {
+      playPauseBtn.classList.add("focused");
+      playPauseBtn.style.border = "3px solid #0ea5e9";
+    }
+  }
+  
 
   if (isUp) {
     // Go back to video container
@@ -2920,10 +2952,6 @@ if (inVideoPlayer) {
   }
 
 
-   const isFs = !!(document.fullscreenElement || 
-                    document.webkitFullscreenElement || 
-                    document.mozFullScreenElement || 
-                    document.msFullscreenElement);
 
 
   if (isDown && isFs) {
@@ -2972,7 +3000,8 @@ if (inVideoPlayer) {
 }
 
     // Aspect ratio button navigation
-  if (inAspectRatioBtn) {
+if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
+
   const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
   const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
 
@@ -2982,6 +3011,8 @@ if (inVideoPlayer) {
   if (isUp) {
     inAspectRatioBtn = false;
     inPlayPauseBtn = true;
+       window.liveTvPageState.inAspectRatioBtn = false;
+    window.liveTvPageState.inPlayPauseBtn = true;
     if (aspectBtn) {
       aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
       aspectBtn.style.border = "none";
@@ -2995,19 +3026,7 @@ if (inVideoPlayer) {
     return;
   }
 
-  // if (isDown) {
-  //   inAspectRatioBtn = false;
-  //   inEPG = true;
-  //   stopVideoControlsHideTimer(); // Stop timer when leaving video controls
-  //   if (aspectBtn) aspectBtn.style.border = "none";
-  //   focusedEPGIndex = 0;
-  //   const epgItems = qsa(".epg-item");
-  //   if (epgItems.length) {
-  //     epgItems[0].classList.add("epg-focused");
-  //   }
-  //   e.preventDefault();
-  //   return;
-  // }
+ 
 
  if (isEnter) {
   // Check fullscreen before allowing toggle
@@ -3017,6 +3036,8 @@ if (inVideoPlayer) {
                   document.msFullscreenElement);
   
   if (isFs) {
+        window._aspectRatioWasUsed = true;
+    window.liveTvPageState.inAspectRatioBtn = true; 
     toggleAspectRatio();
     showVideoControls(); // Show controls and restart timer
   } else {
@@ -3763,51 +3784,13 @@ if (isRight) {
 
 
 
-  // Listen for focus request after fullscreen exit
-  document.addEventListener('focusVideoAfterFullscreen', () => {
-    console.log("📺 Focusing video box after fullscreen exit with aspect ratio change");
-    
-    // Set navigation state to video player
-    inVideoPlayer = true;
-    inChannelGrid = false;
-    inSidebar = false;
-    inSidebarSearch = false;
-    inHeaderSearch = false;
-    inEPG = false;
-    inFavoriteBtn = false;
-    inRemoveHistoryBtn = false;
-    inAspectRatioBtn = false;
-    inPlayPauseBtn = false;
-    
-    // Remove all focus
-    const channels = document.querySelectorAll(".channel-card");
-    channels.forEach((c) => c.classList.remove("channel-card-focused", "channel-card-selected"));
-    
-    const sidebarItems = document.querySelectorAll(".sidebar-item");
-    sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
-    
-    // Focus on video player
-    const videoDiv = document.querySelector(".live-video-player-div");
-    const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
-    
-    if (videoDiv) {
-      videoDiv.classList.add("video-focused");
-      videoDiv.style.border = "3px solid #0ea5e9";
-      videoDiv.style.boxSizing = "border-box";
-      videoDiv.style.outline = "3px solid #0ea5e9";
-      videoDiv.style.outlineOffset = "-3px";
-    }
-    
-    if (playPauseBtn) {
-      playPauseBtn.style.border = "4px solid #0ea5e9";
-    }
-    
-    console.log("✅ Video box focused successfully");
-  });
+
 
 setTimeout(() => {
     document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKeydown);
+
+
 
     // Progress: 10%
     updateLoadingProgress(10, "Initializing parental controls...");
@@ -3816,6 +3799,50 @@ setTimeout(() => {
       if (sidebarArea) {
         sidebarArea.innerHTML = SidebarLoadingOverlay();
       }
+
+
+
+      // Add fullscreen change listener to detect exit
+const fullscreenExitHandler = () => {
+  const isFs = !!(document.fullscreenElement || 
+                  document.webkitFullscreenElement || 
+                  document.mozFullScreenElement || 
+                  document.msFullscreenElement);
+  
+  if (!isFs && window._aspectRatioWasUsed && window.liveTvPageState.inAspectRatioBtn) {
+    // Force navigation state change
+    setTimeout(() => {
+      inAspectRatioBtn = false;
+      inPlayPauseBtn = true;
+      window.liveTvPageState.inAspectRatioBtn = false;
+      window.liveTvPageState.inPlayPauseBtn = true;
+      
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+      
+      if (aspectBtn) {
+        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+        aspectBtn.style.border = "none";
+      }
+      
+      if (playPauseBtn) {
+        playPauseBtn.classList.add("focused");
+        playPauseBtn.style.display = "flex";
+        playPauseBtn.style.opacity = "1";
+        playPauseBtn.style.border = "3px solid #0ea5e9";
+      }
+      
+      console.log("🎯 FORCED focus to play/pause button");
+      window._aspectRatioWasUsed = false;
+    }, 100);
+  }
+};
+
+document.addEventListener("fullscreenchange", fullscreenExitHandler);
+document.addEventListener("webkitfullscreenchange", fullscreenExitHandler);
+document.addEventListener("mozfullscreenchange", fullscreenExitHandler);
+document.addEventListener("msfullscreenchange", fullscreenExitHandler);
+
 
     // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
     const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
@@ -4114,6 +4141,16 @@ setTimeout(() => {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeydown);
     
+
+       // NEW: Remove fullscreen exit handler
+  document.removeEventListener("fullscreenchange", fullscreenExitHandler);
+  document.removeEventListener("webkitfullscreenchange", fullscreenExitHandler);
+  document.removeEventListener("mozfullscreenchange", fullscreenExitHandler);
+  document.removeEventListener("msfullscreenchange", fullscreenExitHandler);
+  
+
+    window.liveTvPageState = null;
+
         if (menuKeyHandler) {
     document.removeEventListener("keydown", menuKeyHandler);
     menuKeyHandler = null; // Reset reference
