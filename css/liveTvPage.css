@@ -357,7 +357,7 @@
     margin-right: 0; /* Remove margin from last item in row */
 }
 
-.channel-card:hover,
+
 .channel-card-focused {
     border: 3px solid rgba(55, 155, 254, 1);
     transform: scale(1.05);
@@ -1290,7 +1290,7 @@ video,
 }
 
 /* 5. Remove problematic transforms on old Tizen */
-.channel-card:hover,
+
 .channel-card-focused {
   border: 3px solid rgba(55, 155, 254, 1);
   /* transform: scale(1.05); */ /* REMOVE - causes issues on old Tizen */

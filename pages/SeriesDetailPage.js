@@ -1,6 +1,7 @@
 
 async function SeriesDetailPage() {
 
+    
 
   // cleanup previous handlers if any
   if (SeriesDetailPage.cleanup) SeriesDetailPage.cleanup();

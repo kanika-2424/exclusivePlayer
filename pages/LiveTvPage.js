@@ -307,8 +307,9 @@ let isLoadingMoreChannels = false;
 let isLoadingMoreCategories = false;
 
 let menuKeyHandler = null;
-
+let filteredCache = null;
 const getFilteredCategories = () => {
+  if (filteredCache && !searchQuery) return filteredCache;
 
    console.log("🔍 getFilteredCategories called");
   console.log("📊 Current chunks - Categories:", currentCategoryChunk, "Channels:", currentChunk);
@@ -480,7 +481,7 @@ const getFilteredCategories = () => {
 
     // STORE ALL CATEGORIES
     allCategoriesData = result;
-
+filteredCache = result;
     console.log("✅ getFilteredCategories result:", result.length, "categories");
     return result;
 
@@ -496,6 +497,7 @@ const getFilteredCategories = () => {
       },
     ];
   }
+  
 };
 
 // ===== GET CHUNKED CHANNELS =====
