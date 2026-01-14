@@ -555,11 +555,14 @@ function renderCategoriesUI() {
              data-category-name="${escapeHtml(c.name)}"
              data-count="${movieCount}">
             ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
-            <div class="cat-item-content">
-                <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-                <span class="cat-count-pill">(${movieCount})</span>
-            </div>
-        </div>`;
+           <div class="movies-category-item ...">
+    <div class="cat-item-content">
+        <span class="cat-name">
+            <span class="cat-name-inner">${escapeHtml(c.name)}</span>
+        </span>
+        <span class="cat-count-pill">(${movieCount})</span>
+    </div>
+</div>`;
     })
     .join("");
 

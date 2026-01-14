@@ -3074,15 +3074,15 @@ if (inSidebarSearch) {
     setHeaderSearchFocus(true);
 
     // Auto-enter edit mode with cursor at end
-    setTimeout(() => {
-      isHeaderSearchActive = true;
-      const input = qs(".search-input");
-      if (input) {
-        input.focus();
-        const textLength = input.value.length;
-        input.setSelectionRange(textLength, textLength);
-      }
-    }, 0);
+    // setTimeout(() => {
+    //   isHeaderSearchActive = true;
+    //   const input = qs(".search-input");
+    //   if (input) {
+    //     input.focus();
+    //     const textLength = input.value.length;
+    //     input.setSelectionRange(textLength, textLength);
+    //   }
+    // }, 0);
 
     e.preventDefault();
     return;
