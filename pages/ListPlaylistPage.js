@@ -11,6 +11,24 @@ function ListPlaylistPage() {
   const isInitialLoad = localStorage.getItem("isInitialLoad") === "true";
   const isLoading = localStorage.getItem("isLoading") === "true";
   
+
+  // 1. If global loading is active, SHOW NOTHING (prevent the flash)
+  if (isLoading || isInitialLoad) {
+    console.log("⏸️ App is initializing, blocking UI render...");
+    return '<div class="global-loading-screen"></div>'; // Empty or a static splash
+  }
+
+  // 2. Only redirect to dashboard if we ARE NOT loading and we are logged in
+  if (isLogin && selectedPlaylist) {
+    console.log("✅ Logged in, redirecting...");
+    // Use a small delay to ensure Router state is ready
+    setTimeout(() => {
+        Router.showPage("dashboard");
+    }, 0);
+    return '<div class="global-loading-screen"></div>'; 
+  }
+
+  
   // ✅ PREVENT REDIRECT during initial app load - let main.js handle it
   if (isLogin && selectedPlaylist && !isInitialLoad && !isLoading) {
     console.log("✅ User already logged in, redirecting to dashboard...");
