@@ -5,60 +5,44 @@ window.addItemToHistory = (item, historyKey) => {
   const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
 
-  const currentPlaylist = playlistsData.find(
+  const playlistIndex = playlistsData.findIndex(
     (pl) => pl.playlistName === selectedPlaylist.playlistName
   );
 
-  if (!currentPlaylist) return;
+  if (playlistIndex === -1) return;
 
-  // Initialize history array if it doesn't exist
-  if (!currentPlaylist[historyKey]) {
-    currentPlaylist[historyKey] = [];
+  if (!playlistsData[playlistIndex][historyKey]) {
+    playlistsData[playlistIndex][historyKey] = [];
   }
 
-  // Remove item if it already exists (to avoid duplicates)
-  const existingIndex = currentPlaylist[historyKey].findIndex(
-    (h) => (typeof h === "object" ? h.stream_id : h) === item.stream_id
+  // Remove existing to bring to top
+  const existingIndex = playlistsData[playlistIndex][historyKey].findIndex(
+    (h) => (typeof h === "object" ? h.stream_id : h) == item.stream_id
   );
 
   if (existingIndex > -1) {
-    currentPlaylist[historyKey].splice(existingIndex, 1);
+    playlistsData[playlistIndex][historyKey].splice(existingIndex, 1);
   }
 
-  // Add item to the beginning of the history array
   const historyItem = {
     stream_id: item.stream_id,
     name: item.name,
     stream_icon: item.stream_icon,
-    stream_type: item.stream_type,
     category_id: item.category_id,
     addedAt: new Date().toISOString(),
   };
 
-  currentPlaylist[historyKey].unshift(historyItem);
+  playlistsData[playlistIndex][historyKey].unshift(historyItem);
 
-  // Limit history to last 50 items
-  if (currentPlaylist[historyKey].length > 50) {
-    currentPlaylist[historyKey] = currentPlaylist[historyKey].slice(0, 50);
+  if (playlistsData[playlistIndex][historyKey].length > 50) {
+    playlistsData[playlistIndex][historyKey] = playlistsData[playlistIndex][historyKey].slice(0, 50);
   }
 
-  // Save back to localStorage
   localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-
-  console.log("✅ Added to history:", item.name);
-
-  // **TRIGGER SIDEBAR UPDATE IF ON LIVE TV PAGE**
-  if (localStorage.getItem("currentPage") === "liveTvPage") {
-    // Find and call renderSidebarCategories if it exists
-    const sidebarArea = document.querySelector("#sidebar-area");
-    if (sidebarArea) {
-      // This will be called from within LiveTvPage context
-      // We'll add a global reference to renderSidebarCategories
-      if (window.updateLiveTvSidebar) {
-        window.updateLiveTvSidebar();
-      }
-    }
-  }
+  
+  // Force update UI
+  filteredCache = null; 
+  if (window.updateLiveTvSidebar) window.updateLiveTvSidebar();
 };
 
 // ===== LOADING SCREEN COMPONENT =====
@@ -380,71 +364,34 @@ const getFilteredCategories = () => {
 
     console.log("🔍 Processing favorites:", updatedFavorites.length);
 
-    const favoritesChannels = (updatedFavorites || [])
-      .map((favItem) => {
-        try {
-          if (typeof favItem === "number") {
-            return (
-              streams.find((s) => s.stream_id === favItem) || {
-                stream_id: favItem,
-                name: "Unknown",
-                stream_icon: "/assets/profile.png",
-              }
-            );
-          }
-          if (!favItem.stream_icon) {
-            const fullData = streams.find(
-              (s) => s.stream_id === favItem.stream_id
-            );
-            return fullData || favItem;
-          }
-          return favItem;
-        } catch (err) {
-          console.error("Error mapping favorite:", err, favItem);
-          return favItem;
-        }
-      })
-      .filter((ch) => {
-        if (!searchQuery.trim() || selectedCategoryId !== "favorites")
-          return true;
-        return (ch.name || "")
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-      });
+   // Replace the Favorites processing section:
+const favoritesChannels = (updatedFavorites || [])
+  .map((favItem) => {
+    // If favItem is just an ID (number), find full stream info
+    const streamId = typeof favItem === "object" ? favItem.stream_id : favItem;
+    const fullData = streams.find((s) => s.stream_id == streamId);
+    
+    return fullData || (typeof favItem === "object" ? favItem : null);
+  })
+  .filter(Boolean) // Remove nulls
+  .filter((ch) => {
+    if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
+    return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-    console.log("🔍 Processing history:", channelHistory.length);
-
-    const historyChannels = (channelHistory || [])
-      .map((histItem) => {
-        try {
-          if (typeof histItem === "number") {
-            return (
-              streams.find((s) => s.stream_id === histItem) || {
-                stream_id: histItem,
-                name: "Unknown",
-                stream_icon: "/assets/profile.png",
-              }
-            );
-          }
-          if (!histItem.stream_icon) {
-            const fullData = streams.find(
-              (s) => s.stream_id === histItem.stream_id
-            );
-            return fullData || histItem;
-          }
-          return histItem;
-        } catch (err) {
-          console.error("Error mapping history item:", err, histItem);
-          return histItem;
-        }
-      })
-      .filter((ch) => {
-        if (!searchQuery.trim() || selectedCategoryId !== "channelHistory")
-          return true;
-        return (ch.name || "")
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-      });
+// Replace the History processing section:
+const historyChannels = (channelHistory || [])
+  .map((histItem) => {
+    const streamId = typeof histItem === "object" ? histItem.stream_id : histItem;
+    const fullData = streams.find((s) => s.stream_id == streamId);
+    
+    return fullData || (typeof histItem === "object" ? histItem : null);
+  })
+  .filter(Boolean)
+  .filter((ch) => {
+    if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
+    return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
     const result = [
       {
@@ -1685,51 +1632,54 @@ const renderEPGList = (epgData) => {
     renderEPGList(programs);
   };
 
-  window.toggleFavoriteItem = (item, favoriteKey) => {
-    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    const selectedPlaylist = JSON.parse(
-      localStorage.getItem("selectedPlaylist")
-    );
+ window.toggleFavoriteItem = (item, favoriteKey) => {
+  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
 
-    const currentPlaylist = playlistsData.find(
-      (pl) => pl.playlistName === selectedPlaylist.playlistName
-    );
+  const playlistIndex = playlistsData.findIndex(
+    (pl) => pl.playlistName === selectedPlaylist.playlistName
+  );
 
-    if (!currentPlaylist[favoriteKey]) {
-      currentPlaylist[favoriteKey] = [];
-    }
+  if (playlistIndex === -1) return { isFav: false, item };
 
-    const index = currentPlaylist[favoriteKey].findIndex(
-      (fav) =>
-        (typeof fav === "object" ? fav.stream_id : fav) === item.stream_id
-    );
+  if (!playlistsData[playlistIndex][favoriteKey]) {
+    playlistsData[playlistIndex][favoriteKey] = [];
+  }
 
-    let isFav;
-    if (index > -1) {
-      currentPlaylist[favoriteKey].splice(index, 1);
-      isFav = false;
-    } else {
-      // Store the FULL item object with all properties
-      const fullItem = {
-        stream_id: item.stream_id,
-        name: item.name,
-        stream_icon: item.stream_icon, // Make sure this is included
-        stream_type: item.stream_type,
-        category_id: item.category_id,
-        // Add any other properties you need
-      };
-      currentPlaylist[favoriteKey].push(fullItem);
-      isFav = true;
-    }
+  const existingIndex = playlistsData[playlistIndex][favoriteKey].findIndex(
+    (fav) => (typeof fav === "object" ? fav.stream_id : fav) == item.stream_id
+  );
 
-    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+  let isFav;
+  if (existingIndex > -1) {
+    playlistsData[playlistIndex][favoriteKey].splice(existingIndex, 1);
+    isFav = false;
+  } else {
+    // Save full object for better reliability
+    const favItem = {
+      stream_id: item.stream_id,
+      name: item.name,
+      stream_icon: item.stream_icon,
+      stream_type: item.stream_type,
+      category_id: item.category_id
+    };
+    playlistsData[playlistIndex][favoriteKey].push(favItem);
+    isFav = true;
+  }
 
-    return { isFav, item };
-  };
+  // Save the entire playlistsData array back
+  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+  
+  // Clear cache to force refresh
+  filteredCache = null; 
+
+  return { isFav, item };
+};
 
   // ===== TOGGLE FAVORITE =====
   // ===== TOGGLE FAVORITE =====
   const toggleFavorite = (channelData) => {
+    filteredCache = null; // Add this line here
     console.log("toggleFavorite called with:", channelData);
 
     const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
