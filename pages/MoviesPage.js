@@ -424,7 +424,7 @@ function buildCategoryMap() {
 
   const continueWatchingCategory = {
     id: "-2",
-    name: "Continue Watching",
+    name: "Continue Watching ",
     parent_id: 0,
     movies: allContinueWatchingMovies,
     _movieCount: allContinueWatchingMovies.length,
@@ -532,39 +532,45 @@ function buildCategoryMap() {
   }
 }
   // Render sidebar categories
-  function renderCategoriesUI() {
-   const wrapper = qs(".movies-categories-list");
-  if (!wrapper) return;
-  
-  wrapper.innerHTML = categories
+function renderCategoriesUI() {
+    const wrapper = qs(".movies-categories-list");
+    if (!wrapper) return;
+    
+    wrapper.innerHTML = categories
     .map((c, idx) => {
-      const isAdultCat = isMovieAdultCategory(c.name);
-      const parentalLockEnabled = !!getParentalPassword();
-      const isCatUnlocked = unlockedMovieAdultCatIds.has(String(c.id));
-      const shouldBlur = parentalLockEnabled && isAdultCat && !isCatUnlocked;
-      
-      return `
-      <div class="movies-category-item ${
-        String(c.id) === String(selectedCategoryId) ? "active" : ""
-      } ${shouldBlur ? 'movie-category-blurred' : ''}" 
-           data-id="${c.id}" 
-           data-idx="${idx}"
-           data-category-name="${escapeHtml(c.name)}">
-        ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
-        <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-      </div>`;
+        const isAdultCat = isMovieAdultCategory(c.name);
+        const parentalLockEnabled = !!getParentalPassword();
+        const isCatUnlocked = unlockedMovieAdultCatIds.has(String(c.id));
+        const shouldBlur = parentalLockEnabled && isAdultCat && !isCatUnlocked;
+        
+        // Always show count for every category
+        const movieCount = c._movieCount || 0;
+        
+        return `
+        <div class="movies-category-item ${
+            String(c.id) === String(selectedCategoryId) ? "active" : ""
+        } ${shouldBlur ? 'movie-category-blurred' : ''}" 
+             data-id="${c.id}" 
+             data-idx="${idx}"
+             data-category-name="${escapeHtml(c.name)}"
+             data-count="${movieCount}">
+            ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
+            <div class="cat-item-content">
+                <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+                <span class="cat-count-pill">(${movieCount})</span>
+            </div>
+        </div>`;
     })
     .join("");
 
-    // Show/hide expand button based on whether we have categories
     const expandBtn = qs("#expandBtn");
-    const categoriesEls = Array.from(
-      wrapper.querySelectorAll(".movies-category-item")
-    );
+    const categoriesEls = Array.from(wrapper.querySelectorAll(".movies-category-item"));
     if (expandBtn) {
-      expandBtn.style.display = categoriesEls.length > 0 ? "flex" : "none";
+        expandBtn.style.display = categoriesEls.length > 0 ? "flex" : "none";
     }
-  }
+
+    setTimeout(() => initCategoryMarquee(), 100);
+}
 
   // Build a single movie card HTML (safe)
 
@@ -647,6 +653,65 @@ function buildMovieCardHTML(m) {
       .replace(/'/g, "&#039;");
   }
 
+
+  // Add marquee effect to long category names
+function initCategoryMarquee() {
+  const categoryItems = qsa('.movies-category-item');
+  const wrapper = qs('.movies-categories-wrapper');
+  const isExpandedMode = wrapper && wrapper.classList.contains('expanded');
+  
+  // Container width changes based on expanded state
+  const containerWidth = isExpandedMode ? 140 : 160;
+  
+  console.log(`🔄 Init marquee | Expanded: ${isExpandedMode} | Container width: ${containerWidth}px`);
+  
+  categoryItems.forEach(item => {
+    const catName = item.querySelector('.cat-name');
+    if (!catName) return;
+    
+    const text = catName.textContent.trim();
+    const hasCount = item.dataset.count && item.dataset.count !== '';
+    
+    // Create temporary element to measure actual text width (including count badge)
+    const temp = document.createElement('span');
+    temp.style.visibility = 'hidden';
+    temp.style.position = 'absolute';
+    temp.style.whiteSpace = 'nowrap';
+    temp.style.fontSize = window.getComputedStyle(catName).fontSize;
+    temp.style.fontFamily = window.getComputedStyle(catName).fontFamily;
+    temp.style.fontWeight = window.getComputedStyle(catName).fontWeight;
+    temp.innerHTML = catName.innerHTML; // Include count badge HTML
+    document.body.appendChild(temp);
+    
+    const textWidth = temp.offsetWidth;
+    document.body.removeChild(temp);
+    
+    console.log(`📏 Category: "${text}" | Text: ${textWidth}px | Container: ${containerWidth}px | HasCount: ${hasCount}`);
+    
+    // Remove previous marquee settings
+    catName.classList.remove('marquee-text');
+    catName.style.removeProperty('--marquee-duration');
+    catName.style.removeProperty('--container-width');
+    catName.style.removeProperty('--text-width');
+    
+    // Add marquee class if text is wider than container
+    if (textWidth > containerWidth) {
+      catName.classList.add('marquee-text');
+      
+      // Set CSS variables for animation
+      catName.style.setProperty('--container-width', `${containerWidth}px`);
+      catName.style.setProperty('--text-width', `${textWidth}px`);
+      
+      // ⭐ FASTER SPEED: Calculate duration with higher speed (60px per second instead of 30)
+      const duration = Math.max(3, (textWidth / 60)); // 60px per second = 2x faster
+      catName.style.setProperty('--marquee-duration', `${duration}s`);
+      
+      console.log(`✅ Marquee enabled | Duration: ${duration}s | Text: ${textWidth}px | Speed: 60px/s`);
+    } else {
+      console.log(`⏭️ Text fits, no marquee needed`);
+    }
+  });
+}
   // Render cards for selectedCategoryId up to visibleCount
   function renderCards() {
     const container = qs(".movies-grid");
@@ -791,7 +856,18 @@ function setFocusOnCategory(index) {
     items[index].classList.add("focused");
     items[index].scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
     currentSection = "categories";
-  }
+    
+    // ⭐ Trigger marquee animation on the focused item
+    setTimeout(() => {
+        const focusedCatName = items[index].querySelector('.cat-name');
+        if (focusedCatName && focusedCatName.classList.contains('marquee-text')) {
+            // Reset animation
+            focusedCatName.style.animation = 'none';
+            void focusedCatName.offsetWidth; // Trigger reflow
+            focusedCatName.style.animation = '';
+        }
+    }, 50);
+}
 function setFocusOnSearch() {
     // category search (sidebar search)
     removeAllFocus();
@@ -893,25 +969,34 @@ function setFocusOnHeaderSearch() {
     currentSection = "scrollBtn";
   }
 
-  function removeAllFocus() {
+function removeAllFocus() {
     qsa(".movie-card").forEach((c) => c.classList.remove("focused"));
-    qsa(".movies-category-item").forEach((c) => c.classList.remove("focused"));
+    
+    // ⭐ Reset categories and stop marquee
+    qsa(".movies-category-item").forEach((c) => {
+        c.classList.remove("focused");
+        const catName = c.querySelector('.cat-name');
+        if (catName) {
+            // Reset to truncated state
+            catName.style.animation = 'none';
+            catName.style.transform = 'translateX(0)';
+        }
+    });
 
-    // Remove from parent containers
     const searchContainer = qs(".search-category-name");
     if (searchContainer) searchContainer.classList.remove("focused");
 
     const headerSearchContainer = qs(".search-container");
-    if (headerSearchContainer)
-      headerSearchContainer.classList.remove("focused");
+    if (headerSearchContainer) headerSearchContainer.classList.remove("focused");
 
     const expandBtn = qs("#expandBtn");
     if (expandBtn) expandBtn.classList.remove("focused");
 
     const scrollBtn = qs("#scrollToTopBtn");
     if (scrollBtn) scrollBtn.classList.remove("focused");
-  const menuDots = qs(".menu-dots");
-  if (menuDots) menuDots.classList.remove("focused");
+    
+    const menuDots = qs(".menu-dots");
+    if (menuDots) menuDots.classList.remove("focused");
 }
 
   // Category click handler (delegated)
@@ -2274,26 +2359,40 @@ document.addEventListener('keydown', menuKeyHandler);
     // Expand toggle
     const expandBtn = qs("#expandBtn");
     const sidebar = qs(".movies-sidebar");
-   if (expandBtn) {
+ if (expandBtn) {
   expandBtnClickHandler = () => {
     isExpanded = !isExpanded;
 
-    
     const wrapper = qs(".movies-categories-wrapper");
     if (wrapper) wrapper.classList.toggle("expanded", isExpanded);
 
     if (sidebar) sidebar.classList.toggle("expanded", isExpanded);
-
-    // 🔥 ONLY toggle class
     expandBtn.classList.toggle("rotated", isExpanded);
 
     const searchInput = qs(".search-category-input");
-    const hasSearchText =
-      searchInput && searchInput.value.trim().length > 0;
+    const hasSearchText = searchInput && searchInput.value.trim().length > 0;
 
     if (!hasSearchText && sidebar) {
       sidebar.classList.remove("filtering");
     }
+
+    // ⭐ Reinitialize marquee after expansion state changes
+    setTimeout(() => {
+      initCategoryMarquee();
+      
+      // If a category is focused, restart its animation
+      if (currentSection === "categories") {
+        const items = qsa(".movies-category-item");
+        if (items[currentCategoryIndex]) {
+          const focusedCatName = items[currentCategoryIndex].querySelector('.cat-name');
+          if (focusedCatName && focusedCatName.classList.contains('marquee-text')) {
+            focusedCatName.style.animation = 'none';
+            void focusedCatName.offsetWidth;
+            focusedCatName.style.animation = '';
+          }
+        }
+      }
+    }, 100);
 
     if (currentSection === "categories") {
       setFocusOnCategory(currentCategoryIndex);
@@ -2308,52 +2407,53 @@ document.addEventListener('keydown', menuKeyHandler);
 
     // Search input
     const searchEl = qs(".search-category-input");
-    if (searchEl) {
-      let timer = null;
-      searchInputHandler = (ev) => {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-          const q = ev.target.value.trim().toLowerCase();
-          const list = qs(".movies-categories-list");
-          const sidebar = qs(".movies-sidebar");
+if (searchEl) {
+  let timer = null;
+  searchInputHandler = (ev) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      const q = ev.target.value.trim().toLowerCase();
+      const list = qs(".movies-categories-list");
+      const sidebar = qs(".movies-sidebar");
 
-          if (!q) {
-            if (sidebar) sidebar.classList.remove("filtering");
-            renderCategoriesUI();
-            return;
-          }
+      if (!q) {
+        if (sidebar) sidebar.classList.remove("filtering");
+        renderCategoriesUI();
+        return;
+      }
 
-          if (sidebar) sidebar.classList.add("filtering");
+      if (sidebar) sidebar.classList.add("filtering");
 
-          const filtered = categories.filter((c) =>
-            c.name.toLowerCase().includes(q)
-          );
-          if (list) {
-            list.innerHTML = filtered
-              .map(
-                (c, idx) => `
-              <div class="movies-category-item ${
-                String(c.id) === String(selectedCategoryId) ? "active" : ""
-              }" data-id="${c.id}" data-idx="${idx}">
-                <span style="text-align: center; " class="cat-name" title="${escapeHtml(
-                  c.name
-                )}">${escapeHtml(c.name)}</span>
-              </div>
-            `
-              )
-              .join("");
+      const filtered = categories.filter((c) =>
+        c.name.toLowerCase().includes(q)
+      );
+      if (list) {
+       list.innerHTML = filtered.map((c, idx) => {
+    const movieCount = c._movieCount || 0;
+   return `
+<div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? "active" : ""}" 
+     data-id="${c.id}" 
+     data-idx="${idx}">
+    <div class="cat-item-content">
+        <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+        <span class="cat-count-badge">(${c._movieCount || 0})</span>
+    </div>
+</div>`;
+}).join("");
 
-            const expandBtn = qs("#expandBtn");
-            if (expandBtn) {
-              expandBtn.style.display = filtered.length > 0 ? "flex" : "none";
-            }
-          }
-        }, 350);
-      };
+        const expandBtn = qs("#expandBtn");
+        if (expandBtn) {
+          expandBtn.style.display = filtered.length > 0 ? "flex" : "none";
+        }
+        
+        setTimeout(() => initCategoryMarquee(), 100);
+      }
+    }, 350);
+  };
 
-      searchEl.removeEventListener("input", searchInputHandler);
-      searchEl.addEventListener("input", searchInputHandler);
-    }
+  searchEl.removeEventListener("input", searchInputHandler);
+  searchEl.addEventListener("input", searchInputHandler);
+}
 
 
       const sortingContainer = document.createElement('div');

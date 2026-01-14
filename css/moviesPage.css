@@ -153,7 +153,7 @@
 }
 
 .category-toggle-btn.rotated {
-    transform: rotate(180deg);
+    /* transform: rotate(180deg); */
 }
 
 /* GRID (with 34px gap) */
@@ -328,9 +328,9 @@
     text-shadow: 0 0 10px rgba(10, 162, 255, 0.8);
 }
 
-.category-toggle-btn.focused.rotated {
+/* .category-toggle-btn.focused.rotated {
     transform: scale(1.2) rotate(180deg);
-}
+} */
 
 
 
@@ -542,12 +542,12 @@
 /* Favorites category highlight */
 .movies-category-item[data-id="-1"] {
   /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-  margin-left: 10px;
+  /* margin-left: 10px; */
 }
 
 .movies-category-item[data-id="-1"].active {
   /* background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); */
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  /* box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); */
 }
 
 .movie-no-data{
@@ -984,3 +984,208 @@
 }
 
 
+.category-toggle-btn.rotated svg {
+    transform: rotate(180deg);
+}
+
+/* Marquee animation for long category names */
+.cat-name {
+    max-width: 160px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+    position: relative;
+}
+
+.cat-name.marquee-text {
+    animation: marquee var(--marquee-duration, 5s) linear infinite;
+    animation-play-state: paused;
+}
+
+.movies-category-item:hover .cat-name.marquee-text,
+.movies-category-item.focused .cat-name.marquee-text,
+.movies-category-item.active .cat-name.marquee-text {
+    animation-play-state: running;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(calc(-100% + 160px));
+    }
+}
+
+/* Count badge for Continue Watching */
+/* .cat-count-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4757;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+} */
+
+/* Make category item position relative for badge positioning */
+.movies-category-item {
+    position: relative;
+}
+
+/* Category name base styles - fixed width container */
+.movies-category-item .cat-name {
+    max-width: 160px;
+    width: 160px; /* Fixed width */
+    overflow: hidden; /* Always hide overflow */
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+    position: relative;
+}
+
+/* Expanded mode - adjust fixed width */
+.movies-categories-wrapper.expanded .movies-category-item .cat-name {
+    max-width: 140px;
+    width: 140px; /* Fixed width for expanded */
+}
+
+/* When category has marquee text */
+.movies-category-item .cat-name.marquee-text {
+    position: relative;
+    overflow: hidden; /* Keep overflow hidden */
+}
+
+/* When focused - animate the text inside */
+.movies-category-item.focused .cat-name.marquee-text {
+    text-overflow: clip; /* Remove ellipsis */
+    overflow: hidden; /* Keep container clipping overflow */
+}
+
+/* Animate the text content itself */
+.movies-category-item.focused .cat-name.marquee-text {
+    animation: marquee-scroll var(--marquee-duration, 8s) linear infinite;
+    animation-delay: 0.8s;
+}
+
+/* Keyframe animation - text moves left */
+@keyframes marquee-scroll {
+    0%, 10% {
+        text-indent: 0;
+    }
+    90%, 100% {
+        text-indent: calc(var(--container-width, 160px) - var(--text-width, 200px));
+    }
+}
+
+/* Not focused - show truncated with ellipsis */
+.movies-category-item:not(.focused) .cat-name.marquee-text {
+    animation: none;
+    text-indent: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Container never expands, always hides overflow */
+.movies-category-item {
+    overflow: hidden;
+}
+
+.movies-category-item.focused {
+    overflow: hidden; /* Keep overflow hidden even when focused */
+    position: relative;
+    z-index: 100;
+}
+
+/* Category wrapper */
+.movies-categories-list {
+    position: relative;
+}
+
+/* Smooth transition */
+.movies-category-item .cat-name {
+    transition: text-overflow 0.2s ease;
+}
+cat-item-content {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.movies-category-item .cat-name {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cat-count-pill {
+    font-size: 0.85em;
+    opacity: 0.7;
+    white-space: nowrap;
+    font-weight: normal;
+    padding-right: 5px;
+}
+
+/* Ensure the marquee only affects the name, not the count */
+.marquee-text {
+    /* Your existing marquee logic remains, but target .cat-name specifically */
+}
+
+/* The container inside the category box */
+.cat-item-content {
+    display: flex;
+    flex-direction: row; /* Ensures side-by-side layout */
+    align-items: center;
+    justify-content: space-between; /* Pushes name to left, count to right */
+    width: 100%;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+/* The Category Name */
+.movies-category-item .cat-name {
+    flex: 1; /* Takes up all available space */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-right: 8px; /* Space between name and count */
+}
+
+/* The Count in Parentheses */
+.cat-count-badge {
+    white-space: nowrap; /* Prevents (50) from breaking into two lines */
+    font-size: 0.9em;
+    opacity: 0.8;
+    flex-shrink: 0; /* Ensures the count never gets squished */
+}
+
+/* Ensure the parent item is also behaving as a flex container */
+.movies-category-item {
+    display: flex;
+    align-items: center;
+    min-height: 40px; /* Or your preferred height */
+}
+
+.movies-category-item.focused .marquee-text {
+    display: inline-block;
+    padding-left: 0;
+    animation: categoryMarquee var(--marquee-duration) linear infinite;
+    text-overflow: clip !important; /* Remove ellipsis when moving */
+}
+
+@keyframes categoryMarquee {
+    0% { transform: translateX(0); }
+    10% { transform: translateX(0); } /* Pause at start */
+    90% { transform: translateX(calc(var(--container-width) - var(--text-width) - 10px)); }
+    100% { transform: translateX(calc(var(--container-width) - var(--text-width) - 10px)); }
+}
