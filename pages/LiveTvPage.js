@@ -85,14 +85,8 @@ const ChannelGridLoadingOverlay = () => {
   return `
     <div class="channel-grid-loading-overlay" id="channelGridLoading">
       <div class="channel-loading-content">
-        <div class="spinner"></div>
         <div class="loading-text">Loading Channels</div>
-        <div class="loading-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="channelProgressFill"></div>
-          </div>
-          <div class="progress-text" id="channelProgressText">0%</div>
-        </div>
+        <div class="loading-subtext">Please wait while we load your channels...</div>
       </div>
     </div>
   `;
@@ -201,7 +195,6 @@ const updateLoadingProgress = (percentage, message) => {
 };
 
 
-  showLoading();
 
     setTimeout(() => {
     hideLoading();

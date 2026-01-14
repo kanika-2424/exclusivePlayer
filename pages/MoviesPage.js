@@ -454,6 +454,9 @@ function buildCategoryMap() {
 
   // Group movies
   for (const m of allMovies) {
+    if (!m.stream_icon) {
+       console.warn("⚠️ Movie missing icon data:", m.name);
+   }
     const cid = String(
       m.category_id ||
         (Array.isArray(m.category_ids) && m.category_ids[0]) ||
@@ -573,7 +576,11 @@ function buildCategoryMap() {
   visibleCount = adjustToFullRow(visibleCount + PAGE_SIZE);
 
 function buildMovieCardHTML(m) {
-  const img = m.stream_icon || "/assets/noImageFound.png";
+  // const img = m.stream_icon || "/assets/noImageFound.png";
+  let imgSrc = m.stream_icon || "/assets/noImageFound.png";
+  if (imgSrc.startsWith("//")) {
+    imgSrc = "http:" + imgSrc;
+  }
   const title = m.name || m.title || "Untitled";
   const rating = isNaN(Number(m.rating_5based)) ? 0 : Math.min(5, Number(m.rating_5based));
 
@@ -598,7 +605,12 @@ function buildMovieCardHTML(m) {
          data-movie-id="${m.stream_id}"
          data-is-adult="${shouldBlur}">
       <div class="movie-card-image-wrapper">
-        <img src="${img}" alt="${escapeHtml(title)}" />
+       <img 
+  src="${imgSrc}" 
+  alt="${escapeHtml(title)}" 
+  loading="lazy"
+  onerror="this.onerror=null; this.src='/assets/noImageFound.png'; this.parentElement.classList.add('img-error');" 
+/>
       </div>
       
       <div class="movie-rating-badge">

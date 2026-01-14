@@ -592,7 +592,8 @@ const LoadingScreen = () => {
       <img src="/assets/logo.png" alt="Logo" class="loading-logo" />
         <div class="spinner"></div>
         <div class="loading-text">Loading</div>
-        <div class="loading-subtext">Please wait while we load your content...</div>
+           <div id="loading-progress" style="font-size: 32px; font-weight: bold;">0%</div>
+
       </div>
     </div>
   `;

@@ -968,6 +968,19 @@
   display: none !important;
 }
 
+/* Placeholder background while image loads or if it fails */
+.movie-card-image-wrapper {
+    background-color: #1a1a1a;
+    background-image: url('/assets/logo.png'); /* Use a faded version of your logo */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 40%;
+}
 
+.movie-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
 
