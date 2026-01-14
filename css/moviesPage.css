@@ -1140,52 +1140,46 @@ cat-item-content {
 .marquee-text {
     /* Your existing marquee logic remains, but target .cat-name specifically */
 }
-
-/* The container inside the category box */
+/* Container for Name + Count */
 .cat-item-content {
     display: flex;
-    flex-direction: row; /* Ensures side-by-side layout */
     align-items: center;
-    justify-content: space-between; /* Pushes name to left, count to right */
+    justify-content: space-between;
     width: 100%;
-    padding: 0 5px;
+    padding: 0 10px;
+    overflow: hidden; /* Important: Clip the scrolling text here */
     box-sizing: border-box;
 }
 
-/* The Category Name */
+/* The Category Name - The "Window" */
 .movies-category-item .cat-name {
-    flex: 1; /* Takes up all available space */
-    overflow: hidden;
+    flex: 1;
+    display: block;
     white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
-    margin-right: 8px; /* Space between name and count */
+    margin-right: 5px;
+    position: relative;
 }
 
-/* The Count in Parentheses */
-.cat-count-badge {
-    white-space: nowrap; /* Prevents (50) from breaking into two lines */
-    font-size: 0.9em;
-    opacity: 0.8;
-    flex-shrink: 0; /* Ensures the count never gets squished */
-}
-
-/* Ensure the parent item is also behaving as a flex container */
-.movies-category-item {
-    display: flex;
-    align-items: center;
-    min-height: 40px; /* Or your preferred height */
-}
-
-.movies-category-item.focused .marquee-text {
+/* The Scrolling Animation */
+.movies-category-item.focused .cat-name.marquee-text {
+    text-overflow: clip; /* Remove dots when moving */
     display: inline-block;
-    padding-left: 0;
-    animation: categoryMarquee var(--marquee-duration) linear infinite;
-    text-overflow: clip !important; /* Remove ellipsis when moving */
+    animation: categoryMarquee var(--marquee-duration, 4s) linear infinite;
+    animation-delay: 0.8s;
+}
+
+/* The Count Badge - Stays Static */
+.cat-count-pill {
+    flex-shrink: 0;
+    font-size: 0.85em;
+    opacity: 0.8;
 }
 
 @keyframes categoryMarquee {
     0% { transform: translateX(0); }
-    10% { transform: translateX(0); } /* Pause at start */
-    90% { transform: translateX(calc(var(--container-width) - var(--text-width) - 10px)); }
-    100% { transform: translateX(calc(var(--container-width) - var(--text-width) - 10px)); }
+    15% { transform: translateX(0); } /* Pause at start */
+    85% { transform: translateX(calc(var(--container-width) - var(--text-width) - 5px)); }
+    100% { transform: translateX(calc(var(--container-width) - var(--text-width) - 5px)); }
 }

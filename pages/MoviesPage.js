@@ -657,58 +657,39 @@ function buildMovieCardHTML(m) {
   // Add marquee effect to long category names
 function initCategoryMarquee() {
   const categoryItems = qsa('.movies-category-item');
-  const wrapper = qs('.movies-categories-wrapper');
-  const isExpandedMode = wrapper && wrapper.classList.contains('expanded');
-  
-  // Container width changes based on expanded state
-  const containerWidth = isExpandedMode ? 140 : 160;
-  
-  console.log(`🔄 Init marquee | Expanded: ${isExpandedMode} | Container width: ${containerWidth}px`);
   
   categoryItems.forEach(item => {
     const catName = item.querySelector('.cat-name');
+    const pill = item.querySelector('.cat-count-pill');
     if (!catName) return;
     
-    const text = catName.textContent.trim();
-    const hasCount = item.dataset.count && item.dataset.count !== '';
+    // 1. Calculate available width: Total item width - pill width - padding
+    const pillWidth = pill ? pill.offsetWidth : 0;
+    const availableWidth = item.offsetWidth - pillWidth - 30; // 30px for padding/margins
     
-    // Create temporary element to measure actual text width (including count badge)
+    // 2. Measure actual text width
     const temp = document.createElement('span');
     temp.style.visibility = 'hidden';
     temp.style.position = 'absolute';
     temp.style.whiteSpace = 'nowrap';
-    temp.style.fontSize = window.getComputedStyle(catName).fontSize;
-    temp.style.fontFamily = window.getComputedStyle(catName).fontFamily;
-    temp.style.fontWeight = window.getComputedStyle(catName).fontWeight;
-    temp.innerHTML = catName.innerHTML; // Include count badge HTML
+    temp.style.font = window.getComputedStyle(catName).font;
+    temp.innerText = catName.innerText;
     document.body.appendChild(temp);
-    
     const textWidth = temp.offsetWidth;
     document.body.removeChild(temp);
     
-    console.log(`📏 Category: "${text}" | Text: ${textWidth}px | Container: ${containerWidth}px | HasCount: ${hasCount}`);
-    
-    // Remove previous marquee settings
-    catName.classList.remove('marquee-text');
-    catName.style.removeProperty('--marquee-duration');
-    catName.style.removeProperty('--container-width');
-    catName.style.removeProperty('--text-width');
-    
-    // Add marquee class if text is wider than container
-    if (textWidth > containerWidth) {
+    // 3. Apply marquee if text is too long
+    if (textWidth > availableWidth) {
       catName.classList.add('marquee-text');
-      
-      // Set CSS variables for animation
-      catName.style.setProperty('--container-width', `${containerWidth}px`);
+      catName.style.setProperty('--container-width', `${availableWidth}px`);
       catName.style.setProperty('--text-width', `${textWidth}px`);
       
-      // ⭐ FASTER SPEED: Calculate duration with higher speed (60px per second instead of 30)
-      const duration = Math.max(3, (textWidth / 60)); // 60px per second = 2x faster
+      // Speed calculation: text length / pixels per second
+      const duration = Math.max(3, textWidth / 50); 
       catName.style.setProperty('--marquee-duration', `${duration}s`);
-      
-      console.log(`✅ Marquee enabled | Duration: ${duration}s | Text: ${textWidth}px | Speed: 60px/s`);
     } else {
-      console.log(`⏭️ Text fits, no marquee needed`);
+      catName.classList.remove('marquee-text');
+      catName.style.transform = 'translateX(0)';
     }
   });
 }
