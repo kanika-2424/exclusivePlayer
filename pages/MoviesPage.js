@@ -1177,82 +1177,101 @@ function openMovieDetail(movieId) {
     }
   }
 
-  function updateFavoritesUI(movieId, isAdding) {
-    // Update favorites category
+function updateFavoritesUI(movieId, isAdding) {
     const favCategory = categories.find((c) => c.id === "-1");
     if (favCategory) {
-      if (isAdding) {
-        const movieToAdd = window.allMoviesStreams.find(
-          (m) => Number(m.stream_id) === Number(movieId)
-        );
-        if (
-          movieToAdd &&
-          !favCategory.movies.some(
-            (m) => Number(m.stream_id) === Number(movieId)
-          )
-        ) {
-          favCategory.movies.push(movieToAdd);
+        if (isAdding) {
+            const movieToAdd = window.allMoviesStreams.find(
+                (m) => Number(m.stream_id) === Number(movieId)
+            );
+            if (movieToAdd && !favCategory.movies.some(m => Number(m.stream_id) === Number(movieId))) {
+                favCategory.movies.push(movieToAdd);
+            }
+        } else {
+            favCategory.movies = favCategory.movies.filter(
+                (m) => Number(m.stream_id) !== Number(movieId)
+            );
         }
-      } else {
-        favCategory.movies = favCategory.movies.filter(
-          (m) => Number(m.stream_id) !== Number(movieId)
-        );
-      }
 
-      favCategory._movieCount = favCategory.movies.length;
+        favCategory._movieCount = favCategory.movies.length;
 
-      // Update UI count
-      const favCatEl = qs('.movies-category-item[data-id="-1"]');
-      if (favCatEl) {
-        const countEl = favCatEl.querySelector(".cat-count");
-        if (countEl) {
-          countEl.textContent = favCategory.movies.length;
+        const favCatEl = qs('.movies-category-item[data-id="-1"]');
+        if (favCatEl) {
+            const pill = favCatEl.querySelector(".cat-count-pill");
+            if (pill) {
+                pill.textContent = `(${favCategory._movieCount})`;
+            }
+            favCatEl.setAttribute('data-count', favCategory._movieCount);
         }
-      }
     }
 
-    // Update heart icon on all cards with this movieId
+    // ⭐ NEW: Also update Continue Watching category count
+    updateContinueWatchingUI();
+
+    // Update heart icons on cards
     const allCurrentCards = qsa(".movie-card");
     allCurrentCards.forEach((card) => {
-      const cardMovieId = Number(card.dataset.movieId);
-      if (cardMovieId === Number(movieId)) {
-        const heartIcon = card.querySelector(".movie-card-heart-icon");
-        const cardElement = card;
-
-        if (isAdding) {
-          if (!heartIcon) {
-            const heartImg = document.createElement("img");
-            heartImg.src = "/assets/heart.png";
-            heartImg.alt = "heart-icon";
-            heartImg.className = "movie-card-heart-icon";
-            cardElement.insertBefore(
-              heartImg,
-              cardElement.querySelector(".movie-hover")
-            );
-          }
-        } else {
-          if (heartIcon && selectedCategoryId !== "-1") {
-            heartIcon.remove();
-          }
+        if (Number(card.dataset.movieId) === Number(movieId)) {
+            const heartIcon = card.querySelector(".movie-card-heart-icon");
+            if (isAdding && !heartIcon) {
+                const heartImg = document.createElement("img");
+                heartImg.src = "/assets/heart.png";
+                heartImg.className = "movie-card-heart-icon";
+                card.insertBefore(heartImg, card.querySelector(".movie-hover"));
+            } else if (!isAdding && heartIcon && selectedCategoryId !== "-1") {
+                heartIcon.remove();
+            }
         }
-      }
     });
 
-    // ⭐ If in Favorites category, re-render to show/hide cards
     if (selectedCategoryId === "-1") {
-      renderCards(); // This will show updated favorites list
-
-      if (movieCards.length === 0) {
-        // No favorites left - go to categories
-        currentSection = "categories";
-        setFocusOnCategory(0);
-      } else {
-        // Maintain focus on valid card
-        currentFocusIndex = Math.min(currentFocusIndex, movieCards.length - 1);
-        setFocusOnCard(currentFocusIndex);
-      }
+        renderCards();
+        if (movieCards.length === 0) {
+            setFocusOnCategory(0);
+        } else {
+            currentFocusIndex = Math.min(currentFocusIndex, movieCards.length - 1);
+            setFocusOnCard(currentFocusIndex);
+        }
     }
-  }
+}
+
+function updateContinueWatchingUI() {
+    // Get fresh continue watching data from localStorage
+    const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData"))
+        .find(pl => pl.playlistName === currentPlaylistName);
+    
+    const freshContinueWatchingMovies = Array.isArray(currentPlaylist.continueWatchingMovies)
+        ? currentPlaylist.continueWatchingMovies
+        : [];
+    
+    const freshContinueWatchingIds = freshContinueWatchingMovies.map(item => Number(item.itemId));
+    
+    // Update the Continue Watching category
+    const continueWatchingCat = categories.find(c => c.id === "-2");
+    if (continueWatchingCat) {
+        // Get fresh movies from allMoviesStreams
+        const allMovies = Array.isArray(window.allMoviesStreams) ? window.allMoviesStreams : [];
+        const updatedMovies = allMovies.filter(m => freshContinueWatchingIds.includes(Number(m.stream_id)));
+        
+        continueWatchingCat.movies = updatedMovies;
+        continueWatchingCat._movieCount = updatedMovies.length;
+        
+        // Update moviesByCategory map
+        moviesByCategory["-2"] = updatedMovies;
+        
+        // Update DOM
+        const continueWatchingEl = qs('.movies-category-item[data-id="-2"]');
+        if (continueWatchingEl) {
+            const pill = continueWatchingEl.querySelector(".cat-count-pill");
+            if (pill) {
+                pill.textContent = `(${continueWatchingCat._movieCount})`;
+            }
+            continueWatchingEl.setAttribute('data-count', continueWatchingCat._movieCount);
+        }
+        
+        console.log("🔄 Updated Continue Watching count:", continueWatchingCat._movieCount);
+    }
+}
 
   // Remote navigation handler
   function handleRemoteNavigation(e) {
@@ -2287,6 +2306,9 @@ if (comingFromDashboard) {
 } else {
   // Coming from movie detail page - restore position
   console.log("↩️ Restoring from detail page");
+
+  updateContinueWatchingUI();
+
   selectedCategoryId = String(savedCatId);
   currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 2; // Default to 3rd category
   currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
@@ -2733,9 +2755,9 @@ ${SortingDialog()}
 <!-- Loading Screen -->
 <div id="moviesLoadingScreen" class="movies-loading-screen">
   <div class="movies-loading-content">
-    <img src="/assets/logo.png" class="movies-loading-logo" alt="Loading" />
+  
     <div class="movies-loading-spinner"></div>
-    <p class="movies-loading-text">Loading Movies...</p>
+
   </div>
 </div>
 </style>
