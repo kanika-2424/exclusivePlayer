@@ -1966,31 +1966,48 @@ const setupScrollAutoLoad = () => {
 
 // 1. ADD THIS DEFINITION HERE
 const setupSidebarSearchListener = () => {
-  const sidebarSearchInput = qs(".sidebar-search-input");
+  const sidebarSearchInput = document.querySelector(".sidebar-search-input");
   if (!sidebarSearchInput) return;
 
-  // Listen for typing
-  sidebarSearchInput.addEventListener("input", (e) => {
-    if (!isPageFullyLoaded) return;
-    
-    // Reset pagination to show first page of results
+  sidebarSearchInput.addEventListener("input", function(e) {
+    // We update the data, but we DON'T recreate the search box element
     currentCategoryChunk = 1;
     focusedSidebarIndex = 0;
-    
-    // Trigger the re-render of the list items
-    renderSidebarCategories();
-  });
 
-  // Important for TV: Stop Remote keys from jumping focus while typing
-  sidebarSearchInput.addEventListener("keydown", (e) => {
-    if (isSidebarSearchActive) {
-      // If Arrow Left/Right/Up/Down is pressed, don't let the 
-      // main handleKeydown function move focus to other components
-      if ([37, 38, 39, 40].includes(e.keyCode)) {
-        e.stopPropagation(); 
-      }
+    // IMPORTANT: Only update the list of items, not the whole sidebar
+    const filtered = getFilteredCategories();
+    const query = e.target.value.toLowerCase();
+    
+    let displayCategories;
+    if (query !== "") {
+      displayCategories = filtered.filter(function(c) {
+        return (c.category_name || "").toLowerCase().includes(query);
+      });
+    } else {
+      displayCategories = filtered;
     }
+
+    // Call a function that ONLY updates the .sidebar-items div
+    updateSidebarItemsOnly(displayCategories);
   });
+};
+
+const updateSidebarItemsOnly = (displayCategories) => {
+  const sidebarItemsContainer = document.querySelector(".sidebar-items");
+  if (!sidebarItemsContainer) return;
+
+  const categoriesToShow = getChunkedCategories(displayCategories, currentCategoryChunk, categoriesPerChunk);
+  
+  const categoriesHTML = categoriesToShow.map((c) => {
+    const isActive = c.category_id === selectedCategoryId;
+    return `
+      <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" data-category-id="${c.category_id}">
+        <span class="sidebar-item-name">${c.category_name}</span>
+        <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+      </div>`;
+  }).join("");
+
+  sidebarItemsContainer.innerHTML = categoriesHTML;
 };
 
 
@@ -3100,109 +3117,72 @@ if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
     // SIDEBAR SEARCH BOX NAVIGATION
   // SIDEBAR SEARCH BOX NAVIGATION
 if (inSidebarSearch) {
-  // UP: Move to header search with cursor at end
-  if (isUp) {
-    inSidebarSearch = false;
-    inHeaderSearch = true;
-    setSidebarSearchFocus(false);
-    setHeaderSearchFocus(true);
+  const searchInput = document.querySelector(".sidebar-search-input");
 
-    // Auto-enter edit mode with cursor at end
-    // setTimeout(() => {
-    //   isHeaderSearchActive = true;
-    //   const input = qs(".search-input");
-    //   if (input) {
-    //     input.focus();
-    //     const textLength = input.value.length;
-    //     input.setSelectionRange(textLength, textLength);
-    //   }
-    // }, 0);
-
-    e.preventDefault();
-    return;
-  }
-
-  // DOWN: Move to first sidebar item
+  // DOWN: Exit search and go to the first item in the filtered list
   if (isDown) {
+    // 1. Force the input to release focus
+    if (searchInput) {
+      searchInput.blur();
+    }
+    // 2. Set states
+    isSidebarSearchActive = false;
     inSidebarSearch = false;
     inSidebar = true;
-    isSidebarSearchActive = false;
+    
+    // 3. Visual cleanup
     setSidebarSearchFocus(false);
+    
+    // 4. Focus first sidebar item
     focusedSidebarIndex = 0;
-    setSidebarFocus(focusedSidebarIndex);
+    const sidebarItems = document.querySelectorAll(".sidebar-item");
+    if (sidebarItems.length > 0) {
+      setSidebarFocus(0);
+    }
+    
     e.preventDefault();
     return;
   }
 
-  // RIGHT: Go to channel grid - ALWAYS START FROM FIRST CHANNEL
-  if (isRight) {
+  // UP: Exit search and go to the Top Channel Search
+  if (isUp) {
+    if (searchInput) {
+      searchInput.blur();
+    }
+    isSidebarSearchActive = false;
     inSidebarSearch = false;
-    inChannelGrid = true;
+    inHeaderSearch = true;
+    
     setSidebarSearchFocus(false);
-
-    const sidebarInput = qs(".sidebar-search-input");
-    if (sidebarInput) {
-      sidebarInput.blur();
-      sidebarInput.selectionStart = sidebarInput.selectionEnd = 0;
-    }
-
-    // ALWAYS reset to first channel
-    focusedChannelIndex = 0;
+    setHeaderSearchFocus(true);
     
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    
-    // Scroll channel grid to start
-    const channelGrid = qs(".channel-grid");
-    if (channelGrid) {
-      channelGrid.scrollTo({ left: 0, behavior: "smooth" });
-    }
-
     e.preventDefault();
     return;
   }
 
-  // If in edit mode, allow typing
-  if (isSidebarSearchActive) {
-    return; // Allow typing
-  }
-
-  // LEFT: Stay in search box when not editing
-  if (isLeft) {
-    e.preventDefault();
-    return;
-  }
-
+  // ENTER: Toggle typing mode
   if (isEnter) {
     isSidebarSearchActive = !isSidebarSearchActive;
-    const searchInput = qs(".sidebar-search-input");
     if (searchInput) {
       if (isSidebarSearchActive) {
-        // Open keyboard - focus input
         searchInput.focus();
-        const textLength = searchInput.value.length;
-        searchInput.setSelectionRange(textLength, textLength);
       } else {
-        // Close keyboard - blur input
         searchInput.blur();
-        searchInput.selectionStart = searchInput.selectionEnd = 0;
       }
     }
     e.preventDefault();
     return;
   }
 
-  // If in edit mode, allow typing - don't prevent default
+  // If the user is currently typing (cursor in box), 
+  // we let the browser handle characters, but NOT Up/Down 
+  // (which we already handled above)
   if (isSidebarSearchActive) {
-    return; // Allow normal keyboard input
+    // Allow Left/Right to move cursor inside text, but stop other navigation
+    if (isLeft || isRight) {
+       return; 
+    }
   }
-
-  // Block navigation keys when not in edit mode
-  if (isUp || isDown || isLeft || isRight) {
-    e.preventDefault();
-    return;
-  }
-
-  return; // Allow other keys
 }
 
     // Sidebar navigation
