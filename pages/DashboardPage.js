@@ -406,16 +406,9 @@ DashboardPage.cleanup = function () {
   document.removeEventListener("keydown", handleKeydown);
 };
 
-    // --- REGISTER EVENTS -----------------------------------------------------
-    document.addEventListener("click", handleClick);
-    document.addEventListener("keydown", handleKeydown);
 
-    // --- CLEANUP -------------------------------------------------------------
-    DashboardPage.cleanup = function () {
-      document.removeEventListener("click", handleClick);
-      document.removeEventListener("keydown", handleKeydown);
-    };
 
+ 
   }, 0);
 
 
