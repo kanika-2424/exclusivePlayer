@@ -1999,7 +1999,10 @@ const renderSidebarCategories = () => {
   const filtered = getFilteredCategories();
   
   // Use current search query if present
-  const query = qs(".sidebar-search-input")?.value.toLowerCase() || "";
+ const query = qs(".sidebar-search-input")
+  ? qs(".sidebar-search-input").value.toLowerCase()
+  : "";
+
   const displayCategories = query 
     ? filtered.filter(c => c.category_name.toLowerCase().includes(query))
     : filtered;
