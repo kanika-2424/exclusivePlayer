@@ -866,35 +866,35 @@ function LiveTvPage() {
   };
 
   // After setRemoveHistoryBtnFocus function
-function setFocusOnMenuDots() {
-  console.log("🎯 Setting focus on menu dots");
-  
-  removeAllFocus();
-  
-  const menuDots = document.querySelector(".menu-dots");
-  if (menuDots) {
-    menuDots.classList.add("focused");
+  function setFocusOnMenuDots() {
+    console.log("🎯 Setting focus on menu dots");
+
+    removeAllFocus();
+
+    const menuDots = document.querySelector(".menu-dots");
+    if (menuDots) {
+      menuDots.classList.add("focused");
+    }
+
+    // Update all navigation states
+    isMenuDotsActive = true;
+    inChannelGrid = false;
+    inHeaderSearch = false;
+    inSidebarSearch = false;
+    inSidebar = false;
+    inEPG = false;
+    inVideoPlayer = false;
+    inFavoriteBtn = false;
+    inRemoveHistoryBtn = false;
+    inPlayPauseBtn = false;
+    inAspectRatioBtn = false;
+
+    // Also update global state
+    if (window.liveTvPageState) {
+      window.liveTvPageState.isMenuDotsActive = true;
+      window.liveTvPageState.inChannelGrid = false;
+    }
   }
-  
-  // Update all navigation states
-  isMenuDotsActive = true;
-  inChannelGrid = false;
-  inHeaderSearch = false;
-  inSidebarSearch = false;
-  inSidebar = false;
-  inEPG = false;
-  inVideoPlayer = false;
-  inFavoriteBtn = false;
-  inRemoveHistoryBtn = false;
-  inPlayPauseBtn = false;
-  inAspectRatioBtn = false;
-  
-  // Also update global state
-  if (window.liveTvPageState) {
-    window.liveTvPageState.isMenuDotsActive = true;
-    window.liveTvPageState.inChannelGrid = false;
-  }
-}
 
   // ===== PASSWORD MODAL COMPONENT =====
   const PasswordModal = () => {
@@ -2231,6 +2231,9 @@ function setFocusOnMenuDots() {
   window.renderLiveTv = () => {
     console.log("🔄 Refreshing Live TV page after sorting");
 
+    // Clear cache to enforce re-filtering and sorting
+    filteredCache = null;
+
     // Reset navigation state
     inChannelGrid = true;
     inSidebar = false;
@@ -2719,119 +2722,119 @@ function setFocusOnMenuDots() {
     // MENU DOTS NAVIGATION
 
     // MENU DOTS NAVIGATION
-  // MENU DOTS NAVIGATION
-// MENU DOTS NAVIGATION
-if (isMenuDotsActive) {
-  console.log("🎯 Menu dots active - key pressed:", e.key); // Debug
-  
-  // ENTER: Open sidebar (HIGHEST PRIORITY - MUST BE FIRST)
-  if (isEnter) {
-    console.log("✅ Enter pressed on menu dots - opening sidebar");
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation(); // Extra safety
-    
-    // Reset menu dots state BEFORE opening sidebar
-    isMenuDotsActive = false;
-    const menuDots = qs(".menu-dots");
-    if (menuDots) menuDots.classList.remove("focused");
-    
-    // Small delay to ensure state is reset
-    setTimeout(() => {
-      openSidebar("liveTvPage");
-    }, 50);
-    return;
-  }
+    // MENU DOTS NAVIGATION
+    // MENU DOTS NAVIGATION
+    if (isMenuDotsActive) {
+      console.log("🎯 Menu dots active - key pressed:", e.key); // Debug
 
-  if (isMenuDotsActive && isEnter) {
-  console.log("🎯 SAFETY CHECK: Enter on menu dots - opening sidebar");
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation();
-  
-  isMenuDotsActive = false;
-  const menuDots = qs(".menu-dots");
-  if (menuDots) menuDots.classList.remove("focused");
-  
-  setTimeout(() => {
-    openSidebar("liveTvPage");
-  }, 50);
-  return;
-}
-  // BACK/ESCAPE: Go back to dashboard
-  if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
-    console.log("⬅️ Back pressed from menu dots - going to dashboard");
-    e.preventDefault();
-    e.stopPropagation();
+      // ENTER: Open sidebar (HIGHEST PRIORITY - MUST BE FIRST)
+      if (isEnter) {
+        console.log("✅ Enter pressed on menu dots - opening sidebar");
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // Extra safety
 
-    // Clean up menu dots focus
-    isMenuDotsActive = false;
-    const menuDots = qs(".menu-dots");
-    if (menuDots) menuDots.classList.remove("focused");
+        // Reset menu dots state BEFORE opening sidebar
+        isMenuDotsActive = false;
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
 
-    // Dispose player
-    disposeLivePlayer();
+        // Small delay to ensure state is reset
+        setTimeout(() => {
+          openSidebar("liveTvPage");
+        }, 50);
+        return;
+      }
 
-    if (window.livePlayer) {
-      try {
-        window.livePlayer.dispose();
-      } catch {}
-      window.livePlayer = null;
+      if (isMenuDotsActive && isEnter) {
+        console.log("🎯 SAFETY CHECK: Enter on menu dots - opening sidebar");
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        isMenuDotsActive = false;
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
+
+        setTimeout(() => {
+          openSidebar("liveTvPage");
+        }, 50);
+        return;
+      }
+      // BACK/ESCAPE: Go back to dashboard
+      if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+        console.log("⬅️ Back pressed from menu dots - going to dashboard");
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Clean up menu dots focus
+        isMenuDotsActive = false;
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
+
+        // Dispose player
+        disposeLivePlayer();
+
+        if (window.livePlayer) {
+          try {
+            window.livePlayer.dispose();
+          } catch {}
+          window.livePlayer = null;
+        }
+
+        // Navigate back
+        localStorage.setItem("currentPage", "dashboard");
+
+        if (typeof Router !== "undefined" && Router.showPage) {
+          Router.showPage("dashboard");
+        } else if (typeof navigateTo === "function") {
+          navigateTo("dashboard-page");
+        }
+        return;
+      }
+
+      if (isDown) {
+        isMenuDotsActive = false;
+        inSidebarSearch = true;
+
+        setHeaderSearchFocus(false);
+        setSidebarSearchFocus(true);
+
+        const headerInput = qs(".search-input");
+        if (headerInput) {
+          headerInput.blur();
+          headerInput.selectionStart = headerInput.selectionEnd = 0;
+        }
+
+        e.preventDefault();
+        return;
+      }
+
+      // LEFT: Go back to header search
+      if (isLeft) {
+        isMenuDotsActive = false;
+        inHeaderSearch = true;
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
+        setHeaderSearchFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      // RIGHT: Stay on menu dots (no action)
+      if (isRight) {
+        e.preventDefault();
+        return;
+      }
+
+      // UP: Stay on menu dots (no action)
+      if (isUp) {
+        e.preventDefault();
+        return;
+      }
+
+      return; // Block other keys when menu dots focused
     }
-
-    // Navigate back
-    localStorage.setItem("currentPage", "dashboard");
-
-    if (typeof Router !== "undefined" && Router.showPage) {
-      Router.showPage("dashboard");
-    } else if (typeof navigateTo === "function") {
-      navigateTo("dashboard-page");
-    }
-    return;
-  }
-
-  if (isDown) {
-    isMenuDotsActive = false;
-    inSidebarSearch = true;
-
-    setHeaderSearchFocus(false);
-    setSidebarSearchFocus(true);
-
-    const headerInput = qs(".search-input");
-    if (headerInput) {
-      headerInput.blur();
-      headerInput.selectionStart = headerInput.selectionEnd = 0;
-    }
-
-    e.preventDefault();
-    return;
-  }
-
-  // LEFT: Go back to header search
-  if (isLeft) {
-    isMenuDotsActive = false;
-    inHeaderSearch = true;
-    const menuDots = qs(".menu-dots");
-    if (menuDots) menuDots.classList.remove("focused");
-    setHeaderSearchFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  // RIGHT: Stay on menu dots (no action)
-  if (isRight) {
-    e.preventDefault();
-    return;
-  }
-
-  // UP: Stay on menu dots (no action)
-  if (isUp) {
-    e.preventDefault();
-    return;
-  }
-
-  return; // Block other keys when menu dots focused
-}
 
     if (inPasswordModal) {
       // Debounce rapid key presses on Tizen
@@ -3911,27 +3914,31 @@ if (isMenuDotsActive) {
 
   setTimeout(() => {
     document.addEventListener("click", handleClick);
-    document.addEventListener("keydown", function(e) {
-  if (localStorage.getItem("currentPage") !== "liveTvPage") return;
-  
-  // Check if menu dots are focused
-  const menuDots = document.querySelector(".menu-dots.focused");
-  if (menuDots && (e.key === "Enter" || e.keyCode === 13)) {
-    console.log("🎯 PRIORITY HANDLER: Enter on menu dots");
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    
-    // Reset state
-    isMenuDotsActive = false;
-    menuDots.classList.remove("focused");
-    
-    // Open sidebar with delay for state reset
-    setTimeout(() => {
-      openSidebar("liveTvPage");
-    }, 50);
-  }
-}, true); // Use capture phase (true) for highest priority
+    document.addEventListener(
+      "keydown",
+      function (e) {
+        if (localStorage.getItem("currentPage") !== "liveTvPage") return;
+
+        // Check if menu dots are focused
+        const menuDots = document.querySelector(".menu-dots.focused");
+        if (menuDots && (e.key === "Enter" || e.keyCode === 13)) {
+          console.log("🎯 PRIORITY HANDLER: Enter on menu dots");
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          // Reset state
+          isMenuDotsActive = false;
+          menuDots.classList.remove("focused");
+
+          // Open sidebar with delay for state reset
+          setTimeout(() => {
+            openSidebar("liveTvPage");
+          }, 50);
+        }
+      },
+      true
+    ); // Use capture phase (true) for highest priority
 
     document.addEventListener("keydown", handleKeydown, true);
 
@@ -4305,110 +4312,6 @@ if (isMenuDotsActive) {
         }, 300);
       });
     }
-
-    // Sidebar Search Input
-    // const sidebarSearchInput = qs(".sidebar-search-input");
-    // if (sidebarSearchInput) {
-    //   let searchTimeout = null;
-    //   let isTyping = false;
-
-    //   // Immediate visual-only search
-    //   sidebarSearchInput.addEventListener("input", (e) => {
-    //     if (!isPageFullyLoaded) return;
-
-    //     const value = e.target.value;
-
-    //     // Clear existing timeout
-    //     if (searchTimeout) {
-    //       clearTimeout(searchTimeout);
-    //     }
-
-    //     // INSTANT VISUAL FILTER (no heavy processing)
-    //     lightweightCategorySearch(value);
-
-    //     // Only do full re-render after user stops typing (500ms)
-    //     isTyping = true;
-    //     searchTimeout = setTimeout(() => {
-    //       isTyping = false;
-    //       console.log("🔄 User stopped typing - doing full category render");
-
-    //       const allData = getFilteredCategories();
-    //       const matchingCategories = allData.filter((c) =>
-    //         c.category_name.toLowerCase().includes(value.toLowerCase())
-    //       );
-
-    //       currentCategoryChunk = 1;
-
-    //       const sidebarItemsContainer = qs(".sidebar-items");
-    //       if (sidebarItemsContainer) {
-    //         const categoriesHTML = matchingCategories
-    //           .slice(0, categoriesPerChunk)
-    //           .map((c) => {
-    //             const isActive = c.category_id === selectedCategoryId;
-    //             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
-    //             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-    //             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-    //             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-
-    //             return `
-    //             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}"
-    //                  data-category-id="${c.category_id}"
-    //                  data-has-adult="${hasAdultContent}">
-    //               <span class="sidebar-item-name">
-    //                 <span class="sidebar-text">${c.category_name}</span>
-    //                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-    //               </span>
-    //               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-    //             </div>`;
-    //           }).join("");
-
-    //         sidebarItemsContainer.innerHTML = categoriesHTML;
-    //       }
-    //     }, 500); // Wait 500ms after last keystroke
-    //   });
-
-    //   // On blur, ensure full render happens
-    //   sidebarSearchInput.addEventListener("blur", () => {
-    //     if (isTyping) {
-    //       clearTimeout(searchTimeout);
-    //       const value = sidebarSearchInput.value;
-
-    //       const allData = getFilteredCategories();
-    //       const matchingCategories = allData.filter((c) =>
-    //         c.category_name.toLowerCase().includes(value.toLowerCase())
-    //       );
-
-    //       currentCategoryChunk = 1;
-
-    //       const sidebarItemsContainer = qs(".sidebar-items");
-    //       if (sidebarItemsContainer) {
-    //         const categoriesHTML = matchingCategories
-    //           .slice(0, categoriesPerChunk)
-    //           .map((c) => {
-    //             const isActive = c.category_id === selectedCategoryId;
-    //             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
-    //             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-    //             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-    //             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-
-    //             return `
-    //             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}"
-    //                  data-category-id="${c.category_id}"
-    //                  data-has-adult="${hasAdultContent}">
-    //               <span class="sidebar-item-name">
-    //                 <span class="sidebar-text">${c.category_name}</span>
-    //                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-    //               </span>
-    //               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-    //             </div>`;
-    //           }).join("");
-
-    //         sidebarItemsContainer.innerHTML = categoriesHTML;
-    //       }
-    //     }
-    //   });
-    // }
-    
 
     LiveTvPage.cleanup = function () {
       isPageFullyLoaded = false;
