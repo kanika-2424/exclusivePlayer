@@ -75,12 +75,12 @@
 .movies-categories-wrapper {
     max-height: 65px;
     overflow: visible;
-    /* transition: max-height 0.35s ease; */
     flex: 1;
     display: flex;
     align-items: center;
     min-width: 0;
     padding: 10px 0;
+    position: relative; /* Important for positioning expand button */
 }
 
 .movies-categories-wrapper.expanded {
@@ -91,11 +91,12 @@
 /* Categories Container */
 .movies-categories-list {
     display: flex;
-    gap: 18px;
+    /* gap: 18px; */
     flex-wrap: nowrap;
     overflow: hidden;
     width: 100%;
     padding: 5px;
+    margin-right: -30px;
     /* transition: all 0.35s ease; */
 }
 
@@ -134,18 +135,15 @@
 /* Toggle Button */
 .category-toggle-btn {
     width: 45px;
-    /* height: 45px; */
     flex-shrink: 0;
-
     display: flex;
-    /* align-items: center; */
     justify-content: center;
-
+    align-items: center; /* Center the icon vertically */
     font-size: 34px;
     color: white;
-
     cursor: pointer;
-    /* transition: transform 0.25s ease, border-color 0.25s ease; */
+    position: relative; /* Change from static */
+    z-index: 10;
 }
 
 .category-toggle-btn:hover {
@@ -247,44 +245,62 @@
 /* EXPANDED SIDEBAR FIX */
 .movies-sidebar.expanded {
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: stretch !important;
     height: auto !important;
     min-height: auto !important;
-    padding-bottom: 20px;
+    padding: 17px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    position: relative; /* Important for absolute positioning of button */
 }
 
 .movies-sidebar.expanded .search-category-name {
-    width: 97% !important;
-    margin-bottom: 15px;
+    width: calc(100% - 20px) !important; /* Account for padding */
+    margin: 0 10px 15px 10px;
+    box-sizing: border-box;
 }
 
 .movies-sidebar.expanded .movies-categories-wrapper {
     width: 100% !important;
+    max-width: 100% !important;
     max-height: none !important;
-    overflow: visible !important;
+    overflow: visible !important; /* Allow button to be visible */
     align-items: flex-start !important;
+    padding: 0 !important;
+    padding-bottom: 70px !important; /* Space for expand button at bottom */
+    box-sizing: border-box !important;
+    position: relative;
 }
 
 .movies-sidebar.expanded .movies-categories-list {
     display: grid !important;
-    grid-template-columns: repeat(8, 1fr); /* 8 columns when expanded */
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
     gap: 18px;
-    width: 95%;
+    width: calc(100% - 80px) !important; /* Leave space for expand button */
     flex-wrap: wrap !important;
-    overflow: visible !important;
+    overflow: hidden !important;
+    padding: 0;
+    box-sizing: border-box;
+    margin-right: 15px; /* Extra spacing from button */
 }
-
+/* Show all items when expanded */
 /* Show all items when expanded */
 .movies-sidebar.expanded .movies-categories-list .movies-category-item {
     display: flex !important;
-    width: 100%; /* Make categories responsive in grid */
+    width: 100% !important;
+    min-width: 0 !important; /* Critical for Tizen */
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
 }
-
 .movies-sidebar.expanded .category-toggle-btn {
     position: absolute;
-    top: 470px; /* Match your sidebar padding */
-    right: 50px;
-    transform: none; /* Remove the translateY */
+    top: 50%; /* Center vertically */
+    right: 17px; /* Match sidebar padding */
+    transform: translateY(-50%); /* Perfect vertical centering */
+    bottom: auto !important;
+    flex-shrink: 0;
+    z-index: 100;
 }
 .movies-sidebar.expanded .search-category-name,
 .movies-sidebar.expanded .movies-categories-wrapper {
@@ -1063,17 +1079,8 @@
     overflow: hidden; /* Keep overflow hidden */
 }
 
-/* When focused - animate the text inside */
-.movies-category-item.focused .cat-name.marquee-text {
-    text-overflow: clip; /* Remove ellipsis */
-    overflow: hidden; /* Keep container clipping overflow */
-}
 
-/* Animate the text content itself */
-.movies-category-item.focused .cat-name.marquee-text {
-    animation: marquee-scroll var(--marquee-duration, 8s) linear infinite;
-    animation-delay: 0.8s;
-}
+
 
 /* Keyframe animation - text moves left */
 @keyframes marquee-scroll {
@@ -1141,16 +1148,20 @@ cat-item-content {
     /* Your existing marquee logic remains, but target .cat-name specifically */
 }
 /* Container for Name + Count */
+/* Container for Name + Count */
 .cat-item-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    max-width: 100%; /* Prevent overflow */
     padding: 0 10px;
-    overflow: hidden; /* Important: Clip the scrolling text here */
     box-sizing: border-box;
+    gap: 8px;
+    overflow: hidden; /* Critical for Tizen */
 }
 
+/* The Category Name - The "Window" */
 /* The Category Name - The "Window" */
 .movies-category-item .cat-name {
     flex: 1;
@@ -1158,13 +1169,21 @@ cat-item-content {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-right: 5px;
     position: relative;
+    min-width: 0; /* Critical for flex shrinking */
+    max-width: 100%; /* Prevent overflow on Tizen */
 }
 
 /* The Scrolling Animation */
 .movies-category-item.focused .cat-name.marquee-text {
-    text-overflow: clip; /* Remove dots when moving */
+    text-overflow: clip;
+    display: block; /* Change from inline-block to block */
+    position: relative;
+}
+
+/* Animate using a wrapper span inside */
+.movies-category-item.focused .cat-name.marquee-text::before {
+    content: attr(title);
     display: inline-block;
     animation: categoryMarquee var(--marquee-duration, 4s) linear infinite;
     animation-delay: 0.8s;
@@ -1179,7 +1198,54 @@ cat-item-content {
 
 @keyframes categoryMarquee {
     0% { transform: translateX(0); }
-    15% { transform: translateX(0); } /* Pause at start */
-    85% { transform: translateX(calc(var(--container-width) - var(--text-width) - 5px)); }
-    100% { transform: translateX(calc(var(--container-width) - var(--text-width) - 5px)); }
+    10% { transform: translateX(0); } /* Pause at start */
+    90% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); }
+    100% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); }
+}
+
+/* Reset animation when not focused */
+.movies-category-item:not(.focused) .cat-name.marquee-text {
+    animation: none !important;
+    transform: translateX(0);
+}
+
+/* Only animate when focused */
+.movies-category-item.focused .cat-name.marquee-text {
+    animation: categoryMarquee var(--marquee-duration, 4s) linear infinite;
+    animation-delay: 0.8s;
+}
+
+/* Ensure parent containers don't allow overflow */
+/* Single Category Item */
+.movies-category-item {
+    width: 100%; /* Full width of grid cell */
+    min-width: 0; /* Allow shrinking below content size */
+    max-width: 100%; /* Prevent expansion */
+    height: 62px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+
+    border-radius: 10px;
+
+    color: white;
+    font-size: 17px;
+
+    cursor: pointer;
+    position: relative;
+    overflow: hidden; /* Prevent content overflow */
+    box-sizing: border-box;
+}
+.movies-categories-list {
+    overflow: visible; /* Allow focus effects but clip individual items */
+}
+/* Expanded mode - reduce max width further for Tizen */
+.movies-sidebar.expanded .movies-category-item .cat-name {
+    max-width: calc(100% - 40px); /* Leave space for count pill */
+    flex: 1;
+    min-width: 0;
 }

@@ -555,14 +555,11 @@ function renderCategoriesUI() {
              data-category-name="${escapeHtml(c.name)}"
              data-count="${movieCount}">
             ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
-           <div class="movies-category-item ...">
-    <div class="cat-item-content">
-        <span class="cat-name">
-            <span class="cat-name-inner">${escapeHtml(c.name)}</span>
-        </span>
-        <span class="cat-count-pill">(${movieCount})</span>
-    </div>
-</div>`;
+            <div class="cat-item-content">
+                <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+                <span class="cat-count-pill">(${movieCount})</span>
+            </div>
+        </div>`;
     })
     .join("");
 
@@ -666,9 +663,18 @@ function initCategoryMarquee() {
     const pill = item.querySelector('.cat-count-pill');
     if (!catName) return;
     
-    // 1. Calculate available width: Total item width - pill width - padding
+    // Remove any existing marquee class first
+    catName.classList.remove('marquee-text');
+    catName.style.animation = 'none';
+    
+    // 1. Calculate available width more conservatively for Tizen
     const pillWidth = pill ? pill.offsetWidth : 0;
-    const availableWidth = item.offsetWidth - pillWidth - 30; // 30px for padding/margins
+    const itemWidth = item.offsetWidth;
+    const padding = 20; // Base padding
+    const buffer = 40; // Extra buffer for Tizen
+    const gap = 8;
+    
+    const availableWidth = Math.max(0, itemWidth - pillWidth - padding - buffer - gap);
     
     // 2. Measure actual text width
     const temp = document.createElement('span');
@@ -681,18 +687,19 @@ function initCategoryMarquee() {
     const textWidth = temp.offsetWidth;
     document.body.removeChild(temp);
     
+    console.log('Category:', catName.innerText, 'ItemWidth:', itemWidth, 'Available:', availableWidth, 'Text:', textWidth);
+    
     // 3. Apply marquee if text is too long
-    if (textWidth > availableWidth) {
+    if (textWidth > availableWidth && availableWidth > 0) {
       catName.classList.add('marquee-text');
       catName.style.setProperty('--container-width', `${availableWidth}px`);
       catName.style.setProperty('--text-width', `${textWidth}px`);
       
-      // Speed calculation: text length / pixels per second
-      const duration = Math.max(3, textWidth / 50); 
+      // Speed calculation
+      const duration = Math.max(4, (textWidth / 30)); 
       catName.style.setProperty('--marquee-duration', `${duration}s`);
     } else {
       catName.classList.remove('marquee-text');
-      catName.style.transform = 'translateX(0)';
     }
   });
 }
