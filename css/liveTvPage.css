@@ -90,9 +90,7 @@
 .search-container.search-focused {
     background: rgba(55, 155, 254, 0.2);
     border: 2px solid rgba(55, 155, 254, 1);
-    box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
-                0 4px 16px rgba(55, 155, 254, 0.3);
-    transform: scale(1.05);
+ 
 }
 
 .search-icon {

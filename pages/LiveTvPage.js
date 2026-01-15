@@ -1963,55 +1963,86 @@ const setupScrollAutoLoad = () => {
   window.channelGridScrollHandler = handleScroll;
 };
 
+
+// 1. ADD THIS DEFINITION HERE
+const setupSidebarSearchListener = () => {
+  const sidebarSearchInput = qs(".sidebar-search-input");
+  if (!sidebarSearchInput) return;
+
+  // Listen for typing
+  sidebarSearchInput.addEventListener("input", (e) => {
+    if (!isPageFullyLoaded) return;
+    
+    // Reset pagination to show first page of results
+    currentCategoryChunk = 1;
+    focusedSidebarIndex = 0;
+    
+    // Trigger the re-render of the list items
+    renderSidebarCategories();
+  });
+
+  // Important for TV: Stop Remote keys from jumping focus while typing
+  sidebarSearchInput.addEventListener("keydown", (e) => {
+    if (isSidebarSearchActive) {
+      // If Arrow Left/Right/Up/Down is pressed, don't let the 
+      // main handleKeydown function move focus to other components
+      if ([37, 38, 39, 40].includes(e.keyCode)) {
+        e.stopPropagation(); 
+      }
+    }
+  });
+};
+
+
   // ===== RENDER SIDEBAR CATEGORIES =====
 const renderSidebarCategories = () => {
   const filtered = getFilteredCategories();
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+  
+  // Use current search query if present
+  const query = qs(".sidebar-search-input")?.value.toLowerCase() || "";
+  const displayCategories = query 
+    ? filtered.filter(c => c.category_name.toLowerCase().includes(query))
+    : filtered;
 
-  // **USE CHUNKED LOADING FOR CATEGORIES**
-  const categoriesToShow = getChunkedCategories(filtered, currentCategoryChunk, categoriesPerChunk);
-const hasMore = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
+  const categoriesToShow = getChunkedCategories(displayCategories, currentCategoryChunk, categoriesPerChunk);
+  
+  const categoriesHTML = categoriesToShow.map((c) => {
+    const isActive = c.category_id === selectedCategoryId;
+    const hasAdult = categoryHasAdultContent(c.category_id);
+    const isLocked = hasAdult && lockedCategories.has(c.category_id);
+    
+    return `
+      <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+           data-category-id="${c.category_id}"
+           data-has-adult="${hasAdult}">
+        <span class="sidebar-item-name">
+          <span class="sidebar-text">${c.category_name}</span>
+          ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+        </span>
+        <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+      </div>`;
+  }).join("");
 
-  console.log(`📁 Showing ${categoriesToShow.length} of ${filtered.length} categories (chunk ${currentCategoryChunk})`);
-
-  const categoriesHTML = categoriesToShow
-    .map((c) => {
-      const isActive = c.category_id === selectedCategoryId;
-      const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-      const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-      
-      return `
-        <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
-             data-category-id="${c.category_id}"
-             data-has-adult="${hasAdultContent}">
-          <span class="sidebar-item-name">
-            <span class="sidebar-text">
-              ${c.category_name}
-            </span>
-            ${isLocked ? `
-              <i class="fa fa-lock sidebar-lock"></i>
-            ` : ''}
-          </span>
-          <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-        </div>
-      `;
-    })
-    .join("");
-
-  const sidebarArea = qs("#sidebar-area");
-  if (sidebarArea) {
-    sidebarArea.innerHTML = `
-      <div class="sidebar-content">
-        <div class="sidebar-search-box">
-          <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
-          <i class="fa fa-search"></i>
-        </div>
-        <div class="sidebar-items">
-          ${categoriesHTML}
-        </div>
-      </div>
-    `;
+  // Only update the ITEMS, not the search box itself, to prevent losing focus
+  const sidebarItemsContainer = qs(".sidebar-items");
+  if (sidebarItemsContainer) {
+    sidebarItemsContainer.innerHTML = categoriesHTML;
+  } else {
+    // Initial render of the whole sidebar structure
+    const sidebarArea = qs("#sidebar-area");
+    if (sidebarArea) {
+      sidebarArea.innerHTML = `
+        <div class="sidebar-content">
+          <div class="sidebar-search-box">
+            <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
+            <i class="fa fa-search"></i>
+          </div>
+          <div class="sidebar-items">
+            ${categoriesHTML}
+          </div>
+        </div>`;
+      setupSidebarSearchListener(); // Attach listener after creating element
+    }
   }
 };
 
@@ -4045,43 +4076,53 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
       });
     }
 
-    const sidebarSearchInput = qs(".sidebar-search-input");
-    if (sidebarSearchInput) {
-      sidebarSearchInput.addEventListener("input", (e) => {
+  const sidebarSearchInput = qs(".sidebar-search-input");
+if (sidebarSearchInput) {
+    sidebarSearchInput.addEventListener("input", (e) => {
         if (!isPageFullyLoaded) return;
+        
         const query = e.target.value.toLowerCase();
-        const filtered = getFilteredCategories();
-
-        const matchingCategories = filtered.filter((c) =>
-          c.category_name.toLowerCase().includes(query)
+        
+        // 1. Get the base data
+        const allData = getFilteredCategories(); 
+        
+        // 2. Filter the categories based on name
+        const matchingCategories = allData.filter((c) =>
+            c.category_name.toLowerCase().includes(query)
         );
 
-        const sidebarItems = qs(".sidebar-items");
-        if (sidebarItems) {
-          sidebarItems.innerHTML = matchingCategories
-            .map((c) => {
-              const isActive = c.category_id === selectedCategoryId;
-              const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-              const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-              const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-              const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-              
-              return `
-              <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
-                   data-category-id="${c.category_id}"
-                   data-has-adult="${hasAdultContent}">
-                <span class="sidebar-item-name">
-                  <span class="sidebar-text">${c.category_name}</span>
-                  ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-                </span>
-                <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-              </div>
-            `;
-            })
-            .join("");
+        // 3. Reset pagination for the sidebar because the list has changed
+        currentCategoryChunk = 1; 
+        
+        // 4. Update the sidebar items container
+        const sidebarItemsContainer = qs(".sidebar-items");
+        if (sidebarItemsContainer) {
+            // We reuse your mapping logic to ensure locks and counts appear correctly
+            const categoriesHTML = matchingCategories
+                .slice(0, categoriesPerChunk) // Show first chunk of results
+                .map((c) => {
+                    const isActive = c.category_id === selectedCategoryId;
+                    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+                    const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+                    const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+                    const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+                    
+                    return `
+                    <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+                         data-category-id="${c.category_id}"
+                         data-has-adult="${hasAdultContent}">
+                      <span class="sidebar-item-name">
+                        <span class="sidebar-text">${c.category_name}</span>
+                        ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+                      </span>
+                      <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+                    </div>`;
+                }).join("");
+            
+            sidebarItemsContainer.innerHTML = categoriesHTML;
         }
-      });
-    }
+    });
+}
     
  LiveTvPage.cleanup = function () {
   isPageFullyLoaded = false;
