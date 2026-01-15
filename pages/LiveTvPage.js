@@ -3327,6 +3327,29 @@ function LiveTvPage() {
         e.preventDefault();
         return;
       }
+      if (isRight) {
+        if (sidebarInput) {
+          sidebarInput.blur();
+        }
+        isSidebarSearchActive = false;
+        inSidebarSearch = false;
+        inChannelGrid = true;
+
+        setSidebarSearchFocus(false);
+
+        // Reset to first channel
+        focusedChannelIndex = 0;
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+        // Scroll channel grid to start
+        const channelGrid = qs(".channel-grid");
+        if (channelGrid) {
+          channelGrid.scrollTo({ left: 0, behavior: "smooth" });
+        }
+
+        e.preventDefault();
+        return;
+      }
     }
 
     // Sidebar navigation
