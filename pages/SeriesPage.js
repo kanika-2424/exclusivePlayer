@@ -442,15 +442,24 @@ function renderCategoriesUI() {
       const isCatUnlocked = unlockedSeriesAdultCatIds.has(String(c.id));
       const shouldBlur = parentalLockEnabled && isAdultCat && !isCatUnlocked;
       
+      // Always show count for every category
+      const seriesCount = c._movieCount || 0;
+      
       return `
       <div class="movies-category-item ${
         String(c.id) === String(selectedCategoryId) ? "active" : ""
       } ${shouldBlur ? 'movie-category-blurred' : ''}" 
            data-id="${c.id}" 
            data-idx="${idx}"
-           data-category-name="${escapeHtml(c.name)}">
+           data-category-name="${escapeHtml(c.name)}"
+           data-count="${seriesCount}">
         ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
-        <span style="display: -webkit-box; text-align: center; margin: 0 auto; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" class="" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+        <div class="cat-item-content">
+          <span class="cat-name" title="${escapeHtml(c.name)}">
+            <span class="cat-name-inner">${escapeHtml(c.name)}</span>
+          </span>
+          <span class="cat-count-pill">(${seriesCount})</span>
+        </div>
       </div>`;
     })
     .join("");
@@ -460,6 +469,75 @@ function renderCategoriesUI() {
   if (expandBtn) {
     expandBtn.style.display = categoriesEls.length > 0 ? "flex" : "none";
   }
+
+  setTimeout(() => initCategoryMarquee(), 100);
+}
+
+// Add marquee effect to long category names
+function initCategoryMarquee() {
+  const categoryItems = qsa('.movies-category-item');
+  
+  categoryItems.forEach(item => {
+    const catName = item.querySelector('.cat-name');
+    const catNameInner = item.querySelector('.cat-name-inner');
+    const pill = item.querySelector('.cat-count-pill');
+    if (!catName || !catNameInner) return;
+    
+    // Remove any existing marquee class first
+    catName.classList.remove('marquee-text');
+    if (catNameInner) {
+      catNameInner.style.animation = 'none';
+      catNameInner.style.transform = 'translateX(0)';
+    }
+    
+    // 1. Calculate available width
+    const itemWidth = item.offsetWidth;
+    const pillWidth = pill ? pill.offsetWidth : 0;
+    const itemPadding = 20;
+    const gap = 10;
+    const buffer = 20; // Extra buffer for Tizen
+    
+    const availableWidth = Math.max(50, itemWidth - pillWidth - itemPadding - gap - buffer);
+    
+    // 2. Measure actual text width with better precision
+    const temp = document.createElement('span');
+    temp.style.cssText = `
+      visibility: hidden;
+      position: absolute;
+      white-space: nowrap;
+      font-family: ${window.getComputedStyle(catNameInner).fontFamily};
+      font-size: ${window.getComputedStyle(catNameInner).fontSize};
+      font-weight: ${window.getComputedStyle(catNameInner).fontWeight};
+      letter-spacing: ${window.getComputedStyle(catNameInner).letterSpacing};
+      padding: 0;
+      margin: 0;
+    `;
+    temp.innerText = catNameInner.innerText;
+    document.body.appendChild(temp);
+    const textWidth = temp.offsetWidth;
+    document.body.removeChild(temp);
+    
+    console.log('📏 Category:', catNameInner.innerText, 'Available:', availableWidth, 'Text:', textWidth);
+    
+    // 3. Apply marquee if text is too long
+    if (textWidth > availableWidth) {
+      catName.classList.add('marquee-text');
+      
+      // Set CSS variables
+      catName.style.setProperty('--container-width', `${availableWidth}px`);
+      catName.style.setProperty('--text-width', `${textWidth}px`);
+      
+      // Calculate duration based on text length (slower for Tizen)
+      const pixelsPerSecond = 30; // Slower for better visibility on Tizen
+      const duration = Math.max(6, textWidth / pixelsPerSecond);
+      catName.style.setProperty('--marquee-duration', `${duration}s`);
+      
+      console.log('✅ Marquee enabled - Duration:', duration.toFixed(1), 's');
+    } else {
+      catName.classList.remove('marquee-text');
+      console.log('⏭️ Text fits, no marquee needed');
+    }
+  });
 }
 
   // Helper: ensure visibleCount aligns to full rows like movies page
@@ -677,7 +755,24 @@ function setFocusOnCategory(index) {
     items[index].classList.add("focused");
     items[index].scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
     currentSection = "categories";
-  }
+    
+    // Reset and trigger marquee animation on inner span
+    setTimeout(() => {
+        const focusedCatName = items[index].querySelector('.cat-name');
+        const focusedCatNameInner = items[index].querySelector('.cat-name-inner');
+        if (focusedCatName && focusedCatNameInner) {
+            // Force text to reset to beginning
+            focusedCatNameInner.style.transform = 'translateX(0)';
+            
+            if (focusedCatName.classList.contains('marquee-text')) {
+                // Reset animation
+                focusedCatNameInner.style.animation = 'none';
+                void focusedCatNameInner.offsetWidth; // Trigger reflow
+                focusedCatNameInner.style.animation = '';
+            }
+        }
+    }, 50);
+}
 
 function setFocusOnSearch() {
     // category search (sidebar search)
@@ -751,9 +846,21 @@ function setFocusOnHeaderSearch() {
     currentSection = "expand";
   }
 
-  function removeAllFocus() {
+function removeAllFocus() {
     qsa(".movie-card").forEach(c => c.classList.remove("focused"));
-    qsa(".movies-category-item").forEach(c => c.classList.remove("focused"));
+    
+    // ⭐ Reset categories and stop marquee
+    qsa(".movies-category-item").forEach((c) => {
+        c.classList.remove("focused");
+        const catName = c.querySelector('.cat-name');
+        if (catName) {
+            // Reset to truncated state
+            catName.style.animation = 'none';
+            catName.style.transform = 'translateX(0)'; // Reset position
+            catName.style.overflow = 'hidden'; // Re-enable clipping
+            catName.style.textOverflow = 'ellipsis'; // Show ellipsis again
+        }
+    });
 
     // Remove from parent containers
     const searchContainer = qs(".search-category-name");
@@ -766,9 +873,10 @@ function setFocusOnHeaderSearch() {
     if (expandBtn) expandBtn.classList.remove("focused");
 
     const scrollBtn = qs("#scrollToTopBtn");
-if (scrollBtn) scrollBtn.classList.remove("focused");
-  const menuDots = qs(".menu-dots");
-  if (menuDots) menuDots.classList.remove("focused");
+    if (scrollBtn) scrollBtn.classList.remove("focused");
+    
+    const menuDots = qs(".menu-dots");
+    if (menuDots) menuDots.classList.remove("focused");
 }
 
   // Category click handler (delegated)
@@ -945,15 +1053,21 @@ function updateFavoritesUI(seriesId, isAdding) {
     
     favCategory._movieCount = favCategory.movies.length;
 
-    // Update UI count
+    // --- REAL-TIME DOM UPDATE ---
     const favCatEl = qs('.movies-category-item[data-id="-1"]');
     if (favCatEl) {
-      const countEl = favCatEl.querySelector(".cat-count");
-      if (countEl) {
-        countEl.textContent = favCategory.movies.length;
-      }
+        // Update the pill text
+        const pill = favCatEl.querySelector(".cat-count-pill");
+        if (pill) {
+            pill.textContent = `(${favCategory._movieCount})`;
+        }
+        // Update the data-count attribute
+        favCatEl.setAttribute('data-count', favCategory._movieCount);
     }
   }
+
+  // ⭐ NEW: Also update Continue Watching category count
+  updateContinueWatchingUI();
 
   // Update heart icon on all cards with this seriesId
   const allCurrentCards = qsa(".movie-card");
@@ -981,20 +1095,57 @@ function updateFavoritesUI(seriesId, isAdding) {
 
   // ⭐ If in Favorites category, re-render to show/hide cards
   if (selectedCategoryId === "-1") {
-    renderCards(); // This will show updated favorites list
+    renderCards();
     
     if (movieCards.length === 0) {
-      // No favorites left - go to categories
       currentSection = "categories";
       setFocusOnCategory(0);
     } else {
-      // Maintain focus on valid card
       currentFocusIndex = Math.min(currentFocusIndex, movieCards.length - 1);
       setFocusOnCard(currentFocusIndex);
     }
   }
 }
  
+function updateContinueWatchingUI() {
+    // Get fresh continue watching data from localStorage
+    const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData"))
+        .find(pl => pl.playlistName === currentPlaylistName);
+    
+    const freshContinueWatchingSeries = Array.isArray(currentPlaylist.continueWatchingSeries)
+        ? currentPlaylist.continueWatchingSeries
+        : [];
+    
+    const freshContinueWatchingIds = freshContinueWatchingSeries.map(item => Number(item.itemId));
+    
+    // Update the Continue Watching category
+    const continueWatchingCat = categories.find(c => c.id === "-2");
+    if (continueWatchingCat) {
+        // Get fresh series from allSeriesStreams
+        const allSeries = Array.isArray(window.allSeriesStreams) ? window.allSeriesStreams : [];
+        const updatedSeries = allSeries.filter(s => 
+            freshContinueWatchingIds.includes(Number(s.series_id || s.stream_id))
+        );
+        
+        continueWatchingCat.movies = updatedSeries;
+        continueWatchingCat._movieCount = updatedSeries.length;
+        
+        // Update seriesByCategory map
+        seriesByCategory["-2"] = updatedSeries;
+        
+        // Update DOM
+        const continueWatchingEl = qs('.movies-category-item[data-id="-2"]');
+        if (continueWatchingEl) {
+            const pill = continueWatchingEl.querySelector(".cat-count-pill");
+            if (pill) {
+                pill.textContent = `(${continueWatchingCat._movieCount})`;
+            }
+            continueWatchingEl.setAttribute('data-count', continueWatchingCat._movieCount);
+        }
+        
+        console.log("🔄 Updated Continue Watching count:", continueWatchingCat._movieCount);
+    }
+}
 
   // Remote navigation handler (copied/adapted from seriesPage)
   function handleRemoteNavigation(e) {
@@ -1800,7 +1951,7 @@ if (searchResults.length === 0) {
 
     console.log("🔄 Initializing Series Page - savedCatId:", savedCatId, "savedCardIndex:", savedCardIndex);
 
-  const comingFromDashboard = !savedCatId && !savedCardIndex;
+const comingFromDashboard = !savedCatId && !savedCardIndex;
 
 if (comingFromDashboard) {
   console.log("🆕 Fresh start from dashboard (Series)");
@@ -1861,6 +2012,34 @@ if (comingFromDashboard) {
       currentFocusIndex
     );
   }, 100);
+} else {
+  // Coming from series detail page - restore position
+  console.log("↩️ Restoring from detail page");
+  
+  // ⭐ NEW: Update Continue Watching count from fresh localStorage data
+  updateContinueWatchingUI();
+  
+  selectedCategoryId = String(savedCatId);
+  currentCategoryIndex = savedCatIndex ? Number(savedCatIndex) : 2; // Default to 3rd category
+  currentFocusIndex = savedCardIndex ? Number(savedCardIndex) : 0;
+  visibleCount = savedCardIndex
+    ? Math.max(PAGE_SIZE, Number(savedCardIndex) + PAGE_SIZE)
+    : PAGE_SIZE;
+  renderCategoriesUI();
+  renderCards();
+
+  setTimeout(() => {
+    if (savedCardIndex) {
+      console.log("🎯 Restoring focus to card:", savedCardIndex);
+      setFocusOnCard(Number(savedCardIndex));
+    } else {
+      setFocusOnCategory(currentCategoryIndex);
+    }
+  }, 80);
+  
+  localStorage.removeItem("seriesSelectedCategoryId");
+  localStorage.removeItem("seriesCategoryIndex");
+  localStorage.removeItem("seriesCardIndex");
 }
 
 
@@ -1880,26 +2059,40 @@ document.addEventListener('keydown', menuKeyHandler);
     // Expand toggle button
     const expandBtn = qs("#expandBtn");
     const sidebar = qs(".movies-sidebar");
-     if (expandBtn) {
+ if (expandBtn) {
   expandBtnClickHandler = () => {
     isExpanded = !isExpanded;
 
-    
     const wrapper = qs(".movies-categories-wrapper");
     if (wrapper) wrapper.classList.toggle("expanded", isExpanded);
 
     if (sidebar) sidebar.classList.toggle("expanded", isExpanded);
-
-    // 🔥 ONLY toggle class
     expandBtn.classList.toggle("rotated", isExpanded);
 
     const searchInput = qs(".search-category-input");
-    const hasSearchText =
-      searchInput && searchInput.value.trim().length > 0;
+    const hasSearchText = searchInput && searchInput.value.trim().length > 0;
 
     if (!hasSearchText && sidebar) {
       sidebar.classList.remove("filtering");
     }
+
+    // ⭐ Reinitialize marquee after expansion state changes
+    setTimeout(() => {
+      initCategoryMarquee();
+      
+      // If a category is focused, restart its animation
+      if (currentSection === "categories") {
+        const items = qsa(".movies-category-item");
+        if (items[currentCategoryIndex]) {
+          const focusedCatName = items[currentCategoryIndex].querySelector('.cat-name');
+          if (focusedCatName && focusedCatName.classList.contains('marquee-text')) {
+            focusedCatName.style.animation = 'none';
+            void focusedCatName.offsetWidth;
+            focusedCatName.style.animation = '';
+          }
+        }
+      }
+    }, 100);
 
     if (currentSection === "categories") {
       setFocusOnCategory(currentCategoryIndex);
@@ -1933,16 +2126,29 @@ document.addEventListener('keydown', menuKeyHandler);
           
           const filtered = categories.filter(c => c.name.toLowerCase().includes(q));
           if (list) {
-            list.innerHTML = filtered.map((c, idx) => `
-              <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" data-id="${c.id}" data-idx="${idx}">
-                <span style="text-align: center;" class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-              </div>
-            `).join("");
+         list.innerHTML = filtered.map((c, idx) => {
+  const seriesCount = c._movieCount || 0;
+  return `
+    <div class="movies-category-item ${String(c.id) === String(selectedCategoryId) ? 'active' : ''}" 
+         data-id="${c.id}" 
+         data-idx="${idx}"
+         data-count="${seriesCount}">
+      <div class="cat-item-content">
+        <span class="cat-name" title="${escapeHtml(c.name)}">
+          <span class="cat-name-inner">${escapeHtml(c.name)}</span>
+        </span>
+        <span class="cat-count-pill">(${seriesCount})</span>
+      </div>
+    </div>`;
+}).join("");
 
-            const expandBtn = qs("#expandBtn");
-            if (expandBtn) {
-              expandBtn.style.display = filtered.length > 0 ? "flex" : "none";
-            }
+         const expandBtn = qs("#expandBtn");
+if (expandBtn) {
+  expandBtn.style.display = filtered.length > 0 ? "flex" : "none";
+}
+
+setTimeout(() => initCategoryMarquee(), 100);
+
           }
         }, 350);
       };
