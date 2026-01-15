@@ -556,7 +556,9 @@ function renderCategoriesUI() {
              data-count="${movieCount}">
             ${shouldBlur ? '<i class="fas fa-lock movie-category-lock-icon"></i>' : ''}
             <div class="cat-item-content">
-                <span class="cat-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+                <span class="cat-name" title="${escapeHtml(c.name)}">
+                    <span class="cat-name-inner">${escapeHtml(c.name)}</span>
+                </span>
                 <span class="cat-count-pill">(${movieCount})</span>
             </div>
         </div>`;
@@ -660,46 +662,63 @@ function initCategoryMarquee() {
   
   categoryItems.forEach(item => {
     const catName = item.querySelector('.cat-name');
+    const catNameInner = item.querySelector('.cat-name-inner');
     const pill = item.querySelector('.cat-count-pill');
-    if (!catName) return;
+    if (!catName || !catNameInner) return;
     
     // Remove any existing marquee class first
     catName.classList.remove('marquee-text');
-    catName.style.animation = 'none';
+    if (catNameInner) {
+      catNameInner.style.animation = 'none';
+      catNameInner.style.transform = 'translateX(0)';
+    }
     
-    // 1. Calculate available width more conservatively for Tizen
-    const pillWidth = pill ? pill.offsetWidth : 0;
+    // 1. Calculate available width
     const itemWidth = item.offsetWidth;
-    const padding = 20; // Base padding
-    const buffer = 40; // Extra buffer for Tizen
-    const gap = 8;
+    const pillWidth = pill ? pill.offsetWidth : 0;
+    const itemPadding = 20;
+    const gap = 10;
+    const buffer = 20; // Extra buffer for Tizen
     
-    const availableWidth = Math.max(0, itemWidth - pillWidth - padding - buffer - gap);
+    const availableWidth = Math.max(50, itemWidth - pillWidth - itemPadding - gap - buffer);
     
-    // 2. Measure actual text width
+    // 2. Measure actual text width with better precision
     const temp = document.createElement('span');
-    temp.style.visibility = 'hidden';
-    temp.style.position = 'absolute';
-    temp.style.whiteSpace = 'nowrap';
-    temp.style.font = window.getComputedStyle(catName).font;
-    temp.innerText = catName.innerText;
+    temp.style.cssText = `
+      visibility: hidden;
+      position: absolute;
+      white-space: nowrap;
+      font-family: ${window.getComputedStyle(catNameInner).fontFamily};
+      font-size: ${window.getComputedStyle(catNameInner).fontSize};
+      font-weight: ${window.getComputedStyle(catNameInner).fontWeight};
+      letter-spacing: ${window.getComputedStyle(catNameInner).letterSpacing};
+      padding: 0;
+      margin: 0;
+    `;
+    temp.innerText = catNameInner.innerText;
     document.body.appendChild(temp);
     const textWidth = temp.offsetWidth;
     document.body.removeChild(temp);
     
-    console.log('Category:', catName.innerText, 'ItemWidth:', itemWidth, 'Available:', availableWidth, 'Text:', textWidth);
+    console.log('📏 Category:', catNameInner.innerText, 'Available:', availableWidth, 'Text:', textWidth);
     
     // 3. Apply marquee if text is too long
-    if (textWidth > availableWidth && availableWidth > 0) {
+    if (textWidth > availableWidth) {
       catName.classList.add('marquee-text');
+      
+      // Set CSS variables
       catName.style.setProperty('--container-width', `${availableWidth}px`);
       catName.style.setProperty('--text-width', `${textWidth}px`);
       
-      // Speed calculation
-      const duration = Math.max(4, (textWidth / 30)); 
+      // Calculate duration based on text length (slower for Tizen)
+      const pixelsPerSecond = 30; // Slower for better visibility on Tizen
+      const duration = Math.max(6, textWidth / pixelsPerSecond);
       catName.style.setProperty('--marquee-duration', `${duration}s`);
+      
+      console.log('✅ Marquee enabled - Duration:', duration.toFixed(1), 's');
     } else {
       catName.classList.remove('marquee-text');
+      console.log('⏭️ Text fits, no marquee needed');
     }
   });
 }
@@ -840,7 +859,6 @@ function setFocusOnCategory(index) {
     currentCategoryIndex = index;
     lastFocusedCategory = index;
 
-    // Blur any input fields
     const searchInput = qs(".search-category-input");
     if (searchInput) searchInput.blur();
 
@@ -848,14 +866,20 @@ function setFocusOnCategory(index) {
     items[index].scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
     currentSection = "categories";
     
-    // ⭐ Trigger marquee animation on the focused item
+    // Reset and trigger marquee animation on inner span
     setTimeout(() => {
         const focusedCatName = items[index].querySelector('.cat-name');
-        if (focusedCatName && focusedCatName.classList.contains('marquee-text')) {
-            // Reset animation
-            focusedCatName.style.animation = 'none';
-            void focusedCatName.offsetWidth; // Trigger reflow
-            focusedCatName.style.animation = '';
+        const focusedCatNameInner = items[index].querySelector('.cat-name-inner');
+        if (focusedCatName && focusedCatNameInner) {
+            // Force text to reset to beginning
+            focusedCatNameInner.style.transform = 'translateX(0)';
+            
+            if (focusedCatName.classList.contains('marquee-text')) {
+                // Reset animation
+                focusedCatNameInner.style.animation = 'none';
+                void focusedCatNameInner.offsetWidth; // Trigger reflow
+                focusedCatNameInner.style.animation = '';
+            }
         }
     }, 50);
 }
@@ -970,7 +994,9 @@ function removeAllFocus() {
         if (catName) {
             // Reset to truncated state
             catName.style.animation = 'none';
-            catName.style.transform = 'translateX(0)';
+            catName.style.transform = 'translateX(0)'; // Reset position
+            catName.style.overflow = 'hidden'; // Re-enable clipping
+            catName.style.textOverflow = 'ellipsis'; // Show ellipsis again
         }
     });
 
@@ -2701,29 +2727,7 @@ ${SortingDialog()}
   </div>
 </div>
 
-<!-- Minimal CSS patch additions + your original CSS preserved -->
-<style>
-/* Category name truncation with tooltip */
-.movies-category-item .cat-name {
-    max-width: 160px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    display: block;
-}
 
-/* Hover description 3-line clamp */
-.hover-desc {
-    font-size: 8px;
-    line-height: 16px;
-    max-width: 80%;
-    margin: 0 auto;
-    opacity: 0.95;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
 
 
 <!-- Loading Screen -->

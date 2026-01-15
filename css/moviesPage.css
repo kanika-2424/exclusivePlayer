@@ -1149,20 +1149,19 @@ cat-item-content {
 }
 /* Container for Name + Count */
 /* Container for Name + Count */
+/* Container for Name + Count */
 .cat-item-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    max-width: 100%; /* Prevent overflow */
     padding: 0 10px;
     box-sizing: border-box;
     gap: 8px;
-    overflow: hidden; /* Critical for Tizen */
+    overflow: hidden;
 }
 
-/* The Category Name - The "Window" */
-/* The Category Name - The "Window" */
+/* The Category Name "Window" */
 .movies-category-item .cat-name {
     flex: 1;
     display: block;
@@ -1170,21 +1169,26 @@ cat-item-content {
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
-    min-width: 0; /* Critical for flex shrinking */
-    max-width: 100%; /* Prevent overflow on Tizen */
+    min-width: 0;
 }
 
-/* The Scrolling Animation */
+/* Fix: Hide original text only when animating to prevent double-rendering */
 .movies-category-item.focused .cat-name.marquee-text {
+    color: transparent; /* Hide the static text */
     text-overflow: clip;
-    display: block; /* Change from inline-block to block */
-    position: relative;
 }
 
-/* Animate using a wrapper span inside */
+/* The Scrolling Animation Layer */
 .movies-category-item.focused .cat-name.marquee-text::before {
     content: attr(title);
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: white; /* Show the animated text */
     display: inline-block;
+    white-space: nowrap;
+    width: auto;
+    /* Ensure no repeating background/content */
     animation: categoryMarquee var(--marquee-duration, 4s) linear infinite;
     animation-delay: 0.8s;
 }
@@ -1194,58 +1198,23 @@ cat-item-content {
     flex-shrink: 0;
     font-size: 0.85em;
     opacity: 0.8;
+    color: white;
+    z-index: 2; /* Ensure it stays above the scrolling text */
+    background: transparent; /* Ensure no overlap issues */
 }
 
+/* Improved Animation: Scroll and Stop, then Reset */
 @keyframes categoryMarquee {
     0% { transform: translateX(0); }
     10% { transform: translateX(0); } /* Pause at start */
-    90% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); }
-    100% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); }
+    80% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); }
+    100% { transform: translateX(calc(-1 * (var(--text-width) - var(--container-width)))); } /* Pause at end */
 }
 
-/* Reset animation when not focused */
-.movies-category-item:not(.focused) .cat-name.marquee-text {
-    animation: none !important;
-    transform: translateX(0);
+/* Reset when not focused */
+.movies-category-item:not(.focused) .cat-name {
+    color: white !important;
 }
-
-/* Only animate when focused */
-.movies-category-item.focused .cat-name.marquee-text {
-    animation: categoryMarquee var(--marquee-duration, 4s) linear infinite;
-    animation-delay: 0.8s;
-}
-
-/* Ensure parent containers don't allow overflow */
-/* Single Category Item */
-.movies-category-item {
-    width: 100%; /* Full width of grid cell */
-    min-width: 0; /* Allow shrinking below content size */
-    max-width: 100%; /* Prevent expansion */
-    height: 62px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: rgba(255, 255, 255, 0.06);
-    border: 0.5px solid rgba(255, 255, 255, 0.5);
-
-    border-radius: 10px;
-
-    color: white;
-    font-size: 17px;
-
-    cursor: pointer;
-    position: relative;
-    overflow: hidden; /* Prevent content overflow */
-    box-sizing: border-box;
-}
-.movies-categories-list {
-    overflow: visible; /* Allow focus effects but clip individual items */
-}
-/* Expanded mode - reduce max width further for Tizen */
-.movies-sidebar.expanded .movies-category-item .cat-name {
-    max-width: calc(100% - 40px); /* Leave space for count pill */
-    flex: 1;
-    min-width: 0;
+.movies-category-item:not(.focused) .cat-name::before {
+    display: none !important;
 }
