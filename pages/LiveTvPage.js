@@ -1,6 +1,3 @@
-
-
-
 window.addItemToHistory = (item, historyKey) => {
   const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
   const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
@@ -35,13 +32,15 @@ window.addItemToHistory = (item, historyKey) => {
   playlistsData[playlistIndex][historyKey].unshift(historyItem);
 
   if (playlistsData[playlistIndex][historyKey].length > 50) {
-    playlistsData[playlistIndex][historyKey] = playlistsData[playlistIndex][historyKey].slice(0, 50);
+    playlistsData[playlistIndex][historyKey] = playlistsData[playlistIndex][
+      historyKey
+    ].slice(0, 50);
   }
 
   localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-  
+
   // Force update UI
-  filteredCache = null; 
+  filteredCache = null;
   if (window.updateLiveTvSidebar) window.updateLiveTvSidebar();
 };
 
@@ -98,47 +97,47 @@ function LiveTvPage() {
   let isPageFullyLoaded = false;
 
   // ===== IMAGE PRELOADING FUNCTION =====
-const preloadChannelImages = (channels, onProgress, onComplete) => {
-  if (!channels || channels.length === 0) {
-    onComplete();
-    return;
-  }
+  const preloadChannelImages = (channels, onProgress, onComplete) => {
+    if (!channels || channels.length === 0) {
+      onComplete();
+      return;
+    }
 
-  const totalImages = channels.length;
-  let loadedCount = 0;
-  let errorCount = 0;
+    const totalImages = channels.length;
+    let loadedCount = 0;
+    let errorCount = 0;
 
-  const imagePromises = channels.map((ch) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      
-      img.onload = () => {
-        loadedCount++;
-        const progress = Math.round((loadedCount / totalImages) * 100);
-        onProgress(progress, loadedCount, totalImages);
-        resolve();
-      };
-      
-      img.onerror = () => {
-        errorCount++;
-        loadedCount++;
-        const progress = Math.round((loadedCount / totalImages) * 100);
-        onProgress(progress, loadedCount, totalImages);
-        resolve(); // Still resolve on error
-      };
-      
-      // Set source to start loading
-      img.src = ch.stream_icon || '/assets/profile.png';
+    const imagePromises = channels.map((ch) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+
+        img.onload = () => {
+          loadedCount++;
+          const progress = Math.round((loadedCount / totalImages) * 100);
+          onProgress(progress, loadedCount, totalImages);
+          resolve();
+        };
+
+        img.onerror = () => {
+          errorCount++;
+          loadedCount++;
+          const progress = Math.round((loadedCount / totalImages) * 100);
+          onProgress(progress, loadedCount, totalImages);
+          resolve(); // Still resolve on error
+        };
+
+        // Set source to start loading
+        img.src = ch.stream_icon || "/assets/profile.png";
+      });
     });
-  });
 
-  Promise.all(imagePromises).then(() => {
-    console.log(`✅ Preloaded ${loadedCount} images (${errorCount} errors)`);
-    onComplete();
-  });
-};
+    Promise.all(imagePromises).then(() => {
+      console.log(`✅ Preloaded ${loadedCount} images (${errorCount} errors)`);
+      onComplete();
+    });
+  };
 
-    // ===== LOADING HELPERS =====
+  // ===== LOADING HELPERS =====
   const showLoading = () => {
     const existing = document.getElementById("liveTvLoadingOverlay");
     if (existing) existing.remove();
@@ -158,65 +157,61 @@ const preloadChannelImages = (channels, onProgress, onComplete) => {
     }
   };
 
-
   // ADD THIS NEW FUNCTION
-const updateLoadingProgress = (percentage, message) => {
-  const progressFill = document.getElementById("progressFill");
-  const progressText = document.getElementById("progressText");
-  const loadingSubtext = document.getElementById("loadingSubtext");
-  
-  if (progressFill) {
-    progressFill.style.width = percentage + "%";
-  }
-  
-  if (progressText) {
-    progressText.textContent = Math.round(percentage) + "%";
-  }
-  
-  if (loadingSubtext && message) {
-    loadingSubtext.textContent = message;
-  }
-};
+  const updateLoadingProgress = (percentage, message) => {
+    const progressFill = document.getElementById("progressFill");
+    const progressText = document.getElementById("progressText");
+    const loadingSubtext = document.getElementById("loadingSubtext");
 
+    if (progressFill) {
+      progressFill.style.width = percentage + "%";
+    }
 
+    if (progressText) {
+      progressText.textContent = Math.round(percentage) + "%";
+    }
 
-    setTimeout(() => {
+    if (loadingSubtext && message) {
+      loadingSubtext.textContent = message;
+    }
+  };
+
+  setTimeout(() => {
     hideLoading();
   }, 3000);
 
   // ===== HELPER: Get Filtered Categories =====
 
-
   // ===== HELPER: Apply Sorting to Channels =====
-const applySortingToChannels = (channels) => {
-  if (!channels || channels.length === 0) return channels;
+  const applySortingToChannels = (channels) => {
+    if (!channels || channels.length === 0) return channels;
 
-  const sortValue = localStorage.getItem("liveTvSortValue") || "default";
-  const sortedChannels = [...channels]; // Create a copy
+    const sortValue = localStorage.getItem("liveTvSortValue") || "default";
+    const sortedChannels = [...channels]; // Create a copy
 
-  switch (sortValue) {
-    case "az":
-      return sortedChannels.sort((a, b) => 
-        (a.name || "").localeCompare(b.name || "")
-      );
-    
-    case "za":
-      return sortedChannels.sort((a, b) => 
-        (b.name || "").localeCompare(a.name || "")
-      );
-    
-    case "recent":
-      return sortedChannels.sort((a, b) => {
-        const dateA = a.addedAt ? new Date(a.addedAt) : new Date(0);
-        const dateB = b.addedAt ? new Date(b.addedAt) : new Date(0);
-        return dateB - dateA;
-      });
-    
-    case "default":
-    default:
-      return channels; // Return original order
-  }
-};
+    switch (sortValue) {
+      case "az":
+        return sortedChannels.sort((a, b) =>
+          (a.name || "").localeCompare(b.name || "")
+        );
+
+      case "za":
+        return sortedChannels.sort((a, b) =>
+          (b.name || "").localeCompare(a.name || "")
+        );
+
+      case "recent":
+        return sortedChannels.sort((a, b) => {
+          const dateA = a.addedAt ? new Date(a.addedAt) : new Date(0);
+          const dateB = b.addedAt ? new Date(b.addedAt) : new Date(0);
+          return dateB - dateA;
+        });
+
+      case "default":
+      default:
+        return channels; // Return original order
+    }
+  };
 
   const currentPlaylistName = JSON.parse(
     localStorage.getItem("selectedPlaylist")
@@ -230,19 +225,19 @@ const applySortingToChannels = (channels) => {
   // ===== STATE VARIABLES =====
 
   // ===== GLOBAL STATE FOR CROSS-COMPONENT ACCESS =====
-window.liveTvPageState = {
-  inChannelGrid: true,
-  inVideoPlayer: false,
-  inSidebar: false,
-  inSidebarSearch: false,
-  inHeaderSearch: false,
-  inEPG: false,
-  inAspectRatioBtn: false,
-  inPlayPauseBtn: false,
-  inFavoriteBtn: false,
-  inRemoveHistoryBtn: false,
-  isMenuDotsActive: false
-};
+  window.liveTvPageState = {
+    inChannelGrid: true,
+    inVideoPlayer: false,
+    inSidebar: false,
+    inSidebarSearch: false,
+    inHeaderSearch: false,
+    inEPG: false,
+    inAspectRatioBtn: false,
+    inPlayPauseBtn: false,
+    inFavoriteBtn: false,
+    inRemoveHistoryBtn: false,
+    isMenuDotsActive: false,
+  };
 
   let selectedCategoryId = "All"; // Currently selected category
   let focusedChannelIndex = 0;
@@ -251,7 +246,6 @@ window.liveTvPageState = {
   const pageSize = 20; // Channels per load
   let searchQuery = ""; // Search text
   let liveTvSortValue = localStorage.getItem("liveTvSortValue") || "default";
-
 
   let inChannelGrid = true;
   let inVideoPlayer = false;
@@ -269,223 +263,236 @@ window.liveTvPageState = {
   let inFavoriteBtn = false; // ADD THIS LINE
   let inRemoveHistoryBtn = false; // ADD THIS
   let isMenuDotsActive = false; // Track if menu dots are focused
-let lockedCategories = new Set(); // Track which categories are locked
+  let lockedCategories = new Set(); // Track which categories are locked
 
   let inPasswordModal = false;
   let pendingChannel = null; // Store channel data when password is required
   let passwordModalOrigin = null; // Track where modal was opened from (sidebar/channels)
 
   let passwordModalFocusIndex = 0; // 0 = input field, 1 = submit button, 2 = cancel button
-let previousCategoryId = null; // Track previous category for re-locking
-let currentCategoryChunk = 1;
-const categoriesPerChunk = 20;
-let allCategoriesData = []; // Store all categories
-let isLoadingMoreChannels = false;
-let isLoadingMoreCategories = false;
+  let previousCategoryId = null; // Track previous category for re-locking
+  let currentCategoryChunk = 1;
+  const categoriesPerChunk = 20;
+  let allCategoriesData = []; // Store all categories
+  let isLoadingMoreChannels = false;
+  let isLoadingMoreCategories = false;
 
-let menuKeyHandler = null;
-let filteredCache = null;
-const getFilteredCategories = () => {
-  if (filteredCache && !searchQuery) return filteredCache;
+  let menuKeyHandler = null;
+  let filteredCache = null;
+  const getFilteredCategories = () => {
+    if (filteredCache && !searchQuery) return filteredCache;
 
-   console.log("🔍 getFilteredCategories called");
-  console.log("📊 Current chunks - Categories:", currentCategoryChunk, "Channels:", currentChunk);
-  
-  
-  try {
-    const currentPlaylistName = JSON.parse(
-      localStorage.getItem("selectedPlaylist")
-    ).playlistName;
-
-    if (!currentPlaylistName) {
-      console.error("❌ No playlist name found");
-      return [];
-    }
-
-    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-    if (!playlistsData) {
-      console.error("❌ No playlists data found");
-      return [];
-    }
-
-    const currentPlaylist = playlistsData.find(
-      (pl) => pl.playlistName === currentPlaylistName
+    console.log("🔍 getFilteredCategories called");
+    console.log(
+      "📊 Current chunks - Categories:",
+      currentCategoryChunk,
+      "Channels:",
+      currentChunk
     );
-    if (!currentPlaylist) {
-      console.error("❌ Current playlist not found");
-      return [];
-    }
 
-    const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
-    const channelHistory = currentPlaylist.ChannelListLive || [];
+    try {
+      const currentPlaylistName = JSON.parse(
+        localStorage.getItem("selectedPlaylist")
+      ).playlistName;
 
-    const streams =
-      window.currentAllStreams || allStreams || window.allLiveStreams || [];
-
-    console.log("🔍 Streams available:", streams.length);
-
-    if (streams.length === 0) {
-      console.warn("⚠️ No streams available in getFilteredCategories");
-    }
-
-    // **FILTER CATEGORIES**
-    const filteredCategories = (
-      categories ||
-      window.liveCategories ||
-      []
-    ).map((c) => {
-      let categoryChannels = [];
-
-      try {
-        categoryChannels =
-          streams.filter((s) => s.category_id === c.category_id) || [];
-
-        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-          categoryChannels = categoryChannels.filter((ch) =>
-            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-      } catch (err) {
-        console.error("Error filtering category channels:", err);
+      if (!currentPlaylistName) {
+        console.error("❌ No playlist name found");
+        return [];
       }
 
-      return {
-        ...c,
-        channels: categoryChannels,
-      };
-    });
+      const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+      if (!playlistsData) {
+        console.error("❌ No playlists data found");
+        return [];
+      }
 
-    const allLiveStreams =
-      searchQuery.trim() && selectedCategoryId === "All"
-        ? streams.filter((ch) =>
-            (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : streams;
+      const currentPlaylist = playlistsData.find(
+        (pl) => pl.playlistName === currentPlaylistName
+      );
+      if (!currentPlaylist) {
+        console.error("❌ Current playlist not found");
+        return [];
+      }
 
-    console.log("🔍 Processing favorites:", updatedFavorites.length);
+      const updatedFavorites = currentPlaylist.favoritesLiveTV || [];
+      const channelHistory = currentPlaylist.ChannelListLive || [];
 
-   // Replace the Favorites processing section:
-const favoritesChannels = (updatedFavorites || [])
-  .map((favItem) => {
-    // If favItem is just an ID (number), find full stream info
-    const streamId = typeof favItem === "object" ? favItem.stream_id : favItem;
-    const fullData = streams.find((s) => s.stream_id == streamId);
-    
-    return fullData || (typeof favItem === "object" ? favItem : null);
-  })
-  .filter(Boolean) // Remove nulls
-  .filter((ch) => {
-    if (!searchQuery.trim() || selectedCategoryId !== "favorites") return true;
-    return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-  });
+      const streams =
+        window.currentAllStreams || allStreams || window.allLiveStreams || [];
 
-// Replace the History processing section:
-const historyChannels = (channelHistory || [])
-  .map((histItem) => {
-    const streamId = typeof histItem === "object" ? histItem.stream_id : histItem;
-    const fullData = streams.find((s) => s.stream_id == streamId);
-    
-    return fullData || (typeof histItem === "object" ? histItem : null);
-  })
-  .filter(Boolean)
-  .filter((ch) => {
-    if (!searchQuery.trim() || selectedCategoryId !== "channelHistory") return true;
-    return (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-  });
+      console.log("🔍 Streams available:", streams.length);
 
-    const result = [
-      {
-        category_id: "All",
-        category_name: "All",
-        channels: applySortingToChannels(allLiveStreams || []),
-        totalChannels: allLiveStreams.length, // ADD THIS
-      },
-      {
-        category_id: "favorites",
-        category_name: "Favorites",
-        channels: applySortingToChannels(favoritesChannels || []),
-        totalChannels: favoritesChannels.length, // ADD THIS
-      },
-      {
-        category_id: "channelHistory",
-        category_name: "Channel History",
-        channels: applySortingToChannels(historyChannels || []),
-        totalChannels: historyChannels.length, // ADD THIS
-      },
-      ...filteredCategories.map(cat => ({
-        ...cat,
-        channels: applySortingToChannels(cat.channels || []),
-        totalChannels: cat.channels.length, // ADD THIS
-      })),
-    ];
+      if (streams.length === 0) {
+        console.warn("⚠️ No streams available in getFilteredCategories");
+      }
 
-    // STORE ALL CATEGORIES
-    allCategoriesData = result;
-filteredCache = result;
-    console.log("✅ getFilteredCategories result:", result.length, "categories");
-    return result;
+      // **FILTER CATEGORIES**
+      const filteredCategories = (
+        categories ||
+        window.liveCategories ||
+        []
+      ).map((c) => {
+        let categoryChannels = [];
 
-  } catch (error) {
-    console.error("❌ ERROR in getFilteredCategories:", error);
-    console.error("Stack:", error.stack);
-    return [
-      {
-        category_id: "All",
-        category_name: "All",
-        channels: [],
-        totalChannels: 0,
-      },
-    ];
-  }
-  
-};
+        try {
+          categoryChannels =
+            streams.filter((s) => s.category_id === c.category_id) || [];
 
+          if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+            categoryChannels = categoryChannels.filter((ch) =>
+              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+            );
+          }
+        } catch (err) {
+          console.error("Error filtering category channels:", err);
+        }
 
-// ===== GET CHUNKED CHANNELS =====
-const getChunkedChannels = (allChannels, chunk, pageSize) => {
-  const startIdx = (chunk - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
-  return allChannels.slice(0, endIdx); // Return all channels up to current chunk
-};
+        return {
+          ...c,
+          channels: categoryChannels,
+        };
+      });
 
-// ===== GET CHUNKED CATEGORIES =====
-const getChunkedCategories = (allCategories, chunk, pageSize) => {
-  const startIdx = (chunk - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
-  return allCategories.slice(0, endIdx);
-};
+      const allLiveStreams =
+        searchQuery.trim() && selectedCategoryId === "All"
+          ? streams.filter((ch) =>
+              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          : streams;
 
-// ===== CHECK IF MORE CHANNELS AVAILABLE =====
-const hasMoreChannelsAvailable = (allChannels, chunk, pageSize) => {
-  return allChannels.length > chunk * pageSize;
-};
+      console.log("🔍 Processing favorites:", updatedFavorites.length);
 
-// 4. CHECK IF MORE CATEGORIES AVAILABLE
-const hasMoreCategoriesAvailable = (allCategories, chunk, pageSize) => {
-  return allCategories.length > chunk * pageSize;
-};
+      // Replace the Favorites processing section:
+      const favoritesChannels = (updatedFavorites || [])
+        .map((favItem) => {
+          // If favItem is just an ID (number), find full stream info
+          const streamId =
+            typeof favItem === "object" ? favItem.stream_id : favItem;
+          const fullData = streams.find((s) => s.stream_id == streamId);
 
+          return fullData || (typeof favItem === "object" ? favItem : null);
+        })
+        .filter(Boolean) // Remove nulls
+        .filter((ch) => {
+          if (!searchQuery.trim() || selectedCategoryId !== "favorites")
+            return true;
+          return (ch.name || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+        });
 
-const showAspectRatioButton = () => {
-  const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
-  if (aspectRatioDiv) {
-    // Check fullscreen status using multiple APIs
-    const isFs = !!(document.fullscreenElement || 
-                    document.webkitFullscreenElement || 
-                    document.mozFullScreenElement || 
-                    document.msFullscreenElement);
-    
-    if (isFs) {
-      aspectRatioDiv.style.display = "block";
-      aspectRatioDiv.style.opacity = "1";
-      aspectRatioDiv.style.transition = "opacity 0.3s ease";
-    } else {
-      aspectRatioDiv.style.display = "none";
-      aspectRatioDiv.style.opacity = "0";
+      // Replace the History processing section:
+      const historyChannels = (channelHistory || [])
+        .map((histItem) => {
+          const streamId =
+            typeof histItem === "object" ? histItem.stream_id : histItem;
+          const fullData = streams.find((s) => s.stream_id == streamId);
+
+          return fullData || (typeof histItem === "object" ? histItem : null);
+        })
+        .filter(Boolean)
+        .filter((ch) => {
+          if (!searchQuery.trim() || selectedCategoryId !== "channelHistory")
+            return true;
+          return (ch.name || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+        });
+
+      const result = [
+        {
+          category_id: "All",
+          category_name: "All",
+          channels: applySortingToChannels(allLiveStreams || []),
+          totalChannels: allLiveStreams.length, // ADD THIS
+        },
+        {
+          category_id: "favorites",
+          category_name: "Favorites",
+          channels: applySortingToChannels(favoritesChannels || []),
+          totalChannels: favoritesChannels.length, // ADD THIS
+        },
+        {
+          category_id: "channelHistory",
+          category_name: "Channel History",
+          channels: applySortingToChannels(historyChannels || []),
+          totalChannels: historyChannels.length, // ADD THIS
+        },
+        ...filteredCategories.map((cat) => ({
+          ...cat,
+          channels: applySortingToChannels(cat.channels || []),
+          totalChannels: cat.channels.length, // ADD THIS
+        })),
+      ];
+
+      // STORE ALL CATEGORIES
+      allCategoriesData = result;
+      filteredCache = result;
+      console.log(
+        "✅ getFilteredCategories result:",
+        result.length,
+        "categories"
+      );
+      return result;
+    } catch (error) {
+      console.error("❌ ERROR in getFilteredCategories:", error);
+      console.error("Stack:", error.stack);
+      return [
+        {
+          category_id: "All",
+          category_name: "All",
+          channels: [],
+          totalChannels: 0,
+        },
+      ];
     }
-  }
-};
+  };
 
+  // ===== GET CHUNKED CHANNELS =====
+  const getChunkedChannels = (allChannels, chunk, pageSize) => {
+    const startIdx = (chunk - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    return allChannels.slice(0, endIdx); // Return all channels up to current chunk
+  };
+
+  // ===== GET CHUNKED CATEGORIES =====
+  const getChunkedCategories = (allCategories, chunk, pageSize) => {
+    const startIdx = (chunk - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    return allCategories.slice(0, endIdx);
+  };
+
+  // ===== CHECK IF MORE CHANNELS AVAILABLE =====
+  const hasMoreChannelsAvailable = (allChannels, chunk, pageSize) => {
+    return allChannels.length > chunk * pageSize;
+  };
+
+  // 4. CHECK IF MORE CATEGORIES AVAILABLE
+  const hasMoreCategoriesAvailable = (allCategories, chunk, pageSize) => {
+    return allCategories.length > chunk * pageSize;
+  };
+
+  const showAspectRatioButton = () => {
+    const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+    if (aspectRatioDiv) {
+      // Check fullscreen status using multiple APIs
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+
+      if (isFs) {
+        aspectRatioDiv.style.display = "block";
+        aspectRatioDiv.style.opacity = "1";
+        aspectRatioDiv.style.transition = "opacity 0.3s ease";
+      } else {
+        aspectRatioDiv.style.display = "none";
+        aspectRatioDiv.style.opacity = "0";
+      }
+    }
+  };
 
   // ===== CHECK IF CONTENT IS 18+ =====
   const isAdultContent = (channelData) => {
@@ -520,52 +527,66 @@ const showAspectRatioButton = () => {
   };
 
   // ===== RE-LOCK CATEGORY WHEN SWITCHING AWAY =====
-const relockPreviousCategory = (previousCategoryId) => {
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-  
-  if (hasParentalPassword && previousCategoryId && categoryHasAdultContent(previousCategoryId)) {
-    lockedCategories.add(previousCategoryId);
-    console.log("🔒 Re-locked category:", previousCategoryId);
-  }
-};
+  const relockPreviousCategory = (previousCategoryId) => {
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const hasParentalPassword =
+      selectedPlaylist.parentalPassword &&
+      selectedPlaylist.parentalPassword.length > 0;
+
+    if (
+      hasParentalPassword &&
+      previousCategoryId &&
+      categoryHasAdultContent(previousCategoryId)
+    ) {
+      lockedCategories.add(previousCategoryId);
+      console.log("🔒 Re-locked category:", previousCategoryId);
+    }
+  };
 
   // ===== CHECK IF CATEGORY HAS ADULT CONTENT =====
-// ===== CHECK IF CATEGORY HAS ADULT CONTENT =====
-const categoryHasAdultContent = (categoryId) => {
-  const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-  
-  // Special handling for built-in categories
-  if (categoryId === "All") {
-    return streams.some(ch => isAdultContent(ch));
-  }
-  
-  if (categoryId === "favorites") {
-    const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
-    const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
-      pl => pl.playlistName === currentPlaylistName
+  // ===== CHECK IF CATEGORY HAS ADULT CONTENT =====
+  const categoryHasAdultContent = (categoryId) => {
+    const streams =
+      window.currentAllStreams || allStreams || window.allLiveStreams || [];
+
+    // Special handling for built-in categories
+    if (categoryId === "All") {
+      return streams.some((ch) => isAdultContent(ch));
+    }
+
+    if (categoryId === "favorites") {
+      const currentPlaylistName = JSON.parse(
+        localStorage.getItem("selectedPlaylist")
+      ).playlistName;
+      const currentPlaylist = JSON.parse(
+        localStorage.getItem("playlistsData")
+      ).find((pl) => pl.playlistName === currentPlaylistName);
+      const favoritesList = currentPlaylist.favoritesLiveTV || [];
+
+      const favChannels = favoritesList
+        .map((favItem) => {
+          if (typeof favItem === "number") {
+            return streams.find((s) => s.stream_id === favItem);
+          }
+          return favItem;
+        })
+        .filter(Boolean);
+
+      return favChannels.some((ch) => isAdultContent(ch));
+    }
+
+    if (categoryId === "channelHistory") {
+      // History should never be locked (adult channels aren't added to history)
+      return false;
+    }
+
+    // Regular categories
+    const categoryChannels = streams.filter(
+      (s) => s.category_id === categoryId
     );
-    const favoritesList = currentPlaylist.favoritesLiveTV || [];
-    
-    const favChannels = favoritesList.map(favItem => {
-      if (typeof favItem === "number") {
-        return streams.find(s => s.stream_id === favItem);
-      }
-      return favItem;
-    }).filter(Boolean);
-    
-    return favChannels.some(ch => isAdultContent(ch));
-  }
-  
-  if (categoryId === "channelHistory") {
-    // History should never be locked (adult channels aren't added to history)
-    return false;
-  }
-  
-  // Regular categories
-  const categoryChannels = streams.filter(s => s.category_id === categoryId);
-  return categoryChannels.some(ch => isAdultContent(ch));
-};
+    return categoryChannels.some((ch) => isAdultContent(ch));
+  };
 
   // ===== VIDEO ASPECT RATIO MANAGER =====
   // ===== VIDEO ASPECT RATIO MANAGER =====
@@ -588,7 +609,7 @@ const categoryHasAdultContent = (categoryId) => {
       this.classes.forEach((cls) => videoElement.classList.remove(cls));
 
       // Add the selected class
-      videoElement.classList.add(this.classes[index]);  
+      videoElement.classList.add(this.classes[index]);
     },
 
     cycle(videoElement) {
@@ -645,52 +666,51 @@ const categoryHasAdultContent = (categoryId) => {
   // ===== SIMPLE VIDEO PLAYER (TEMPORARY) =====
   // Find this function and replace it:
 
-
-
-
   // Add this function after SimpleVideoPlayer:
-// Add this function after SimpleVideoPlayer:
-const toggleAspectRatio = () => {
-  // Try to find video element from different player types
-  let videoEl = document.getElementById("live-video-player") || // SimpleVideoPlayer
-                document.querySelector("#live-videojs-player_html5_api") || // LiveVideoJsComponent
-                document.querySelector("#flowplayer-live video") || // FlowLivePlayerComponent
-                document.querySelector(".flowplayer .fp-engine"); // Flowplayer engine
-  
-  // If still not found, try to get from window.livePlayer
-  if (!videoEl && window.livePlayer) {
-    if (window.livePlayer._fp) {
-      // Flowplayer
-      videoEl = document.querySelector(".flowplayer .fp-engine");
-    } else {
-      // Video.js
-      videoEl = window.livePlayer.el().querySelector("video");
+  // Add this function after SimpleVideoPlayer:
+  const toggleAspectRatio = () => {
+    // Try to find video element from different player types
+    let videoEl =
+      document.getElementById("live-video-player") || // SimpleVideoPlayer
+      document.querySelector("#live-videojs-player_html5_api") || // LiveVideoJsComponent
+      document.querySelector("#flowplayer-live video") || // FlowLivePlayerComponent
+      document.querySelector(".flowplayer .fp-engine"); // Flowplayer engine
+
+    // If still not found, try to get from window.livePlayer
+    if (!videoEl && window.livePlayer) {
+      if (window.livePlayer._fp) {
+        // Flowplayer
+        videoEl = document.querySelector(".flowplayer .fp-engine");
+      } else {
+        // Video.js
+        videoEl = window.livePlayer.el().querySelector("video");
+      }
     }
-  }
 
-  if (!videoEl || !window.VideoAspectRatio) {
-    console.warn("Video element or VideoAspectRatio not found");
-    return;
-  }
-
-  // Cycle to next aspect ratio
-  const newLabel = window.VideoAspectRatio.cycle(videoEl);
-
-  // Update button label if it exists
-  const aspectBtn = document.querySelector(".aspect-ratio-btn") || 
-                    document.querySelector("#videojs-aspect-ratio");
-  if (aspectBtn) {
-    const aspectLabel = aspectBtn.querySelector(".aspect-label");
-    if (aspectLabel && newLabel) {
-      aspectLabel.textContent = newLabel;
+    if (!videoEl || !window.VideoAspectRatio) {
+      console.warn("Video element or VideoAspectRatio not found");
+      return;
     }
-  }
 
-  // Show large overlay notification in center of screen
-  window.VideoAspectRatio.showOverlay(newLabel);
+    // Cycle to next aspect ratio
+    const newLabel = window.VideoAspectRatio.cycle(videoEl);
 
-  console.log("✅ Aspect ratio changed to:", newLabel);
-};
+    // Update button label if it exists
+    const aspectBtn =
+      document.querySelector(".aspect-ratio-btn") ||
+      document.querySelector("#videojs-aspect-ratio");
+    if (aspectBtn) {
+      const aspectLabel = aspectBtn.querySelector(".aspect-label");
+      if (aspectLabel && newLabel) {
+        aspectLabel.textContent = newLabel;
+      }
+    }
+
+    // Show large overlay notification in center of screen
+    window.VideoAspectRatio.showOverlay(newLabel);
+
+    console.log("✅ Aspect ratio changed to:", newLabel);
+  };
 
   // ===== HELPER: Get Filtered Categories =====
   // ===== HELPER: Get Filtered Categories =====
@@ -712,7 +732,6 @@ const toggleAspectRatio = () => {
 
   // Helper to set focus on channel cards
   const setFocus = (list, idx, cls) => {
-
     list.forEach((el) => el.classList.remove(cls));
     if (list[idx]) {
       list[idx].classList.add(cls);
@@ -722,7 +741,6 @@ const toggleAspectRatio = () => {
 
   // Helper to set focus on sidebar
   const setSidebarFocus = (idx) => {
-
     const list = qsa(".sidebar-item");
     list.forEach((el) => el.classList.remove("sidebar-focused"));
     if (list[idx]) {
@@ -732,24 +750,22 @@ const toggleAspectRatio = () => {
   };
 
   // Helper to set focus on sidebar search box
-// Helper to set focus on sidebar search box
-const setSidebarSearchFocus = (active) => {
-
-  const searchBox = qs(".sidebar-search-box");
-  const searchInput = qs(".sidebar-search-input");
-  if (active) {
-    searchBox.classList.add("search-focused");
-    // DON'T focus the input - just add visual focus
-    // searchInput.focus(); // REMOVE THIS LINE
-  } else {
-    searchBox.classList.remove("search-focused");
-    searchInput.blur();
-  }
-};
+  // Helper to set focus on sidebar search box
+  const setSidebarSearchFocus = (active) => {
+    const searchBox = qs(".sidebar-search-box");
+    const searchInput = qs(".sidebar-search-input");
+    if (active) {
+      searchBox.classList.add("search-focused");
+      // DON'T focus the input - just add visual focus
+      // searchInput.focus(); // REMOVE THIS LINE
+    } else {
+      searchBox.classList.remove("search-focused");
+      searchInput.blur();
+    }
+  };
 
   // Helper to set focus on header search box
   const setHeaderSearchFocus = (active) => {
-
     const searchBox = qs(".search-container");
     const searchInput = qs(".search-input");
     if (active) {
@@ -763,7 +779,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on epg
   const setEPGFocus = (idx) => {
-
     const list = qsa(".epg-item");
     list.forEach((el) => el.classList.remove("epg-focused"));
     if (list[idx]) {
@@ -774,7 +789,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on favorite button
   const setFavoriteBtnFocus = (active) => {
-
     const channels = qsa(".channel-card");
     const card = channels[focusedChannelIndex];
     if (!card) return;
@@ -791,7 +805,6 @@ const setSidebarSearchFocus = (active) => {
 
   // Helper to set focus on remove history button
   const setRemoveHistoryBtnFocus = (active) => {
-
     const channels = qsa(".channel-card");
     const card = channels[focusedChannelIndex];
     if (!card) return;
@@ -812,8 +825,6 @@ const setSidebarSearchFocus = (active) => {
     channels.forEach((c) =>
       c.classList.remove("channel-card-focused", "channel-card-selected")
     );
-
- 
 
     // Remove focus from EPG items
     const epgItems = qsa(".epg-item");
@@ -873,8 +884,8 @@ const setSidebarSearchFocus = (active) => {
   }
 
   // ===== PASSWORD MODAL COMPONENT =====
- const PasswordModal = () => {
-  return `
+  const PasswordModal = () => {
+    return `
     <div class="password-modal-overlay" id="passwordModalOverlay">
       <div class="password-modal">
         <div class="password-modal-header">
@@ -905,188 +916,188 @@ const setSidebarSearchFocus = (active) => {
       </div>
     </div>
   `;
-};
+  };
 
   // ===== SHOW PASSWORD MODAL =====
- const showPasswordModal = (channelData) => {
-  pendingChannel = channelData;
-  inPasswordModal = true;
-  inChannelGrid = false;
-  passwordModalFocusIndex = 0;
+  const showPasswordModal = (channelData) => {
+    pendingChannel = channelData;
+    inPasswordModal = true;
+    inChannelGrid = false;
+    passwordModalFocusIndex = 0;
 
     const previousSidebarIndex = focusedSidebarIndex;
-  inSidebar = false;
+    inSidebar = false;
 
-  // Add modal to page
-  const modalContainer = document.createElement("div");
-  modalContainer.innerHTML = PasswordModal();
-  document.body.appendChild(modalContainer.firstElementChild);
+    // Add modal to page
+    const modalContainer = document.createElement("div");
+    modalContainer.innerHTML = PasswordModal();
+    document.body.appendChild(modalContainer.firstElementChild);
 
-  // CRITICAL: Use requestAnimationFrame for better performance on Tizen
-  requestAnimationFrame(() => {
-    const input = document.getElementById("passwordModalInput");
-    if (input) {
-      // Set type to text initially for faster rendering on TV
-      input.type = "password";
-      
-      // Add input event listener for immediate feedback
-      input.addEventListener("input", (e) => {
-        // Force immediate update on Tizen
-        e.target.value = e.target.value;
-      });
-      
-      // Focus after a small delay for Tizen stability
-      setTimeout(() => {
-        input.focus();
-        updatePasswordModalFocus();
-      }, 50);
-    }
-  });
-};
+    // CRITICAL: Use requestAnimationFrame for better performance on Tizen
+    requestAnimationFrame(() => {
+      const input = document.getElementById("passwordModalInput");
+      if (input) {
+        // Set type to text initially for faster rendering on TV
+        input.type = "password";
+
+        // Add input event listener for immediate feedback
+        input.addEventListener("input", (e) => {
+          // Force immediate update on Tizen
+          e.target.value = e.target.value;
+        });
+
+        // Focus after a small delay for Tizen stability
+        setTimeout(() => {
+          input.focus();
+          updatePasswordModalFocus();
+        }, 50);
+      }
+    });
+  };
 
   // ===== HIDE PASSWORD MODAL =====
   // ===== HIDE PASSWORD MODAL (UPDATED) =====
-const hidePasswordModal = (clearPending = true) => {
-  const modal = document.getElementById("passwordModalOverlay");
-  const input = document.getElementById("passwordModalInput");
-  
-  // Force blur immediately on Tizen
-  if (input) {
-    input.blur();
-    input.value = ""; // Clear value immediately
-  }
-  
-  // Remove modal without animation for faster cleanup
-  if (modal) {
-    modal.remove();
-  }
-  
-  inPasswordModal = false;
+  const hidePasswordModal = (clearPending = true) => {
+    const modal = document.getElementById("passwordModalOverlay");
+    const input = document.getElementById("passwordModalInput");
 
-  if (clearPending) {
-    pendingChannel = null;
-  }
-
-  passwordModalFocusIndex = 0;
-
-  // Always return focus to sidebar
-  requestAnimationFrame(() => {
-    inSidebar = true;
-    inChannelGrid = false;
-    inSidebarSearch = false;
-    inHeaderSearch = false;
-    
-    const sidebarItems = qsa(".sidebar-item");
-    if (sidebarItems.length > 0) {
-      setSidebarFocus(focusedSidebarIndex);
+    // Force blur immediately on Tizen
+    if (input) {
+      input.blur();
+      input.value = ""; // Clear value immediately
     }
-  });
-};
+
+    // Remove modal without animation for faster cleanup
+    if (modal) {
+      modal.remove();
+    }
+
+    inPasswordModal = false;
+
+    if (clearPending) {
+      pendingChannel = null;
+    }
+
+    passwordModalFocusIndex = 0;
+
+    // Always return focus to sidebar
+    requestAnimationFrame(() => {
+      inSidebar = true;
+      inChannelGrid = false;
+      inSidebarSearch = false;
+      inHeaderSearch = false;
+
+      const sidebarItems = qsa(".sidebar-item");
+      if (sidebarItems.length > 0) {
+        setSidebarFocus(focusedSidebarIndex);
+      }
+    });
+  };
 
   // ===== UPDATE PASSWORD MODAL FOCUS =====
-const updatePasswordModalFocus = () => {
-  const input = document.getElementById("passwordModalInput");
-  const submitBtn = document.querySelector(".password-submit-btn");
-  const cancelBtn = document.querySelector(".password-cancel-btn");
+  const updatePasswordModalFocus = () => {
+    const input = document.getElementById("passwordModalInput");
+    const submitBtn = document.querySelector(".password-submit-btn");
+    const cancelBtn = document.querySelector(".password-cancel-btn");
 
-  // Use requestAnimationFrame for smoother updates on Tizen
-  requestAnimationFrame(() => {
-    // Remove all focus
-    if (input) {
-      input.classList.remove("password-input-focused");
-      if (passwordModalFocusIndex !== 0) {
-        input.blur();
+    // Use requestAnimationFrame for smoother updates on Tizen
+    requestAnimationFrame(() => {
+      // Remove all focus
+      if (input) {
+        input.classList.remove("password-input-focused");
+        if (passwordModalFocusIndex !== 0) {
+          input.blur();
+        }
       }
-    }
-    if (submitBtn) submitBtn.classList.remove("password-btn-focused");
-    if (cancelBtn) cancelBtn.classList.remove("password-btn-focused");
+      if (submitBtn) submitBtn.classList.remove("password-btn-focused");
+      if (cancelBtn) cancelBtn.classList.remove("password-btn-focused");
 
-    // Add focus to current element
-    if (passwordModalFocusIndex === 0 && input) {
-      input.classList.add("password-input-focused");
-      // Small delay for Tizen keyboard
-      setTimeout(() => {
-        input.focus();
-      }, 50);
-    } else if (passwordModalFocusIndex === 1 && submitBtn) {
-      submitBtn.classList.add("password-btn-focused");
-    } else if (passwordModalFocusIndex === 2 && cancelBtn) {
-      cancelBtn.classList.add("password-btn-focused");
-    }
-  });
-};
+      // Add focus to current element
+      if (passwordModalFocusIndex === 0 && input) {
+        input.classList.add("password-input-focused");
+        // Small delay for Tizen keyboard
+        setTimeout(() => {
+          input.focus();
+        }, 50);
+      } else if (passwordModalFocusIndex === 1 && submitBtn) {
+        submitBtn.classList.add("password-btn-focused");
+      } else if (passwordModalFocusIndex === 2 && cancelBtn) {
+        cancelBtn.classList.add("password-btn-focused");
+      }
+    });
+  };
 
   // ===== VERIFY PASSWORD =====
-const verifyPasswordForCategory = () => {
-  const input = document.getElementById("passwordModalInput");
-  if (!input) return;
-  
-  const enteredPassword = input.value.trim();
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-  const correctPassword = selectedPlaylist.parentalPassword || "";
-  
-  if (enteredPassword === correctPassword) {
-    // Password correct - unlock category
-    const categoryToUnlock = pendingChannel; // This stores category ID
-    
-    if (categoryToUnlock) {
-      lockedCategories.delete(categoryToUnlock);
-      console.log("🔓 Unlocked category:", categoryToUnlock);
-      
-      // Update previous category
-      previousCategoryId = categoryToUnlock;
-      selectedCategoryId = categoryToUnlock;
-    }
-    
-    // Hide modal immediately
-    hidePasswordModal(false);
-    
-    // Use requestAnimationFrame for smoother transition on Tizen
-    requestAnimationFrame(() => {
-      // Show brief loading message
-      const channelGrid = qs(".channel-grid");
-      if (channelGrid) {
-        channelGrid.innerHTML = `
+  const verifyPasswordForCategory = () => {
+    const input = document.getElementById("passwordModalInput");
+    if (!input) return;
+
+    const enteredPassword = input.value.trim();
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const correctPassword = selectedPlaylist.parentalPassword || "";
+
+    if (enteredPassword === correctPassword) {
+      // Password correct - unlock category
+      const categoryToUnlock = pendingChannel; // This stores category ID
+
+      if (categoryToUnlock) {
+        lockedCategories.delete(categoryToUnlock);
+        console.log("🔓 Unlocked category:", categoryToUnlock);
+
+        // Update previous category
+        previousCategoryId = categoryToUnlock;
+        selectedCategoryId = categoryToUnlock;
+      }
+
+      // Hide modal immediately
+      hidePasswordModal(false);
+
+      // Use requestAnimationFrame for smoother transition on Tizen
+      requestAnimationFrame(() => {
+        // Show brief loading message
+        const channelGrid = qs(".channel-grid");
+        if (channelGrid) {
+          channelGrid.innerHTML = `
           <div style="display: flex; justify-content: center; align-items: center; height: 300px;">
             <p style="color: white; font-size: 20px;">Loading channels...</p>
           </div>
         `;
-      }
-      
-      // Render channels after a small delay for Tizen
-      setTimeout(() => {
-        renderChannels();
-        renderSidebarCategories();
-        
-        // Focus on first channel after render completes
-        setTimeout(() => {
-          const channels = qsa(".channel-card");
-          if (channels.length > 0) {
-            inChannelGrid = true;
-            inSidebar = false;
-            focusedChannelIndex = 0;
-            setFocus(channels, 0, "channel-card-focused");
-          }
-        }, 100);
-      }, 50);
-    });
-    
-  } else {
-    // Wrong password
-    if (typeof Toaster !== "undefined" && typeof Toaster.showToast === "function") {
-      Toaster.showToast("error", "Incorrect password");
-    }
-    input.value = "";
-    input.focus();
-  }
-};
+        }
 
+        // Render channels after a small delay for Tizen
+        setTimeout(() => {
+          renderChannels();
+          renderSidebarCategories();
+
+          // Focus on first channel after render completes
+          setTimeout(() => {
+            const channels = qsa(".channel-card");
+            if (channels.length > 0) {
+              inChannelGrid = true;
+              inSidebar = false;
+              focusedChannelIndex = 0;
+              setFocus(channels, 0, "channel-card-focused");
+            }
+          }, 100);
+        }, 50);
+      });
+    } else {
+      // Wrong password
+      if (
+        typeof Toaster !== "undefined" &&
+        typeof Toaster.showToast === "function"
+      ) {
+        Toaster.showToast("error", "Incorrect password");
+      }
+      input.value = "";
+      input.focus();
+    }
+  };
 
   // ===== PLAY CHANNEL FUNCTION (FIXED) =====
   const playChannel = (channelData) => {
     console.log("🎬 Playing channel:", channelData); // Debug log
-
- 
 
     const videoWrapper = qs(".livetv-video-wrapper");
     if (!videoWrapper) {
@@ -1179,193 +1190,209 @@ const verifyPasswordForCategory = () => {
           (item) => item.stream_id == channelData.stream_id
         );
 
-         if (selectedChannelItem && !isAdultContent(selectedChannelItem) && typeof window.addItemToHistory === "function") {
-    window.addItemToHistory(selectedChannelItem, "ChannelListLive");
-  }
-
-
-      
+        if (
+          selectedChannelItem &&
+          !isAdultContent(selectedChannelItem) &&
+          typeof window.addItemToHistory === "function"
+        ) {
+          window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+        }
       }
 
       // Initialize Video.js if available
       // Find this section in playChannel function (around line 400)
       // REPLACE the entire setTimeout block with this:
 
-   setTimeout(() => {
-  const videoEl = document.getElementById("live-video-player");
-  const playPauseBtn = document.querySelector(".play-pause-btn");
-  const aspectBtn = document.querySelector(".aspect-ratio-btn");
-
-   if (playPauseIcon) {
-    playPauseIcon.style.display = "flex";
-    playPauseIcon.style.opacity = "1";
-  }
-  
-  if (aspectRatioBtn) {
-    aspectRatioBtn.style.display = "block";
-    aspectRatioBtn.style.opacity = "1";
-  }
-
-  if (videoEl && typeof videojs !== "undefined") {
-    // Force video element to be visible
-    videoEl.style.display = "block";
-    videoEl.style.visibility = "visible";
-    videoEl.style.opacity = "1";
-    
-    window.livePlayer = videojs(videoEl, {
-      controls: true,
-      autoplay: true,
-      preload: "auto",
-      fluid: false, // Changed to false
-      fill: true, // Added
-      responsive: false, // Added for Tizen
-      html5: {
-        vhs: {
-          overrideNative: true,
-          enableLowInitialPlaylist: true
-        },
-        nativeVideoTracks: false,
-        nativeAudioTracks: false,
-        nativeTextTracks: false
-      }
-    });
-
-    // Force video to display
-    window.livePlayer.ready(function() {
-      const player = this;
-      const tech = player.tech({ IWillNotUseThisInPlugins: true });
-      
-      if (tech && tech.el_) {
-        tech.el_.style.width = "100%";
-        tech.el_.style.height = "100%";
-        tech.el_.style.display = "block";
-        tech.el_.style.position = "relative";
-      }
-    });
-
-    if (window.VideoAspectRatio) {
-      window.VideoAspectRatio.initialize(videoEl);
-    }
-
-    window.livePlayer.on("waiting", () => {
-      const loader = document.querySelector(".live-video-loader");
-      if (loader) loader.classList.remove("hidden");
-    });
-
-    window.livePlayer.on("playing", () => {
-      const loader = document.querySelector(".live-video-loader");
-      if (loader) loader.classList.add("hidden");
-      
-      // Ensure video is visible after playing starts
-      if (videoEl) {
-        videoEl.style.display = "block";
-        videoEl.style.visibility = "visible";
-      }
-    });
-
-    window.livePlayer.on("error", (e) => {
-      console.error("❌ Player error:", e);
-    });
-
-
-
-        const handleFullscreenChange = () => {
-      const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
-      if (aspectRatioDiv) {
-        const isFs = document.fullscreenElement || 
-                     document.webkitFullscreenElement || 
-                     document.mozFullScreenElement || 
-                     document.msFullscreenElement;
-        
-        aspectRatioDiv.style.display = isFs ? "block" : "none";
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-    document.addEventListener("msfullscreenchange", handleFullscreenChange);
-    
-    // Rest of your play/pause button handlers...
-    if (playPauseBtn) {
-      const playIcon = playPauseBtn.querySelector("i");
-      
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.opacity = "1";
       setTimeout(() => {
-        playPauseBtn.style.opacity = "0";
-        setTimeout(() => {
-          playPauseBtn.style.display = "none";
-        }, 300);
-      }, 2000);
+        const videoEl = document.getElementById("live-video-player");
+        const playPauseBtn = document.querySelector(".play-pause-btn");
+        const aspectBtn = document.querySelector(".aspect-ratio-btn");
 
-      videoEl.addEventListener("pause", () => {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        if (playIcon) playIcon.className = "fa-solid fa-play";
-      });
-
-      videoEl.addEventListener("play", () => {
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        if (playIcon) playIcon.className = "fa-solid fa-pause";
-        setTimeout(() => {
-          if (!videoEl.paused) {
-            playPauseBtn.style.opacity = "0";
-            setTimeout(() => {
-              playPauseBtn.style.display = "none";
-            }, 300);
-          }
-        }, 1500);
-      });
-
-      playPauseBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePlayPause();
-      });
-
-     const videoContainer = document.querySelector(".live-video-player-div");
-if (videoContainer) {
-  videoContainer.addEventListener("click", (e) => {
-    if (e.target === videoContainer || e.target === videoEl) {
-      if (!document.fullscreenElement && 
-          !document.webkitFullscreenElement && 
-          !document.mozFullScreenElement && 
-          !document.msFullscreenElement) {
-        if (videoContainer.requestFullscreen) {
-          videoContainer.requestFullscreen();
-        } else if (videoContainer.webkitRequestFullscreen) {
-          videoContainer.webkitRequestFullscreen();
-        } else if (videoContainer.mozRequestFullScreen) {
-          videoContainer.mozRequestFullScreen();
-        } else if (videoContainer.msRequestFullscreen) {
-          videoContainer.msRequestFullscreen();
+        if (playPauseIcon) {
+          playPauseIcon.style.display = "flex";
+          playPauseIcon.style.opacity = "1";
         }
-      }
-    }
-  });
-}
 
-      videoEl.addEventListener("click", (e) => {
-        e.stopPropagation();
-        playPauseBtn.style.display = "flex";
-        togglePlayPause();
-      });
-    }
+        if (aspectRatioBtn) {
+          aspectRatioBtn.style.display = "block";
+          aspectRatioBtn.style.opacity = "1";
+        }
 
-    if (aspectBtn) {
-      const aspectLabel = aspectBtn.querySelector(".aspect-label");
-      if (aspectLabel && window.VideoAspectRatio) {
-        aspectLabel.textContent = window.VideoAspectRatio.getCurrentRatio();
-      }
+        if (videoEl && typeof videojs !== "undefined") {
+          // Force video element to be visible
+          videoEl.style.display = "block";
+          videoEl.style.visibility = "visible";
+          videoEl.style.opacity = "1";
 
-      aspectBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleAspectRatio();
-      });
-    }
-  }
-}, 100);
+          window.livePlayer = videojs(videoEl, {
+            controls: true,
+            autoplay: true,
+            preload: "auto",
+            fluid: false, // Changed to false
+            fill: true, // Added
+            responsive: false, // Added for Tizen
+            html5: {
+              vhs: {
+                overrideNative: true,
+                enableLowInitialPlaylist: true,
+              },
+              nativeVideoTracks: false,
+              nativeAudioTracks: false,
+              nativeTextTracks: false,
+            },
+          });
+
+          // Force video to display
+          window.livePlayer.ready(function () {
+            const player = this;
+            const tech = player.tech({ IWillNotUseThisInPlugins: true });
+
+            if (tech && tech.el_) {
+              tech.el_.style.width = "100%";
+              tech.el_.style.height = "100%";
+              tech.el_.style.display = "block";
+              tech.el_.style.position = "relative";
+            }
+          });
+
+          if (window.VideoAspectRatio) {
+            window.VideoAspectRatio.initialize(videoEl);
+          }
+
+          window.livePlayer.on("waiting", () => {
+            const loader = document.querySelector(".live-video-loader");
+            if (loader) loader.classList.remove("hidden");
+          });
+
+          window.livePlayer.on("playing", () => {
+            const loader = document.querySelector(".live-video-loader");
+            if (loader) loader.classList.add("hidden");
+
+            // Ensure video is visible after playing starts
+            if (videoEl) {
+              videoEl.style.display = "block";
+              videoEl.style.visibility = "visible";
+            }
+          });
+
+          window.livePlayer.on("error", (e) => {
+            console.error("❌ Player error:", e);
+          });
+
+          const handleFullscreenChange = () => {
+            const aspectRatioDiv = document.querySelector(
+              ".videojs-aspect-ratio-div"
+            );
+            if (aspectRatioDiv) {
+              const isFs =
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement;
+
+              aspectRatioDiv.style.display = isFs ? "block" : "none";
+            }
+          };
+
+          document.addEventListener("fullscreenchange", handleFullscreenChange);
+          document.addEventListener(
+            "webkitfullscreenchange",
+            handleFullscreenChange
+          );
+          document.addEventListener(
+            "mozfullscreenchange",
+            handleFullscreenChange
+          );
+          document.addEventListener(
+            "msfullscreenchange",
+            handleFullscreenChange
+          );
+
+          // Rest of your play/pause button handlers...
+          if (playPauseBtn) {
+            const playIcon = playPauseBtn.querySelector("i");
+
+            playPauseBtn.style.display = "flex";
+            playPauseBtn.style.opacity = "1";
+            setTimeout(() => {
+              playPauseBtn.style.opacity = "0";
+              setTimeout(() => {
+                playPauseBtn.style.display = "none";
+              }, 300);
+            }, 2000);
+
+            videoEl.addEventListener("pause", () => {
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              if (playIcon) playIcon.className = "fa-solid fa-play";
+            });
+
+            videoEl.addEventListener("play", () => {
+              playPauseBtn.style.display = "flex";
+              playPauseBtn.style.opacity = "1";
+              if (playIcon) playIcon.className = "fa-solid fa-pause";
+              setTimeout(() => {
+                if (!videoEl.paused) {
+                  playPauseBtn.style.opacity = "0";
+                  setTimeout(() => {
+                    playPauseBtn.style.display = "none";
+                  }, 300);
+                }
+              }, 1500);
+            });
+
+            playPauseBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              togglePlayPause();
+            });
+
+            const videoContainer = document.querySelector(
+              ".live-video-player-div"
+            );
+            if (videoContainer) {
+              videoContainer.addEventListener("click", (e) => {
+                if (e.target === videoContainer || e.target === videoEl) {
+                  if (
+                    !document.fullscreenElement &&
+                    !document.webkitFullscreenElement &&
+                    !document.mozFullScreenElement &&
+                    !document.msFullscreenElement
+                  ) {
+                    if (videoContainer.requestFullscreen) {
+                      videoContainer.requestFullscreen();
+                    } else if (videoContainer.webkitRequestFullscreen) {
+                      videoContainer.webkitRequestFullscreen();
+                    } else if (videoContainer.mozRequestFullScreen) {
+                      videoContainer.mozRequestFullScreen();
+                    } else if (videoContainer.msRequestFullscreen) {
+                      videoContainer.msRequestFullscreen();
+                    }
+                  }
+                }
+              });
+            }
+
+            videoEl.addEventListener("click", (e) => {
+              e.stopPropagation();
+              playPauseBtn.style.display = "flex";
+              togglePlayPause();
+            });
+          }
+
+          if (aspectBtn) {
+            const aspectLabel = aspectBtn.querySelector(".aspect-label");
+            if (aspectLabel && window.VideoAspectRatio) {
+              aspectLabel.textContent =
+                window.VideoAspectRatio.getCurrentRatio();
+            }
+
+            aspectBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              toggleAspectRatio();
+            });
+          }
+        }
+      }, 100);
     }
 
     // Update visual states
@@ -1399,27 +1426,29 @@ if (videoContainer) {
 
     // Add to history
     if (selectedCategoryId !== "channelHistory") {
+      const isAdult = isAdultContent(channelData);
 
-   const isAdult = isAdultContent(channelData);
-  
-  if (!isAdult) {
-    // Only add non-adult content to history
-    const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-    const selectedChannelItem = streams.find(
-      (item) => item.stream_id == channelData.stream_id
-    );
-    
-    if (selectedChannelItem && typeof window.addItemToHistory === "function") {
-      window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+      if (!isAdult) {
+        // Only add non-adult content to history
+        const streams =
+          window.currentAllStreams || allStreams || window.allLiveStreams || [];
+        const selectedChannelItem = streams.find(
+          (item) => item.stream_id == channelData.stream_id
+        );
+
+        if (
+          selectedChannelItem &&
+          typeof window.addItemToHistory === "function"
+        ) {
+          window.addItemToHistory(selectedChannelItem, "ChannelListLive");
+        }
+      } else {
+        console.log("🔒 Adult content - not adding to history");
+      }
     }
-  } else {
-    console.log("🔒 Adult content - not adding to history");
-  }
-}
 
     console.log("✅ Channel playback initiated");
   };
-
 
   window.isItemFavoriteForPlaylist = (item, favoriteKey) => {
     const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
@@ -1443,7 +1472,6 @@ if (videoContainer) {
   };
 
   // ===== UPDATE EPG (Program Guide) =====
-
 
   const updateEPG = (channelData) => {
     const epgList = qs(".epg-list");
@@ -1504,84 +1532,88 @@ if (videoContainer) {
     const streamId = channelData.stream_id;
 
     if (streamId && typeof getLiveStreamEpg === "function") {
+      getLiveStreamEpg(streamId);
       getLiveStreamEpg(streamId)
-      getLiveStreamEpg(streamId)
-  .then((data) => {
-    console.log("------EPG data received:" , data);
-    
-    // Handle both response formats
-    let epgData = [];
-    if (Array.isArray(data)) {
-      epgData = data;
-    } else if (data && data.epg_listings && Array.isArray(data.epg_listings)) {
-      epgData = data.epg_listings;
-    }
+        .then((data) => {
+          console.log("------EPG data received:", data);
 
-    console.log("------EPG listings array:", epgData);
+          // Handle both response formats
+          let epgData = [];
+          if (Array.isArray(data)) {
+            epgData = data;
+          } else if (
+            data &&
+            data.epg_listings &&
+            Array.isArray(data.epg_listings)
+          ) {
+            epgData = data.epg_listings;
+          }
 
-    if (epgData.length > 0) {
-      renderEPGList(epgData);
-    } else {
-      epgList.innerHTML = `
+          console.log("------EPG listings array:", epgData);
+
+          if (epgData.length > 0) {
+            renderEPGList(epgData);
+          } else {
+            epgList.innerHTML = `
         <div class="epg-item">
           <span class="epg-title">No EPG data available</span>
         </div>
       `;
-    }
-  })
-  .catch((error) => {
-    console.error("------EPG fetch error:", error);
-    epgList.innerHTML = `
+          }
+        })
+        .catch((error) => {
+          console.error("------EPG fetch error:", error);
+          epgList.innerHTML = `
       <div class="epg-item">
         <span class="epg-title">Failed to load EPG</span>
       </div>
     `;
-  });
+        });
     }
   };
 
   // ===== RENDER EPG LIST =====
-const renderEPGList = (epgData) => {
-  const epgList = qs(".epg-list");
-  if (!epgList) return;
+  const renderEPGList = (epgData) => {
+    const epgList = qs(".epg-list");
+    if (!epgList) return;
 
-  console.log("------Rendering EPG list with data:", epgData);
+    console.log("------Rendering EPG list with data:", epgData);
 
-  const currentPlaylistName = JSON.parse(
-    localStorage.getItem("selectedPlaylist")
-  ).playlistName;
-  const currentPlaylist = JSON.parse(
-    localStorage.getItem("playlistsData")
-  ).find((pl) => pl.playlistName === currentPlaylistName);
-  const timeFormat = currentPlaylist.timeFormat || "12hrs";
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
+    const currentPlaylist = JSON.parse(
+      localStorage.getItem("playlistsData")
+    ).find((pl) => pl.playlistName === currentPlaylistName);
+    const timeFormat = currentPlaylist.timeFormat || "12hrs";
 
-  try {
-    const epgHTML = epgData
-      .map((program) => {
-        const startTime = formatTimes(program.start, timeFormat);
-        const endTime = formatTimes(program.end, timeFormat);
-        const title = decodeBase64(program.title) || "Untitled";
+    try {
+      const epgHTML = epgData
+        .map((program) => {
+          const startTime = formatTimes(program.start, timeFormat);
+          const endTime = formatTimes(program.end, timeFormat);
+          const title = decodeBase64(program.title) || "Untitled";
 
-        return `
+          return `
           <div class="epg-item">
             <span class="epg-time">${startTime} - ${endTime}</span>
             <span class="epg-title">${title}</span>
           </div>
         `;
-      })
-      .join("");
+        })
+        .join("");
 
-    epgList.innerHTML = epgHTML;
-    console.log("------EPG rendered successfully");
-  } catch (error) {
-    console.error("------Error rendering EPG:", error);
-    epgList.innerHTML = `
+      epgList.innerHTML = epgHTML;
+      console.log("------EPG rendered successfully");
+    } catch (error) {
+      console.error("------Error rendering EPG:", error);
+      epgList.innerHTML = `
       <div class="epg-item">
         <span class="epg-title">Error displaying EPG data</span>
       </div>
     `;
-  }
-};
+    }
+  };
 
   // Helper functions (copy from LiveVideoJsComponent)
   function formatTimes(dateStr, format) {
@@ -1594,9 +1626,10 @@ const renderEPGList = (epgData) => {
     }
     if (isNaN(date)) return dateStr;
 
-    const options = format === "12hrs"
-      ? { hour: "numeric", minute: "2-digit", hour12: true }
-      : { hour: "2-digit", minute: "2-digit", hour12: false };
+    const options =
+      format === "12hrs"
+        ? { hour: "numeric", minute: "2-digit", hour12: true }
+        : { hour: "2-digit", minute: "2-digit", hour12: false };
 
     return new Intl.DateTimeFormat(undefined, options).format(date);
   }
@@ -1633,49 +1666,51 @@ const renderEPGList = (epgData) => {
     renderEPGList(programs);
   };
 
- window.toggleFavoriteItem = (item, favoriteKey) => {
-  const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
-  const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist"));
+  window.toggleFavoriteItem = (item, favoriteKey) => {
+    const playlistsData = JSON.parse(localStorage.getItem("playlistsData"));
+    const selectedPlaylist = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    );
 
-  const playlistIndex = playlistsData.findIndex(
-    (pl) => pl.playlistName === selectedPlaylist.playlistName
-  );
+    const playlistIndex = playlistsData.findIndex(
+      (pl) => pl.playlistName === selectedPlaylist.playlistName
+    );
 
-  if (playlistIndex === -1) return { isFav: false, item };
+    if (playlistIndex === -1) return { isFav: false, item };
 
-  if (!playlistsData[playlistIndex][favoriteKey]) {
-    playlistsData[playlistIndex][favoriteKey] = [];
-  }
+    if (!playlistsData[playlistIndex][favoriteKey]) {
+      playlistsData[playlistIndex][favoriteKey] = [];
+    }
 
-  const existingIndex = playlistsData[playlistIndex][favoriteKey].findIndex(
-    (fav) => (typeof fav === "object" ? fav.stream_id : fav) == item.stream_id
-  );
+    const existingIndex = playlistsData[playlistIndex][favoriteKey].findIndex(
+      (fav) => (typeof fav === "object" ? fav.stream_id : fav) == item.stream_id
+    );
 
-  let isFav;
-  if (existingIndex > -1) {
-    playlistsData[playlistIndex][favoriteKey].splice(existingIndex, 1);
-    isFav = false;
-  } else {
-    // Save full object for better reliability
-    const favItem = {
-      stream_id: item.stream_id,
-      name: item.name,
-      stream_icon: item.stream_icon,
-      stream_type: item.stream_type,
-      category_id: item.category_id
-    };
-    playlistsData[playlistIndex][favoriteKey].push(favItem);
-    isFav = true;
-  }
+    let isFav;
+    if (existingIndex > -1) {
+      playlistsData[playlistIndex][favoriteKey].splice(existingIndex, 1);
+      isFav = false;
+    } else {
+      // Save full object for better reliability
+      const favItem = {
+        stream_id: item.stream_id,
+        name: item.name,
+        stream_icon: item.stream_icon,
+        stream_type: item.stream_type,
+        category_id: item.category_id,
+      };
+      playlistsData[playlistIndex][favoriteKey].push(favItem);
+      isFav = true;
+    }
 
-  // Save the entire playlistsData array back
-  localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-  
-  // Clear cache to force refresh
-  filteredCache = null; 
+    // Save the entire playlistsData array back
+    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
 
-  return { isFav, item };
-};
+    // Clear cache to force refresh
+    filteredCache = null;
+
+    return { isFav, item };
+  };
 
   // ===== TOGGLE FAVORITE =====
   // ===== TOGGLE FAVORITE =====
@@ -1768,28 +1803,31 @@ const renderEPGList = (epgData) => {
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
-// ===== RENDER CHANNELS =====
-// ===== RENDER CHANNELS =====
-const renderChannels = () => {
-  const filtered = getFilteredCategories();
+  // ===== RENDER CHANNELS =====
+  // ===== RENDER CHANNELS =====
+  const renderChannels = () => {
+    const filtered = getFilteredCategories();
 
-  let selectedCat = filtered.find(
-    (c) => c.category_id === selectedCategoryId
-  );
-  if (!selectedCat) {
-    selectedCat = filtered[0];
-    selectedCategoryId = selectedCat.category_id;
-  }
+    let selectedCat = filtered.find(
+      (c) => c.category_id === selectedCategoryId
+    );
+    if (!selectedCat) {
+      selectedCat = filtered[0];
+      selectedCategoryId = selectedCat.category_id;
+    }
 
-  const channelGrid = qs(".channel-grid");
-  if (!channelGrid) return;
+    const channelGrid = qs(".channel-grid");
+    if (!channelGrid) return;
 
-  // Check if category is locked
-  const isLocked = lockedCategories.has(selectedCategoryId);
-  
-  if (isLocked) {
-    console.log("🔒 Showing locked overlay for category:", selectedCategoryId);
-    channelGrid.innerHTML = `
+    // Check if category is locked
+    const isLocked = lockedCategories.has(selectedCategoryId);
+
+    if (isLocked) {
+      console.log(
+        "🔒 Showing locked overlay for category:",
+        selectedCategoryId
+      );
+      channelGrid.innerHTML = `
       <div class="locked-category-overlay">
         <div class="locked-category-message">
           <i class="fa fa-lock" style="font-size: 64px; color: #ef4444; margin-bottom: 20px;"></i>
@@ -1798,42 +1836,52 @@ const renderChannels = () => {
         </div>
       </div>
     `;
-    return;
-  }
+      return;
+    }
 
-  const allChannels = selectedCat.channels || [];
-  
-  const channelsToShow = getChunkedChannels(allChannels, currentChunk, pageSize);
-  const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
+    const allChannels = selectedCat.channels || [];
 
-  console.log(`📺 Showing ${channelsToShow.length} of ${allChannels.length} channels (chunk ${currentChunk})`);
+    const channelsToShow = getChunkedChannels(
+      allChannels,
+      currentChunk,
+      pageSize
+    );
+    const hasMore = hasMoreChannelsAvailable(
+      allChannels,
+      currentChunk,
+      pageSize
+    );
 
-  if (channelsToShow.length === 0) {
-    channelGrid.innerHTML = `
+    console.log(
+      `📺 Showing ${channelsToShow.length} of ${allChannels.length} channels (chunk ${currentChunk})`
+    );
+
+    if (channelsToShow.length === 0) {
+      channelGrid.innerHTML = `
       <div class="no-channels">
         <p>No channels found in this category</p>
       </div>`;
-    return;
-  }
+      return;
+    }
 
-  const currentPlaylistName = JSON.parse(
-    localStorage.getItem("selectedPlaylist")
-  ).playlistName;
-  const currentPlaylist = JSON.parse(
-    localStorage.getItem("playlistsData")
-  ).find((pl) => pl.playlistName === currentPlaylistName);
-  const favoritesList = currentPlaylist.favoritesLiveTV || [];
+    const currentPlaylistName = JSON.parse(
+      localStorage.getItem("selectedPlaylist")
+    ).playlistName;
+    const currentPlaylist = JSON.parse(
+      localStorage.getItem("playlistsData")
+    ).find((pl) => pl.playlistName === currentPlaylistName);
+    const favoritesList = currentPlaylist.favoritesLiveTV || [];
 
-  const isHistoryView = selectedCategoryId === "channelHistory";
+    const isHistoryView = selectedCategoryId === "channelHistory";
 
-  const channelCardsHTML = channelsToShow
-    .map((ch) => {
-      const isFav = favoritesList.some(
-        (fav) =>
-          (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
-      );
+    const channelCardsHTML = channelsToShow
+      .map((ch) => {
+        const isFav = favoritesList.some(
+          (fav) =>
+            (typeof fav === "object" ? fav.stream_id : fav) === ch.stream_id
+        );
 
-      return `
+        return `
       <div class="channel-card" 
            data-stream-id="${ch.stream_id}" 
            data-name="${ch.name}" 
@@ -1869,198 +1917,231 @@ const renderChannels = () => {
         <div class="channel-name">${ch.name}</div>
       </div>
     `;
-    })
-    .join("");
+      })
+      .join("");
 
-  // Use requestAnimationFrame for smoother rendering on Tizen
-  requestAnimationFrame(() => {
-    channelGrid.innerHTML = channelCardsHTML;
-    
-    // Update scroll arrows after render
-    setTimeout(() => {
-      const updateScrollArrows = window.updateScrollArrows;
-      if (typeof updateScrollArrows === 'function') {
-        updateScrollArrows();
-      }
-    }, 50);
-  });
-};
+    // Use requestAnimationFrame for smoother rendering on Tizen
+    requestAnimationFrame(() => {
+      channelGrid.innerHTML = channelCardsHTML;
 
-// ===== LOAD MORE CHANNELS FUNCTION =====
-// ===== LOAD MORE CHANNELS FUNCTION =====
-const loadMoreChannels = () => {
-  if (isLoadingMoreChannels) {
-    console.log("⏳ Already loading channels...");
-    return;
-  }
-  
-  const filtered = getFilteredCategories();
-  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-  const allChannels = selectedCat ? selectedCat.channels || [] : [];
-  const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
-  
-  if (!hasMore) {
-    console.log("✅ No more channels to load");
-    return;
-  }
-  
-  isLoadingMoreChannels = true;
-  currentChunk++;
-  
-  console.log(`📺 Loading chunk ${currentChunk} (${currentChunk * pageSize} channels)...`);
-  
-  // Show loading indicator
-
-  
-  // Small delay for TV performance
-  setTimeout(() => {
-    renderChannels();
-    isLoadingMoreChannels = false;
-    
-    // Maintain focus on current channel
-    const channels = qsa(".channel-card");
-    if (channels.length > focusedChannelIndex) {
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    }
-  }, 100);
-};
-
-// ===== SETUP SCROLL-BASED AUTO-LOADING =====
-const setupScrollAutoLoad = () => {
-  const channelGrid = qs(".channel-grid");
-  if (!channelGrid) return;
-  
-  let scrollTimeout;
-  
-  const handleScroll = () => {
-    if (isLoadingMoreChannels) return;
-    
-    clearTimeout(scrollTimeout);
-    
-    scrollTimeout = setTimeout(() => {
-      const filtered = getFilteredCategories();
-      const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-      const allChannels = selectedCat ? selectedCat.channels || [] : [];
-      const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
-      
-      if (!hasMore) return;
-      
-      // Check if scrolled near the end (80% of scroll width)
-      const scrollLeft = channelGrid.scrollLeft;
-      const scrollWidth = channelGrid.scrollWidth;
-      const clientWidth = channelGrid.clientWidth;
-      const scrollPercentage = (scrollLeft + clientWidth) / scrollWidth;
-      
-      if (scrollPercentage > 0.8) {
-        console.log("🔄 Scroll detected near end - auto-loading...");
-        loadMoreChannels();
-      }
-    }, 200); // Debounce scroll events
+      // Update scroll arrows after render
+      setTimeout(() => {
+        const updateScrollArrows = window.updateScrollArrows;
+        if (typeof updateScrollArrows === "function") {
+          updateScrollArrows();
+        }
+      }, 50);
+    });
   };
-  
-  channelGrid.addEventListener('scroll', handleScroll);
-  
-  // Store reference for cleanup
-  window.channelGridScrollHandler = handleScroll;
-};
 
-
-// 1. ADD THIS DEFINITION HERE
-const setupSidebarSearchListener = () => {
-  const sidebarSearchInput = document.querySelector(".sidebar-search-input");
-  if (!sidebarSearchInput) return;
-
-  let searchTimeout = null;
-
-  sidebarSearchInput.addEventListener("input", function(e) {
-    currentCategoryChunk = 1;
-    focusedSidebarIndex = 0;
-
-    const query = e.target.value.toLowerCase();
-    
-    // Clear existing timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+  // ===== LOAD MORE CHANNELS FUNCTION =====
+  // ===== LOAD MORE CHANNELS FUNCTION =====
+  const loadMoreChannels = () => {
+    if (isLoadingMoreChannels) {
+      console.log("⏳ Already loading channels...");
+      return;
     }
-    
-    // Debounce: only update after 300ms of no typing
-    searchTimeout = setTimeout(() => {
-      const filtered = getFilteredCategories();
-      
-      let displayCategories;
-      if (query !== "") {
-        displayCategories = filtered.filter(function(c) {
-          return (c.category_name || "").toLowerCase().includes(query);
-        });
-      } else {
-        displayCategories = filtered;
+
+    const filtered = getFilteredCategories();
+    const selectedCat = filtered.find(
+      (c) => c.category_id === selectedCategoryId
+    );
+    const allChannels = selectedCat ? selectedCat.channels || [] : [];
+    const hasMore = hasMoreChannelsAvailable(
+      allChannels,
+      currentChunk,
+      pageSize
+    );
+
+    if (!hasMore) {
+      console.log("✅ No more channels to load");
+      return;
+    }
+
+    isLoadingMoreChannels = true;
+    currentChunk++;
+
+    console.log(
+      `📺 Loading chunk ${currentChunk} (${
+        currentChunk * pageSize
+      } channels)...`
+    );
+
+    // Show loading indicator
+
+    // Small delay for TV performance
+    setTimeout(() => {
+      renderChannels();
+      isLoadingMoreChannels = false;
+
+      // Maintain focus on current channel
+      const channels = qsa(".channel-card");
+      if (channels.length > focusedChannelIndex) {
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      }
+    }, 100);
+  };
+
+  // ===== SETUP SCROLL-BASED AUTO-LOADING =====
+  const setupScrollAutoLoad = () => {
+    const channelGrid = qs(".channel-grid");
+    if (!channelGrid) return;
+
+    let scrollTimeout;
+
+    const handleScroll = () => {
+      if (isLoadingMoreChannels) return;
+
+      clearTimeout(scrollTimeout);
+
+      scrollTimeout = setTimeout(() => {
+        const filtered = getFilteredCategories();
+        const selectedCat = filtered.find(
+          (c) => c.category_id === selectedCategoryId
+        );
+        const allChannels = selectedCat ? selectedCat.channels || [] : [];
+        const hasMore = hasMoreChannelsAvailable(
+          allChannels,
+          currentChunk,
+          pageSize
+        );
+
+        if (!hasMore) return;
+
+        // Check if scrolled near the end (80% of scroll width)
+        const scrollLeft = channelGrid.scrollLeft;
+        const scrollWidth = channelGrid.scrollWidth;
+        const clientWidth = channelGrid.clientWidth;
+        const scrollPercentage = (scrollLeft + clientWidth) / scrollWidth;
+
+        if (scrollPercentage > 0.8) {
+          console.log("🔄 Scroll detected near end - auto-loading...");
+          loadMoreChannels();
+        }
+      }, 200); // Debounce scroll events
+    };
+
+    channelGrid.addEventListener("scroll", handleScroll);
+
+    // Store reference for cleanup
+    window.channelGridScrollHandler = handleScroll;
+  };
+
+  // 1. ADD THIS DEFINITION HERE
+  const setupSidebarSearchListener = () => {
+    const sidebarSearchInput = document.querySelector(".sidebar-search-input");
+    if (!sidebarSearchInput) return;
+
+    let searchTimeout = null;
+
+    sidebarSearchInput.addEventListener("input", function (e) {
+      currentCategoryChunk = 1;
+      focusedSidebarIndex = 0;
+
+      const query = e.target.value.toLowerCase();
+
+      // Clear existing timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
       }
 
-      updateSidebarItemsOnly(displayCategories);
-    }, 300);
-  });
-};
+      // Debounce: only update after 300ms of no typing
+      searchTimeout = setTimeout(() => {
+        const filtered = getFilteredCategories();
 
-const updateSidebarItemsOnly = (displayCategories) => {
-  const sidebarItemsContainer = document.querySelector(".sidebar-items");
-  if (!sidebarItemsContainer) return;
+        let displayCategories;
+        if (query !== "") {
+          displayCategories = filtered.filter(function (c) {
+            return (c.category_name || "").toLowerCase().includes(query);
+          });
+        } else {
+          displayCategories = filtered;
+        }
 
-  const categoriesToShow = getChunkedCategories(displayCategories, currentCategoryChunk, categoriesPerChunk);
-  
-  const categoriesHTML = categoriesToShow.map((c) => {
-    const isActive = c.category_id === selectedCategoryId;
-    return `
-      <div class="sidebar-item ${isActive ? "sidebar-active" : ""}" data-category-id="${c.category_id}">
+        updateSidebarItemsOnly(displayCategories);
+      }, 300);
+    });
+  };
+
+  const updateSidebarItemsOnly = (displayCategories) => {
+    const sidebarItemsContainer = document.querySelector(".sidebar-items");
+    if (!sidebarItemsContainer) return;
+
+    const categoriesToShow = getChunkedCategories(
+      displayCategories,
+      currentCategoryChunk,
+      categoriesPerChunk
+    );
+
+    const categoriesHTML = categoriesToShow
+      .map((c) => {
+        const isActive = c.category_id === selectedCategoryId;
+        return `
+      <div class="sidebar-item ${
+        isActive ? "sidebar-active" : ""
+      }" data-category-id="${c.category_id}">
         <span class="sidebar-item-name">${c.category_name}</span>
-        <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+        <span class="sidebar-item-count">${
+          c.channels ? c.channels.length : 0
+        }</span>
       </div>`;
-  }).join("");
+      })
+      .join("");
 
-  sidebarItemsContainer.innerHTML = categoriesHTML;
-};
-
+    sidebarItemsContainer.innerHTML = categoriesHTML;
+  };
 
   // ===== RENDER SIDEBAR CATEGORIES =====
-const renderSidebarCategories = () => {
-  const filtered = getFilteredCategories();
-  
-  // Use current search query if present
- const query = qs(".sidebar-search-input")
-  ? qs(".sidebar-search-input").value.toLowerCase()
-  : "";
+  const renderSidebarCategories = () => {
+    const filtered = getFilteredCategories();
 
-  const displayCategories = query 
-    ? filtered.filter(c => c.category_name.toLowerCase().includes(query))
-    : filtered;
+    // Use current search query if present
+    const query = qs(".sidebar-search-input")
+      ? qs(".sidebar-search-input").value.toLowerCase()
+      : "";
 
-  const categoriesToShow = getChunkedCategories(displayCategories, currentCategoryChunk, categoriesPerChunk);
-  
-  const categoriesHTML = categoriesToShow.map((c) => {
-    const isActive = c.category_id === selectedCategoryId;
-    const hasAdult = categoryHasAdultContent(c.category_id);
-    const isLocked = hasAdult && lockedCategories.has(c.category_id);
-    
-    return `
-      <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+    const displayCategories = query
+      ? filtered.filter((c) => c.category_name.toLowerCase().includes(query))
+      : filtered;
+
+    const categoriesToShow = getChunkedCategories(
+      displayCategories,
+      currentCategoryChunk,
+      categoriesPerChunk
+    );
+
+    const categoriesHTML = categoriesToShow
+      .map((c) => {
+        const isActive = c.category_id === selectedCategoryId;
+        const hasAdult = categoryHasAdultContent(c.category_id);
+        const isLocked = hasAdult && lockedCategories.has(c.category_id);
+
+        return `
+      <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${
+          isLocked ? "sidebar-locked" : ""
+        }" 
            data-category-id="${c.category_id}"
            data-has-adult="${hasAdult}">
         <span class="sidebar-item-name">
           <span class="sidebar-text">${c.category_name}</span>
-          ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+          ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ""}
         </span>
-        <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+        <span class="sidebar-item-count">${
+          c.channels ? c.channels.length : 0
+        }</span>
       </div>`;
-  }).join("");
+      })
+      .join("");
 
-  // Only update the ITEMS, not the search box itself, to prevent losing focus
-  const sidebarItemsContainer = qs(".sidebar-items");
-  if (sidebarItemsContainer) {
-    sidebarItemsContainer.innerHTML = categoriesHTML;
-  } else {
-    // Initial render of the whole sidebar structure
-    const sidebarArea = qs("#sidebar-area");
-    if (sidebarArea) {
-      sidebarArea.innerHTML = `
+    // Only update the ITEMS, not the search box itself, to prevent losing focus
+    const sidebarItemsContainer = qs(".sidebar-items");
+    if (sidebarItemsContainer) {
+      sidebarItemsContainer.innerHTML = categoriesHTML;
+    } else {
+      // Initial render of the whole sidebar structure
+      const sidebarArea = qs("#sidebar-area");
+      if (sidebarArea) {
+        sidebarArea.innerHTML = `
         <div class="sidebar-content">
           <div class="sidebar-search-box">
             <input type="text" class="sidebar-search-input" placeholder="Search Categories" />
@@ -2070,123 +2151,132 @@ const renderSidebarCategories = () => {
             ${categoriesHTML}
           </div>
         </div>`;
-      setupSidebarSearchListener(); // Attach listener after creating element
+        setupSidebarSearchListener(); // Attach listener after creating element
+      }
     }
-  }
-};
+  };
 
-// ===== LOAD MORE CATEGORIES FUNCTION =====
-const loadMoreCategories = () => {
-  if (isLoadingMoreCategories) {
-    console.log("⏳ Already loading categories...");
-    return;
-  }
-  
-  const filtered = allCategoriesData.length > 0 ? allCategoriesData : getFilteredCategories();
-  const hasMore = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
-  
-  if (!hasMore) {
-    console.log("✅ No more categories to load");
-    return;
-  }
-  
-  isLoadingMoreCategories = true;
-  currentCategoryChunk++;
-  
-  console.log(`📁 Loading category chunk ${currentCategoryChunk}...`);
-  
-  setTimeout(() => {
-    renderSidebarCategories();
-    isLoadingMoreCategories = false;
-    
-    // Maintain sidebar focus
-    const sidebarItems = qsa(".sidebar-item");
-    if (sidebarItems.length > focusedSidebarIndex) {
-      setSidebarFocus(focusedSidebarIndex);
+  // ===== LOAD MORE CATEGORIES FUNCTION =====
+  const loadMoreCategories = () => {
+    if (isLoadingMoreCategories) {
+      console.log("⏳ Already loading categories...");
+      return;
     }
-  }, 100);
-};
 
+    const filtered =
+      allCategoriesData.length > 0
+        ? allCategoriesData
+        : getFilteredCategories();
+    const hasMore = hasMoreCategoriesAvailable(
+      filtered,
+      currentCategoryChunk,
+      categoriesPerChunk
+    );
 
-// Initialize locked categories
-const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-
-if (hasParentalPassword) {
-  const filtered = getFilteredCategories();
-  filtered.forEach(cat => {
-    if (categoryHasAdultContent(cat.category_id)) {
-      lockedCategories.add(cat.category_id);
+    if (!hasMore) {
+      console.log("✅ No more categories to load");
+      return;
     }
-  });
-}
+
+    isLoadingMoreCategories = true;
+    currentCategoryChunk++;
+
+    console.log(`📁 Loading category chunk ${currentCategoryChunk}...`);
+
+    setTimeout(() => {
+      renderSidebarCategories();
+      isLoadingMoreCategories = false;
+
+      // Maintain sidebar focus
+      const sidebarItems = qsa(".sidebar-item");
+      if (sidebarItems.length > focusedSidebarIndex) {
+        setSidebarFocus(focusedSidebarIndex);
+      }
+    }, 100);
+  };
+
+  // Initialize locked categories
+  const selectedPlaylist =
+    JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+  const hasParentalPassword =
+    selectedPlaylist.parentalPassword &&
+    selectedPlaylist.parentalPassword.length > 0;
+
+  if (hasParentalPassword) {
+    const filtered = getFilteredCategories();
+    filtered.forEach((cat) => {
+      if (categoryHasAdultContent(cat.category_id)) {
+        lockedCategories.add(cat.category_id);
+      }
+    });
+  }
 
   window.updateLiveTvSidebar = renderSidebarCategories;
 
   // ===== GLOBAL RENDER FUNCTION FOR SORTING =====
-// ===== GLOBAL RENDER FUNCTION FOR SORTING =====
-window.renderLiveTv = () => {
-  console.log("🔄 Refreshing Live TV page after sorting");
-  
-  // Reset navigation state
-  inChannelGrid = true;
-  inSidebar = false;
-  inSidebarSearch = false;
-  inHeaderSearch = false;
-  inEPG = false;
-  inVideoPlayer = false;
-  inFavoriteBtn = false;
-  inRemoveHistoryBtn = false;
-  inAspectRatioBtn = false;
-  isMenuDotsActive = false;
-  
-  // Reset focus index
-  focusedChannelIndex = 0;
-  
-  // Re-render channels with new sort order
-  renderChannels();
-  renderSidebarCategories();
-  
-  // Restore focus to first channel
-  setTimeout(() => {
-    const channels = qsa(".channel-card");
-    if (channels.length > 0) {
-      // Remove all existing focus
-      removeAllFocus();
-      
-      // Set focus on first channel
-      focusedChannelIndex = 0;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-      
-      console.log("✅ Focus restored to channel grid");
-    }
-  }, 100);
-};
+  // ===== GLOBAL RENDER FUNCTION FOR SORTING =====
+  window.renderLiveTv = () => {
+    console.log("🔄 Refreshing Live TV page after sorting");
+
+    // Reset navigation state
+    inChannelGrid = true;
+    inSidebar = false;
+    inSidebarSearch = false;
+    inHeaderSearch = false;
+    inEPG = false;
+    inVideoPlayer = false;
+    inFavoriteBtn = false;
+    inRemoveHistoryBtn = false;
+    inAspectRatioBtn = false;
+    isMenuDotsActive = false;
+
+    // Reset focus index
+    focusedChannelIndex = 0;
+
+    // Re-render channels with new sort order
+    renderChannels();
+    renderSidebarCategories();
+
+    // Restore focus to first channel
+    setTimeout(() => {
+      const channels = qsa(".channel-card");
+      if (channels.length > 0) {
+        // Remove all existing focus
+        removeAllFocus();
+
+        // Set focus on first channel
+        focusedChannelIndex = 0;
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+        console.log("✅ Focus restored to channel grid");
+      }
+    }, 100);
+  };
 
   // CLICK HANDLER
   // ===== CLICK HANDLER (UPDATED) =====
   function handleClick(e) {
+    if (!isPageFullyLoaded) {
+      e.preventDefault();
+      e.stopPropagation();
 
-      if (!isPageFullyLoaded) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // SHOW VISUAL FEEDBACK
-    const loadingSubtext = document.getElementById("loadingSubtext");
-    if (loadingSubtext) {
-      loadingSubtext.textContent = "Please wait - channels are still loading...";
-      loadingSubtext.style.color = "#fbbf24"; // Yellow color
-      
-      // Flash the text
-      loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
-      setTimeout(() => {
-        loadingSubtext.style.animation = "";
-      }, 500);
+      // SHOW VISUAL FEEDBACK
+      const loadingSubtext = document.getElementById("loadingSubtext");
+      if (loadingSubtext) {
+        loadingSubtext.textContent =
+          "Please wait - channels are still loading...";
+        loadingSubtext.style.color = "#fbbf24"; // Yellow color
+
+        // Flash the text
+        loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
+        setTimeout(() => {
+          loadingSubtext.style.animation = "";
+        }, 500);
+      }
+
+      console.log("⏳ Please wait - page is still loading...");
+      return;
     }
-    
-    console.log("⏳ Please wait - page is still loading...");
-    return;
-  }
     console.log("Click detected on:", e.target);
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
@@ -2200,7 +2290,7 @@ window.renderLiveTv = () => {
     if (inPasswordModal) {
       // Submit button
       if (e.target.classList.contains("password-submit-btn")) {
-    verifyPasswordForCategory(); // Changed function name
+        verifyPasswordForCategory(); // Changed function name
         return;
       }
 
@@ -2236,44 +2326,44 @@ window.renderLiveTv = () => {
       return;
     }
     // Check if click is on favorite button OR its children (svg/path)
-  // Check if click is on favorite button OR its children (svg/path)
-const favBtn = e.target.closest(".favorite-btn");
-const svg = e.target.closest("svg");
-const isFavClick = favBtn || (svg && svg.parentElement.classList.contains("favorite-btn"));
+    // Check if click is on favorite button OR its children (svg/path)
+    const favBtn = e.target.closest(".favorite-btn");
+    const svg = e.target.closest("svg");
+    const isFavClick =
+      favBtn || (svg && svg.parentElement.classList.contains("favorite-btn"));
 
-if (favBtn || isFavClick) {
-  e.stopPropagation();
+    if (favBtn || isFavClick) {
+      e.stopPropagation();
 
-  const targetBtn = favBtn || (svg ? svg.parentElement : null);
-  if (!targetBtn) return;
-  
-  const card = targetBtn.closest(".channel-card");
-  if (!card) return;
+      const targetBtn = favBtn || (svg ? svg.parentElement : null);
+      if (!targetBtn) return;
 
-  const streamId = card.dataset.streamId;
-  const channelData = allStreams.find((ch) => ch.stream_id == streamId);
+      const card = targetBtn.closest(".channel-card");
+      if (!card) return;
 
-  if (channelData) {
-    toggleFavorite(channelData);
+      const streamId = card.dataset.streamId;
+      const channelData = allStreams.find((ch) => ch.stream_id == streamId);
 
-    if (selectedCategoryId === "favorites") {
-      setTimeout(() => {
-        renderChannels();
-        renderSidebarCategories();
-        const channels = qsa(".channel-card");
-        if (channels.length > 0) {
-          focusedChannelIndex = Math.min(
-            focusedChannelIndex,
-            channels.length - 1
-          );
-          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+      if (channelData) {
+        toggleFavorite(channelData);
+
+        if (selectedCategoryId === "favorites") {
+          setTimeout(() => {
+            renderChannels();
+            renderSidebarCategories();
+            const channels = qsa(".channel-card");
+            if (channels.length > 0) {
+              focusedChannelIndex = Math.min(
+                focusedChannelIndex,
+                channels.length - 1
+              );
+              setFocus(channels, focusedChannelIndex, "channel-card-focused");
+            }
+          }, 100);
         }
-      }, 100);
+      }
+      return;
     }
-  }
-  return;
-}
-  
 
     if (favBtn || isFavClick) {
       e.stopPropagation();
@@ -2307,9 +2397,6 @@ if (favBtn || isFavClick) {
       return;
     }
 
-
-   
-
     // Channel card click
     const card = e.target.closest(".channel-card");
     if (card) {
@@ -2325,95 +2412,108 @@ if (favBtn || isFavClick) {
       return;
     }
 
-  // Sidebar category click
-// Sidebar category click
-// Sidebar category click
-const sidebarItem = e.target.closest(".sidebar-item");
-if (sidebarItem) {
-  const catId = sidebarItem.dataset.categoryId;
-  const hasAdult = sidebarItem.dataset.hasAdult === "true";
-  const isLocked = lockedCategories.has(catId);
-  
-  // Re-lock previous category if switching away
-  if (previousCategoryId && previousCategoryId !== catId) {
-    relockPreviousCategory(previousCategoryId);
-  }
-  
-  // Check if category is locked
-  if (hasAdult && isLocked) {
-    // Show password modal to unlock category
-    showPasswordModal(catId);
-    return;
-  }
-  
-  // Category is unlocked or has no adult content - switch to it
-  selectedCategoryId = catId;
-  previousCategoryId = catId;
-  currentChunk = 1;
+    // Sidebar category click
+    // Sidebar category click
+    // Sidebar category click
+    const sidebarItem = e.target.closest(".sidebar-item");
+    if (sidebarItem) {
+      const catId = sidebarItem.dataset.categoryId;
+      const hasAdult = sidebarItem.dataset.hasAdult === "true";
+      const isLocked = lockedCategories.has(catId);
 
-  // **SHOW CHANNEL GRID LOADING OVERLAY**
-  const channelGrid = qs(".channel-grid");
-  if (channelGrid) {
-    channelGrid.innerHTML = ChannelGridLoadingOverlay();
-  }
-
-  focusedChannelIndex = 0;
-
-  // **GET CHANNELS TO PRELOAD**
-  const filtered = getFilteredCategories();
-  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-  const allChannels = selectedCat ? selectedCat.channels || [] : [];
-  const channelsToPreload = getChunkedChannels(allChannels, currentChunk, pageSize);
-
-  // **PRELOAD NEW CATEGORY IMAGES**
-  preloadChannelImages(
-    channelsToPreload,
-    // Progress callback
-    (progress, loaded, total) => {
-      const channelProgressFill = document.getElementById("channelProgressFill");
-      const channelProgressText = document.getElementById("channelProgressText");
-      const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
-      
-      if (channelProgressFill) {
-        channelProgressFill.style.width = progress + "%";
-      }
-      
-      if (channelProgressText) {
-        channelProgressText.textContent = Math.round(progress) + "%";
-      }
-      
-      if (channelLoadingSubtext) {
-        // channelLoadingSubtext.textContent = `Loading images ${loaded}/${total}...`;
-      }
-    },
-    // Complete callback
-    () => {
-      renderChannels();
-      renderSidebarCategories();
-
-      // **REMOVE CHANNEL GRID LOADING OVERLAY**
-      const channelGridLoadingOverlay = document.getElementById("channelGridLoading");
-      if (channelGridLoadingOverlay) {
-        channelGridLoadingOverlay.style.opacity = "0";
-        channelGridLoadingOverlay.style.transition = "opacity 0.3s ease";
-        setTimeout(() => {
-          channelGridLoadingOverlay.remove();
-        }, 300);
+      // Re-lock previous category if switching away
+      if (previousCategoryId && previousCategoryId !== catId) {
+        relockPreviousCategory(previousCategoryId);
       }
 
-      setTimeout(() => {
-        const channels = qsa(".channel-card");
-        if (channels.length > 0) {
-          setFocus(channels, 0, "channel-card-focused");
-          inChannelGrid = true;
-          inSidebar = false;
+      // Check if category is locked
+      if (hasAdult && isLocked) {
+        // Show password modal to unlock category
+        showPasswordModal(catId);
+        return;
+      }
+
+      // Category is unlocked or has no adult content - switch to it
+      selectedCategoryId = catId;
+      previousCategoryId = catId;
+      currentChunk = 1;
+
+      // **SHOW CHANNEL GRID LOADING OVERLAY**
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.innerHTML = ChannelGridLoadingOverlay();
+      }
+
+      focusedChannelIndex = 0;
+
+      // **GET CHANNELS TO PRELOAD**
+      const filtered = getFilteredCategories();
+      const selectedCat = filtered.find(
+        (c) => c.category_id === selectedCategoryId
+      );
+      const allChannels = selectedCat ? selectedCat.channels || [] : [];
+      const channelsToPreload = getChunkedChannels(
+        allChannels,
+        currentChunk,
+        pageSize
+      );
+
+      // **PRELOAD NEW CATEGORY IMAGES**
+      preloadChannelImages(
+        channelsToPreload,
+        // Progress callback
+        (progress, loaded, total) => {
+          const channelProgressFill = document.getElementById(
+            "channelProgressFill"
+          );
+          const channelProgressText = document.getElementById(
+            "channelProgressText"
+          );
+          const channelLoadingSubtext = document.getElementById(
+            "channelLoadingSubtext"
+          );
+
+          if (channelProgressFill) {
+            channelProgressFill.style.width = progress + "%";
+          }
+
+          if (channelProgressText) {
+            channelProgressText.textContent = Math.round(progress) + "%";
+          }
+
+          if (channelLoadingSubtext) {
+            // channelLoadingSubtext.textContent = `Loading images ${loaded}/${total}...`;
+          }
+        },
+        // Complete callback
+        () => {
+          renderChannels();
+          renderSidebarCategories();
+
+          // **REMOVE CHANNEL GRID LOADING OVERLAY**
+          const channelGridLoadingOverlay =
+            document.getElementById("channelGridLoading");
+          if (channelGridLoadingOverlay) {
+            channelGridLoadingOverlay.style.opacity = "0";
+            channelGridLoadingOverlay.style.transition = "opacity 0.3s ease";
+            setTimeout(() => {
+              channelGridLoadingOverlay.remove();
+            }, 300);
+          }
+
+          setTimeout(() => {
+            const channels = qsa(".channel-card");
+            if (channels.length > 0) {
+              setFocus(channels, 0, "channel-card-focused");
+              inChannelGrid = true;
+              inSidebar = false;
+            }
+          }, 50);
         }
-      }, 50);
+      );
+
+      return;
     }
-  );
-  
-  return;
-}
 
     // EPG item click
     const epgItem = e.target.closest(".epg-item");
@@ -2426,151 +2526,167 @@ if (sidebarItem) {
     }
   }
 
-
   // Show both play button and aspect ratio button
-// Show both play button and aspect ratio button
-const showVideoControls = () => {
-  const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
-  const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
-  
-  if (playPauseBtn) {
-    playPauseBtn.style.display = "flex";
-    playPauseBtn.style.opacity = "1";
-    playPauseBtn.style.transition = "opacity 0.3s ease";
-  }
-  
-  // CRITICAL: Check fullscreen status before showing
-  if (aspectRatioDiv) {
-    const isFs = !!(document.fullscreenElement || 
-                    document.webkitFullscreenElement || 
-                    document.mozFullScreenElement || 
-                    document.msFullscreenElement);
-    
-    if (isFs) {
-      aspectRatioDiv.style.display = "block";
-      aspectRatioDiv.style.opacity = "1";
-      aspectRatioDiv.style.transition = "opacity 0.3s ease";
-    } else {
-      // Force hide if not in fullscreen
-      aspectRatioDiv.style.display = "none";
-      aspectRatioDiv.style.opacity = "0";
+  // Show both play button and aspect ratio button
+  const showVideoControls = () => {
+    const playPauseBtn =
+      document.querySelector(".play-pause-btn") ||
+      document.querySelector("#live-play-pause-btn");
+    const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
+
+    if (playPauseBtn) {
+      playPauseBtn.style.display = "flex";
+      playPauseBtn.style.opacity = "1";
+      playPauseBtn.style.transition = "opacity 0.3s ease";
     }
-  }
-  
-  // Always restart auto-hide timer
-  startVideoControlsHideTimer();
-};
 
-// Make it globally accessible
-window.showVideoControls = showVideoControls;
+    // CRITICAL: Check fullscreen status before showing
+    if (aspectRatioDiv) {
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
 
-// Start timer to auto-hide video controls after 3 seconds
-// Start timer to auto-hide video controls after 3 seconds
-const startVideoControlsHideTimer = () => {
-  if (videoControlsHideTimer) {
-    clearTimeout(videoControlsHideTimer);
-    videoControlsHideTimer = null;
-  }
-  
-  videoControlsHideTimer = setTimeout(() => {
-    // Check if video is playing
-    let isPlaying = false;
-    if (window.livePlayer) {
-      try {
-        if (window.livePlayer._fp) {
-          isPlaying = window.livePlayer._fp.playing;
-        } else {
-          isPlaying = window.livePlayer.paused ? !window.livePlayer.paused() : false;
+      if (isFs) {
+        aspectRatioDiv.style.display = "block";
+        aspectRatioDiv.style.opacity = "1";
+        aspectRatioDiv.style.transition = "opacity 0.3s ease";
+      } else {
+        // Force hide if not in fullscreen
+        aspectRatioDiv.style.display = "none";
+        aspectRatioDiv.style.opacity = "0";
+      }
+    }
+
+    // Always restart auto-hide timer
+    startVideoControlsHideTimer();
+  };
+
+  // Make it globally accessible
+  window.showVideoControls = showVideoControls;
+
+  // Start timer to auto-hide video controls after 3 seconds
+  // Start timer to auto-hide video controls after 3 seconds
+  const startVideoControlsHideTimer = () => {
+    if (videoControlsHideTimer) {
+      clearTimeout(videoControlsHideTimer);
+      videoControlsHideTimer = null;
+    }
+
+    videoControlsHideTimer = setTimeout(() => {
+      // Check if video is playing
+      let isPlaying = false;
+      if (window.livePlayer) {
+        try {
+          if (window.livePlayer._fp) {
+            isPlaying = window.livePlayer._fp.playing;
+          } else {
+            isPlaying = window.livePlayer.paused
+              ? !window.livePlayer.paused()
+              : false;
+          }
+        } catch (err) {
+          console.warn("Error checking play state:", err);
         }
-      } catch (err) {
-        console.warn("Error checking play state:", err);
       }
-    }
-    
-    if (isPlaying) {
-      const playPauseBtn = document.querySelector(".play-pause-btn") || document.querySelector("#live-play-pause-btn");
-      const aspectRatioDiv = document.querySelector(".videojs-aspect-ratio-div");
-      
-      if (playPauseBtn) {
-        playPauseBtn.style.opacity = "0";
-        playPauseBtn.style.transition = "opacity 0.3s ease";
-        setTimeout(() => {
-          playPauseBtn.style.display = "none";
-        }, 300);
-      }
-      
-      // CRITICAL: Only hide aspect ratio if in fullscreen
-      if (aspectRatioDiv) {
-        const isFs = !!(document.fullscreenElement || 
-                        document.webkitFullscreenElement || 
-                        document.mozFullScreenElement || 
-                        document.msFullscreenElement);
-        
-        if (isFs) {
-          aspectRatioDiv.style.opacity = "0";
-          aspectRatioDiv.style.transition = "opacity 0.3s ease";
+
+      if (isPlaying) {
+        const playPauseBtn =
+          document.querySelector(".play-pause-btn") ||
+          document.querySelector("#live-play-pause-btn");
+        const aspectRatioDiv = document.querySelector(
+          ".videojs-aspect-ratio-div"
+        );
+
+        if (playPauseBtn) {
+          playPauseBtn.style.opacity = "0";
+          playPauseBtn.style.transition = "opacity 0.3s ease";
           setTimeout(() => {
-            aspectRatioDiv.style.display = "none";
+            playPauseBtn.style.display = "none";
           }, 300);
-        } else {
-          // Force hide immediately if not fullscreen
-          aspectRatioDiv.style.display = "none";
-          aspectRatioDiv.style.opacity = "0";
+        }
+
+        // CRITICAL: Only hide aspect ratio if in fullscreen
+        if (aspectRatioDiv) {
+          const isFs = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+
+          if (isFs) {
+            aspectRatioDiv.style.opacity = "0";
+            aspectRatioDiv.style.transition = "opacity 0.3s ease";
+            setTimeout(() => {
+              aspectRatioDiv.style.display = "none";
+            }, 300);
+          } else {
+            // Force hide immediately if not fullscreen
+            aspectRatioDiv.style.display = "none";
+            aspectRatioDiv.style.opacity = "0";
+          }
         }
       }
+
+      videoControlsHideTimer = null;
+    }, 3000);
+  };
+
+  window.startVideoControlsHideTimer = startVideoControlsHideTimer;
+
+  // Stop auto-hide timer
+  const stopVideoControlsHideTimer = () => {
+    if (videoControlsHideTimer) {
+      clearTimeout(videoControlsHideTimer);
+      videoControlsHideTimer = null;
     }
-    
-    videoControlsHideTimer = null;
-  }, 3000);
-};
-
-
-window.startVideoControlsHideTimer = startVideoControlsHideTimer;
-
-// Stop auto-hide timer
-const stopVideoControlsHideTimer = () => {
-  if (videoControlsHideTimer) {
-    clearTimeout(videoControlsHideTimer);
-    videoControlsHideTimer = null;
-  }
-};
+  };
 
   // KEY NAVIGATION
   function handleKeydown(e) {
+    // CRITICAL: Safety check - only run if on liveTvPage
+    if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
- const activeElement = document.activeElement;
-  const isTypingInInput = activeElement && (
-    activeElement.classList.contains('search-input') ||
-    activeElement.classList.contains('sidebar-search-input') ||
-    activeElement.id === 'passwordModalInput'
-  );
-  
-  // Allow typing without interference
-  if (isTypingInInput && !e.key.startsWith('Arrow') && e.key !== 'Enter' && e.keyCode !== 10009) {
-    return; // Let browser handle typing naturally
-  }
+    const activeElement = document.activeElement;
+    const isTypingInInput =
+      activeElement &&
+      (activeElement.classList.contains("search-input") ||
+        activeElement.classList.contains("sidebar-search-input") ||
+        activeElement.id === "passwordModalInput");
 
-  // BLOCK ALL NAVIGATION UNTIL PAGE IS FULLY LOADED
-  if (!isPageFullyLoaded) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const loadingSubtext = document.getElementById("loadingSubtext");
-    if (loadingSubtext) {
-      loadingSubtext.textContent = "Please wait - channels are still loading...";
-      loadingSubtext.style.color = "#fbbf24";
-      
-      loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
-      setTimeout(() => {
-        loadingSubtext.style.animation = "";
-      }, 500);
+    // Allow typing without interference
+    if (
+      isTypingInInput &&
+      !e.key.startsWith("Arrow") &&
+      e.key !== "Enter" &&
+      e.keyCode !== 10009
+    ) {
+      return; // Let browser handle typing naturally
     }
-    
-    console.log("⏳ Please wait - page is still loading...");
-    return;
-  }
-  
-  
+
+    // BLOCK ALL NAVIGATION UNTIL PAGE IS FULLY LOADED
+    if (!isPageFullyLoaded) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const loadingSubtext = document.getElementById("loadingSubtext");
+      if (loadingSubtext) {
+        loadingSubtext.textContent =
+          "Please wait - channels are still loading...";
+        loadingSubtext.style.color = "#fbbf24";
+
+        loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
+        setTimeout(() => {
+          loadingSubtext.style.animation = "";
+        }, 500);
+      }
+
+      console.log("⏳ Please wait - page is still loading...");
+      return;
+    }
 
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
@@ -2589,42 +2705,41 @@ const stopVideoControlsHideTimer = () => {
 
     // MENU DOTS NAVIGATION
 
-// MENU DOTS NAVIGATION
-if (isMenuDotsActive) {
-    // BACK/ESCAPE: Go back to dashboard
-    if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
+    // MENU DOTS NAVIGATION
+    if (isMenuDotsActive) {
+      // BACK/ESCAPE: Go back to dashboard
+      if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
         console.log("⬅️ Back pressed from menu dots - going to dashboard");
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Clean up menu dots focus
         isMenuDotsActive = false;
-        const menuDots = qs('.menu-dots');
-        if (menuDots) menuDots.classList.remove('focused');
-        
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
+
         // Dispose player
         disposeLivePlayer();
-        
+
         if (window.livePlayer) {
-            try {
-                window.livePlayer.dispose();
-            } catch {}
-            window.livePlayer = null;
+          try {
+            window.livePlayer.dispose();
+          } catch {}
+          window.livePlayer = null;
         }
-        
+
         // Navigate back
         localStorage.setItem("currentPage", "dashboard");
-        
+
         if (typeof Router !== "undefined" && Router.showPage) {
-            Router.showPage("dashboard");
+          Router.showPage("dashboard");
         } else if (typeof navigateTo === "function") {
-            navigateTo("dashboard-page");
+          navigateTo("dashboard-page");
         }
         return;
-    }
-    
+      }
 
-     if (isDown) {
+      if (isDown) {
         isMenuDotsActive = false;
         inSidebarSearch = true;
         // isHeaderSearchActive = false;
@@ -2641,139 +2756,135 @@ if (isMenuDotsActive) {
         return;
       }
 
-    // DOWN: Open sidebar
-    // if (isDown) {
-    //     openSidebar('liveTvPage');
-    //     e.preventDefault();
-    //     return;
-    // }
-    
-    // LEFT: Go back to header search
-    if (isLeft) {
+      // DOWN: Open sidebar
+      // if (isDown) {
+      //     openSidebar('liveTvPage');
+      //     e.preventDefault();
+      //     return;
+      // }
+
+      // LEFT: Go back to header search
+      if (isLeft) {
         isMenuDotsActive = false;
         inHeaderSearch = true;
-        const menuDots = qs('.menu-dots');
-        if (menuDots) menuDots.classList.remove('focused');
+        const menuDots = qs(".menu-dots");
+        if (menuDots) menuDots.classList.remove("focused");
         setHeaderSearchFocus(true);
         e.preventDefault();
         return;
-    }
-    
-    // RIGHT: Stay on menu dots (no action)
-    if (isRight) {
+      }
+
+      // RIGHT: Stay on menu dots (no action)
+      if (isRight) {
         e.preventDefault();
         return;
-    }
-    
-    // UP: Stay on menu dots (no action)
-    if (isUp) {
+      }
+
+      // UP: Stay on menu dots (no action)
+      if (isUp) {
         e.preventDefault();
         return;
-    }
-    
-    // ENTER: Open sidebar
-    if (isEnter) {
-        openSidebar('liveTvPage');
+      }
+
+      // ENTER: Open sidebar
+      if (isEnter) {
+        openSidebar("liveTvPage");
         e.preventDefault();
         return;
+      }
+
+      return; // Block other keys when menu dots focused
     }
-    
-    return; // Block other keys when menu dots focused
-}
 
-   if (inPasswordModal) {
-  // Debounce rapid key presses on Tizen
-  if (window.passwordModalDebounce) {
-    return;
-  }
-  
-  window.passwordModalDebounce = true;
-  setTimeout(() => {
-    window.passwordModalDebounce = false;
-  }, 100);
-  
-  if (e.key === "ArrowDown") {
-    passwordModalFocusIndex++;
-    if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
-    
-    // Blur input when moving away
-    const input = document.getElementById("passwordModalInput");
-    if (input && passwordModalFocusIndex > 0) {
-      input.blur();
+    if (inPasswordModal) {
+      // Debounce rapid key presses on Tizen
+      if (window.passwordModalDebounce) {
+        return;
+      }
+
+      window.passwordModalDebounce = true;
+      setTimeout(() => {
+        window.passwordModalDebounce = false;
+      }, 100);
+
+      if (e.key === "ArrowDown") {
+        passwordModalFocusIndex++;
+        if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
+
+        // Blur input when moving away
+        const input = document.getElementById("passwordModalInput");
+        if (input && passwordModalFocusIndex > 0) {
+          input.blur();
+        }
+
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "ArrowRight") {
+        passwordModalFocusIndex++;
+        if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
+
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        passwordModalFocusIndex--;
+        if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
+
+        // Focus input if we moved back to it
+        if (passwordModalFocusIndex === 0) {
+          const input = document.getElementById("passwordModalInput");
+          if (input) input.focus();
+        }
+
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        passwordModalFocusIndex--;
+        if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
+        updatePasswordModalFocus();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        // Blur input before any action
+        const input = document.getElementById("passwordModalInput");
+        if (input) {
+          input.blur();
+        }
+
+        if (passwordModalFocusIndex === 1) {
+          // Submit
+          verifyPasswordForCategory(); // Changed function name
+        } else if (passwordModalFocusIndex === 2) {
+          // Cancel
+          hidePasswordModal();
+        } else if (passwordModalFocusIndex === 0) {
+          // Move from input to submit button
+          passwordModalFocusIndex = 1;
+          updatePasswordModalFocus();
+        }
+        e.preventDefault();
+        return;
+      }
+
+      // Back button closes modal
+      if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
+        hidePasswordModal();
+        e.preventDefault();
+        return;
+      }
+
+      return;
     }
-    
-    updatePasswordModalFocus();
-    e.preventDefault();
-    return;
-  }
-
-
-    if (e.key === "ArrowRight") {
-    passwordModalFocusIndex++;
-    if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
-    
-
-    updatePasswordModalFocus();
-    e.preventDefault();
-    return;
-  }
-
-  if (e.key === "ArrowLeft") {
-  passwordModalFocusIndex--;
-  if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
-
-  // Focus input if we moved back to it
-  if (passwordModalFocusIndex === 0) {
-    const input = document.getElementById("passwordModalInput");
-    if (input) input.focus();
-  }
-
-  updatePasswordModalFocus();
-  e.preventDefault();
-  return;
-}
-
-
-  if (e.key === "ArrowUp") {
-    passwordModalFocusIndex--;
-    if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
-    updatePasswordModalFocus();
-    e.preventDefault();
-    return;
-  }
- 
-
-  if (e.key === "Enter") {
-    // Blur input before any action
-    const input = document.getElementById("passwordModalInput");
-    if (input) {
-      input.blur();
-    }
-    
-    if (passwordModalFocusIndex === 1) {
-      // Submit
-    verifyPasswordForCategory(); // Changed function name
-    } else if (passwordModalFocusIndex === 2) {
-      // Cancel
-      hidePasswordModal();
-    } else if (passwordModalFocusIndex === 0) {
-      // Move from input to submit button
-      passwordModalFocusIndex = 1;
-      updatePasswordModalFocus();
-    }
-    e.preventDefault();
-    return;
-  }
-
-  // Back button closes modal
-  if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
-    hidePasswordModal();
-    e.preventDefault();
-    return;
-  }
-
-  return;
-}
 
     // Handle back button
     // Handle back button
@@ -2809,461 +2920,473 @@ if (isMenuDotsActive) {
       }
 
       localStorage.setItem("currentPage", "dashboard");
-      Router.showPage("dashboard");
+
+      if (typeof Router !== "undefined" && Router.showPage) {
+        Router.showPage("dashboard");
+      } else if (typeof navigateTo === "function") {
+        navigateTo("dashboard-page");
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
     // If user is in video player area
-   // If user is in video player area
-if (inVideoPlayer) {
-  const videoDiv = qs(".live-video-player-div");
-  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+    // If user is in video player area
+    if (inVideoPlayer) {
+      const videoDiv = qs(".live-video-player-div");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
 
-  // Show controls whenever user navigates in video area
-  showVideoControls();
+      // Show controls whenever user navigates in video area
+      showVideoControls();
 
-  if (isUp) {
-    inVideoPlayer = false;
-    inChannelGrid = true;
-    stopVideoControlsHideTimer(); // Stop timer when leaving video
-    if (videoDiv) {
-      videoDiv.classList.remove("video-focused");
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
-    }
-    if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedChannelIndex = 0;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
+      if (isUp) {
+        inVideoPlayer = false;
+        inChannelGrid = true;
+        stopVideoControlsHideTimer(); // Stop timer when leaving video
+        if (videoDiv) {
+          videoDiv.classList.remove("video-focused");
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+        if (aspectBtn) aspectBtn.style.border = "none";
+        focusedChannelIndex = 0;
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
 
-  if (isDown) {
-    
-    // Go to play/pause button
-    inVideoPlayer = false;
-    inPlayPauseBtn = true;
-    showVideoControls(); // Show controls when moving to play button
-    if (videoDiv) {
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
-    }
-    if (playPauseBtn) {
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.opacity = "1";
-      playPauseBtn.classList.add("focused");
-    }
-    e.preventDefault();
-    return;
-  }
+      if (isDown) {
+        // Go to play/pause button
+        inVideoPlayer = false;
+        inPlayPauseBtn = true;
+        showVideoControls(); // Show controls when moving to play button
+        if (videoDiv) {
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (playPauseBtn) {
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+          playPauseBtn.classList.add("focused");
+        }
+        e.preventDefault();
+        return;
+      }
 
-  if (isEnter) {
-    // Click on video container to enter fullscreen
-    if (videoDiv) {
-      try {
-        if (!document.fullscreenElement && 
-            !document.webkitFullscreenElement && 
-            !document.mozFullScreenElement && 
-            !document.msFullscreenElement) {
-          // Enter fullscreen - try different methods for TV compatibility
-          if (videoDiv.requestFullscreen) {
-            videoDiv.requestFullscreen();
-          } else if (videoDiv.webkitRequestFullscreen) {
-            videoDiv.webkitRequestFullscreen();
-          } else if (videoDiv.mozRequestFullScreen) {
-            videoDiv.mozRequestFullScreen();
-          } else if (videoDiv.msRequestFullscreen) {
-            videoDiv.msRequestFullscreen();
-          }
-        } else {
-          // Exit fullscreen
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
+      if (isEnter) {
+        // Click on video container to enter fullscreen
+        if (videoDiv) {
+          try {
+            if (
+              !document.fullscreenElement &&
+              !document.webkitFullscreenElement &&
+              !document.mozFullScreenElement &&
+              !document.msFullscreenElement
+            ) {
+              // Enter fullscreen - try different methods for TV compatibility
+              if (videoDiv.requestFullscreen) {
+                videoDiv.requestFullscreen();
+              } else if (videoDiv.webkitRequestFullscreen) {
+                videoDiv.webkitRequestFullscreen();
+              } else if (videoDiv.mozRequestFullScreen) {
+                videoDiv.mozRequestFullScreen();
+              } else if (videoDiv.msRequestFullscreen) {
+                videoDiv.msRequestFullscreen();
+              }
+            } else {
+              // Exit fullscreen
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+              } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+              }
+            }
+          } catch (err) {
+            console.error("Fullscreen error:", err);
           }
         }
-      } catch (err) {
-        console.error("Fullscreen error:", err);
+        showVideoControls(); // Show controls on any interaction
+        e.preventDefault();
+        return;
       }
-    }
-    showVideoControls(); // Show controls on any interaction
-    e.preventDefault();
-    return;
-  }
 
-  if (isRight) {
-    // Go to EPG list
-    inVideoPlayer = false;
-    inEPG = true;
-    stopVideoControlsHideTimer(); // Stop timer when leaving video
-    if (videoDiv) {
-      videoDiv.classList.remove("video-focused");
-      videoDiv.style.outline = "none";
-      videoDiv.style.border = "none";
-    }
-    if (aspectBtn) aspectBtn.style.border = "none";
-    focusedEPGIndex = 0;
-    const epgItems = qsa(".epg-item");
-    if (epgItems.length) {
-      epgItems[0].classList.add("epg-focused");
-      epgItems[0].scrollIntoView({ block: "nearest" });
-    }
-    e.preventDefault();
-    return;
-  }
+      if (isRight) {
+        // Go to EPG list
+        inVideoPlayer = false;
+        inEPG = true;
+        stopVideoControlsHideTimer(); // Stop timer when leaving video
+        if (videoDiv) {
+          videoDiv.classList.remove("video-focused");
+          videoDiv.style.outline = "none";
+          videoDiv.style.border = "none";
+        }
+        if (aspectBtn) aspectBtn.style.border = "none";
+        focusedEPGIndex = 0;
+        const epgItems = qsa(".epg-item");
+        if (epgItems.length) {
+          epgItems[0].classList.add("epg-focused");
+          epgItems[0].scrollIntoView({ block: "nearest" });
+        }
+        e.preventDefault();
+        return;
+      }
 
-  return;
-}
+      return;
+    }
 
     // Play/Pause button navigation
-   if (inPlayPauseBtn) {
-  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-  const videoDiv = qs(".live-video-player-div");
-  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+    if (inPlayPauseBtn) {
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      const videoDiv = qs(".live-video-player-div");
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
 
-  // Show controls on any navigation
-  showVideoControls();
-   const isFs = !!(document.fullscreenElement || 
-                    document.webkitFullscreenElement || 
-                    document.mozFullScreenElement || 
-                    document.msFullscreenElement);
-if (!isFs && window._justExitedFullscreen) {
-    // Clear the flag
-    window._justExitedFullscreen = false;
-    
-    // Ensure focus is on play/pause button
-    if (playPauseBtn) {
-      playPauseBtn.classList.add("focused");
-      playPauseBtn.style.border = "3px solid #0ea5e9";
-    }
-  }
-  
+      // Show controls on any navigation
+      showVideoControls();
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      if (!isFs && window._justExitedFullscreen) {
+        // Clear the flag
+        window._justExitedFullscreen = false;
 
-  if (isUp) {
-    // Go back to video container
-    inPlayPauseBtn = false;
-    inVideoPlayer = true;
-    if (playPauseBtn) {
-      playPauseBtn.classList.remove("focused");
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.opacity = "1";
-    }
-    if (videoDiv) {
-      videoDiv.classList.add("video-focused");
-      videoDiv.style.border = "3px solid #0ea5e9";
-      videoDiv.style.boxSizing = "border-box";
-      videoDiv.style.outline = "3px solid #0ea5e9";
-      videoDiv.style.outlineOffset = "-3px";
-    }
-    e.preventDefault();
-    return;
-  }
+        // Ensure focus is on play/pause button
+        if (playPauseBtn) {
+          playPauseBtn.classList.add("focused");
+          playPauseBtn.style.border = "3px solid #0ea5e9";
+        }
+      }
 
+      if (isUp) {
+        // Go back to video container
+        inPlayPauseBtn = false;
+        inVideoPlayer = true;
+        if (playPauseBtn) {
+          playPauseBtn.classList.remove("focused");
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+        }
+        if (videoDiv) {
+          videoDiv.classList.add("video-focused");
+          videoDiv.style.border = "3px solid #0ea5e9";
+          videoDiv.style.boxSizing = "border-box";
+          videoDiv.style.outline = "3px solid #0ea5e9";
+          videoDiv.style.outlineOffset = "-3px";
+        }
+        e.preventDefault();
+        return;
+      }
 
+      if (isDown && isFs) {
+        // Go to aspect ratio button
 
+        inPlayPauseBtn = false;
+        inAspectRatioBtn = true;
+        if (playPauseBtn) playPauseBtn.classList.remove("focused");
+        if (aspectBtn) {
+          aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "3px solid var(--gold)";
+          aspectBtn.scrollIntoView({ block: "nearest" });
+        }
+        e.preventDefault();
+        return;
+      }
 
-  if (isDown && isFs) {
-    // Go to aspect ratio button
-
-    inPlayPauseBtn = false;
-    inAspectRatioBtn = true;
-    if (playPauseBtn) playPauseBtn.classList.remove("focused");
-    if (aspectBtn) {
-      aspectBtn.classList.add("videojs-aspect-ratio-btn-focused");
-      aspectBtn.style.border = "3px solid var(--gold)";
-      aspectBtn.scrollIntoView({ block: "nearest" });
-    }
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    // Toggle play/pause
-    if (window.livePlayer) {
-      try {
-        if (window.livePlayer._fp) {
-          const fp = window.livePlayer._fp;
-          if (fp.playing) {
-            fp.pause();
-          } else {
-            fp.resume();
+      if (isEnter) {
+        // Toggle play/pause
+        if (window.livePlayer) {
+          try {
+            if (window.livePlayer._fp) {
+              const fp = window.livePlayer._fp;
+              if (fp.playing) {
+                fp.pause();
+              } else {
+                fp.resume();
+              }
+            } else {
+              if (window.livePlayer.paused()) {
+                window.livePlayer.play();
+              } else {
+                window.livePlayer.pause();
+              }
+            }
+          } catch (err) {
+            console.warn("Play/Pause toggle failed:", err);
           }
         } else {
-          if (window.livePlayer.paused()) {
-            window.livePlayer.play();
-          } else {
-            window.livePlayer.pause();
-          }
+          togglePlayPause();
         }
-      } catch (err) {
-        console.warn("Play/Pause toggle failed:", err);
+        showVideoControls(); // Show controls on interaction
+        e.preventDefault();
+        return;
       }
-    } else {
-      togglePlayPause();
     }
-    showVideoControls(); // Show controls on interaction
-    e.preventDefault();
-    return;
-  }
-}
 
     // Aspect ratio button navigation
-if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
+    if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
+      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
 
-  const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-  const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
+      // Show controls on any navigation
+      showVideoControls();
 
-  // Show controls on any navigation
-  showVideoControls();
+      if (isUp) {
+        inAspectRatioBtn = false;
+        inPlayPauseBtn = true;
+        window.liveTvPageState.inAspectRatioBtn = false;
+        window.liveTvPageState.inPlayPauseBtn = true;
+        if (aspectBtn) {
+          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+          aspectBtn.style.border = "none";
+        }
+        if (playPauseBtn) {
+          playPauseBtn.classList.add("focused");
+          playPauseBtn.style.display = "flex";
+          playPauseBtn.style.opacity = "1";
+        }
+        e.preventDefault();
+        return;
+      }
 
-  if (isUp) {
-    inAspectRatioBtn = false;
-    inPlayPauseBtn = true;
-       window.liveTvPageState.inAspectRatioBtn = false;
-    window.liveTvPageState.inPlayPauseBtn = true;
-    if (aspectBtn) {
-      aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-      aspectBtn.style.border = "none";
-    }
-    if (playPauseBtn) {
-      playPauseBtn.classList.add("focused");
-      playPauseBtn.style.display = "flex";
-      playPauseBtn.style.opacity = "1";
-    }
-    e.preventDefault();
-    return;
-  }
+      if (isEnter) {
+        // Check fullscreen before allowing toggle
+        const isFs = !!(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement
+        );
 
- 
-
- if (isEnter) {
-  // Check fullscreen before allowing toggle
-  const isFs = !!(document.fullscreenElement || 
-                  document.webkitFullscreenElement || 
-                  document.mozFullScreenElement || 
-                  document.msFullscreenElement);
-  
-  if (isFs) {
-        window._aspectRatioWasUsed = true;
-    window.liveTvPageState.inAspectRatioBtn = true; 
-    toggleAspectRatio();
-    showVideoControls(); // Show controls and restart timer
-  } else {
-    console.log("🚫 Aspect ratio blocked - not in fullscreen");
-  }
-  e.preventDefault();
-  return;
-}
-}
-
-if (inHeaderSearch) {
-  const searchInput = qs(".search-input");
-
-  // FORCE EXIT ON FIRST PRESS
-  if (isDown) {
-    if (searchInput) {
-      searchInput.blur(); // Releases the browser's hold on the input
-    }
-    isHeaderSearchActive = false; // Reset the state
-    inHeaderSearch = false;
-    inSidebarSearch = true;
-    
-    setHeaderSearchFocus(false);
-    setSidebarSearchFocus(true);
-    
-    e.preventDefault(); // Prevents the browser from using the 'Down' key
-    return;
-  }
-
-  if (isRight) {
-    if (searchInput) {
-      searchInput.blur();
-    }
-    isHeaderSearchActive = false;
-    inHeaderSearch = false;
-    setHeaderSearchFocus(false);
-    setFocusOnMenuDots();
-    e.preventDefault();
-    return;
-  }
-
-  // Handle Enter to toggle keyboard
-  if (isEnter) {
-    if (searchInput) {
-      if (!isHeaderSearchActive) {
-        isHeaderSearchActive = true;
-        setTimeout(function() { searchInput.focus(); }, 50);
-      } else {
-        isHeaderSearchActive = false;
-        searchInput.blur();
+        if (isFs) {
+          window._aspectRatioWasUsed = true;
+          window.liveTvPageState.inAspectRatioBtn = true;
+          toggleAspectRatio();
+          showVideoControls(); // Show controls and restart timer
+        } else {
+          console.log("🚫 Aspect ratio blocked - not in fullscreen");
+        }
+        e.preventDefault();
+        return;
       }
     }
-    e.preventDefault();
-    return;
-  }
-}
+
+    if (inHeaderSearch) {
+      const searchInput = qs(".search-input");
+
+      // FORCE EXIT ON FIRST PRESS
+      if (isDown) {
+        if (searchInput) {
+          searchInput.blur(); // Releases the browser's hold on the input
+        }
+        isHeaderSearchActive = false; // Reset the state
+        inHeaderSearch = false;
+        inSidebarSearch = true;
+
+        setHeaderSearchFocus(false);
+        setSidebarSearchFocus(true);
+
+        e.preventDefault(); // Prevents the browser from using the 'Down' key
+        return;
+      }
+
+      if (isRight) {
+        if (searchInput) {
+          searchInput.blur();
+        }
+        isHeaderSearchActive = false;
+        inHeaderSearch = false;
+        setHeaderSearchFocus(false);
+        setFocusOnMenuDots();
+        e.preventDefault();
+        return;
+      }
+
+      // Handle Enter to toggle keyboard
+      if (isEnter) {
+        if (searchInput) {
+          if (!isHeaderSearchActive) {
+            isHeaderSearchActive = true;
+            setTimeout(function () {
+              searchInput.focus();
+            }, 50);
+          } else {
+            isHeaderSearchActive = false;
+            searchInput.blur();
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+    }
 
     // SIDEBAR SEARCH BOX NAVIGATION
-  // SIDEBAR SEARCH BOX NAVIGATION
-if (inSidebarSearch) {
-  const sidebarInput = document.querySelector(".sidebar-search-input");
+    // SIDEBAR SEARCH BOX NAVIGATION
+    if (inSidebarSearch) {
+      const sidebarInput = document.querySelector(".sidebar-search-input");
 
-  // FORCE EXIT ON FIRST PRESS
-  if (isDown) {
-    if (sidebarInput) {
-      sidebarInput.blur(); // Kill focus immediately
-    }
-    isSidebarSearchActive = false;
-    inSidebarSearch = false;
-    inSidebar = true;
-    
-    setSidebarSearchFocus(false);
-    
-    focusedSidebarIndex = 0;
-    const sidebarItems = qsa(".sidebar-item");
-    if (sidebarItems.length > 0) {
-      setSidebarFocus(0);
-    }
-    
-    e.preventDefault();
-    return;
-  }
-
-  if (isUp) {
-    if (sidebarInput) {
-      sidebarInput.blur();
-    }
-    isSidebarSearchActive = false;
-    inSidebarSearch = false;
-    inHeaderSearch = true;
-    setSidebarSearchFocus(false);
-    setHeaderSearchFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    if (sidebarInput) {
-      if (!isSidebarSearchActive) {
-        isSidebarSearchActive = true;
-        setTimeout(function() { sidebarInput.focus(); }, 50);
-      } else {
+      // FORCE EXIT ON FIRST PRESS
+      if (isDown) {
+        if (sidebarInput) {
+          sidebarInput.blur(); // Kill focus immediately
+        }
         isSidebarSearchActive = false;
-        sidebarInput.blur();
+        inSidebarSearch = false;
+        inSidebar = true;
+
+        setSidebarSearchFocus(false);
+
+        focusedSidebarIndex = 0;
+        const sidebarItems = qsa(".sidebar-item");
+        if (sidebarItems.length > 0) {
+          setSidebarFocus(0);
+        }
+
+        e.preventDefault();
+        return;
+      }
+
+      if (isUp) {
+        if (sidebarInput) {
+          sidebarInput.blur();
+        }
+        isSidebarSearchActive = false;
+        inSidebarSearch = false;
+        inHeaderSearch = true;
+        setSidebarSearchFocus(false);
+        setHeaderSearchFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        if (sidebarInput) {
+          if (!isSidebarSearchActive) {
+            isSidebarSearchActive = true;
+            setTimeout(function () {
+              sidebarInput.focus();
+            }, 50);
+          } else {
+            isSidebarSearchActive = false;
+            sidebarInput.blur();
+          }
+        }
+        e.preventDefault();
+        return;
       }
     }
-    e.preventDefault();
-    return;
-  }
-}
 
     // Sidebar navigation
- // Sidebar navigation
-if (inSidebar) {
+    // Sidebar navigation
+    if (inSidebar) {
+      const filtered = getFilteredCategories();
+      const hasMoreCats = hasMoreCategoriesAvailable(
+        filtered,
+        currentCategoryChunk,
+        categoriesPerChunk
+      );
 
-    const filtered = getFilteredCategories();
-const hasMoreCats = hasMoreCategoriesAvailable(filtered, currentCategoryChunk, categoriesPerChunk);
-  
-
-  // UP: Go back to sidebar search box or stay at first item
-  if (isUp) {
-    if (focusedSidebarIndex > 0) {
-      focusedSidebarIndex--;
-      setSidebarFocus(focusedSidebarIndex);
-    } else {
-      // Move to sidebar search box
-      inSidebar = false;
-      inSidebarSearch = true;
-      sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
-      setSidebarSearchFocus(true);
-    }
-    e.preventDefault();
-    return;
-  }
-
-  if (isDown) {
-    const sidebarItems = qsa(".sidebar-item");
-    
-    if (focusedSidebarIndex < sidebarItems.length - 1) {
-      focusedSidebarIndex++;
-      setSidebarFocus(focusedSidebarIndex);
-      
-      // **AUTO-LOAD MORE CATEGORIES WHEN NEAR END**
-      const isNearEnd = focusedSidebarIndex >= sidebarItems.length - 3;
-      if (isNearEnd && hasMoreCats && !isLoadingMoreCategories) {
-        console.log("🔄 Near end of categories - auto-loading...");
-        loadMoreCategories();
+      // UP: Go back to sidebar search box or stay at first item
+      if (isUp) {
+        if (focusedSidebarIndex > 0) {
+          focusedSidebarIndex--;
+          setSidebarFocus(focusedSidebarIndex);
+        } else {
+          // Move to sidebar search box
+          inSidebar = false;
+          inSidebarSearch = true;
+          sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
+          setSidebarSearchFocus(true);
+        }
+        e.preventDefault();
+        return;
       }
-    }
-    e.preventDefault();
-    return;
-  }
-  // RIGHT: Go back to channels - ALWAYS START FROM FIRST CHANNEL
-  if (isRight) {
-    inSidebar = false;
-    inChannelGrid = true;
-    sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
-    
-    // ALWAYS reset to first channel
-    focusedChannelIndex = 0;
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    
-    // Scroll channel grid to start
-    const channelGrid = qs(".channel-grid");
-    if (channelGrid) {
-      channelGrid.scrollTo({ left: 0, behavior: "smooth" });
-    }
-    
-    e.preventDefault();
-    return;
-  }
 
-  // LEFT: Stay in sidebar
-  if (isLeft) {
-    e.preventDefault();
-    return;
-  }
+      if (isDown) {
+        const sidebarItems = qsa(".sidebar-item");
 
-  // ENTER: Click sidebar item
-// ENTER: Click sidebar item or unlock category
-// ENTER: Click sidebar item or unlock category
-if (isEnter) {
-  const sidebarItems = qsa(".sidebar-item");
-  const selectedItem = sidebarItems[focusedSidebarIndex];
-  
-  if (selectedItem) {
-    const catId = selectedItem.dataset.categoryId;
-    const hasAdult = selectedItem.dataset.hasAdult === "true";
-    const isLocked = lockedCategories.has(catId);
-    
-    // Re-lock previous category if switching away
-    if (previousCategoryId && previousCategoryId !== catId) {
-      relockPreviousCategory(previousCategoryId);
-    }
-    
-    if (hasAdult && isLocked) {
-      // Show password modal
-      showPasswordModal(catId);
-    } else {
-      // Switch to category
-      selectedItem.click();
-    }
-  }
-  
-  e.preventDefault();
-  return;
-}
+        if (focusedSidebarIndex < sidebarItems.length - 1) {
+          focusedSidebarIndex++;
+          setSidebarFocus(focusedSidebarIndex);
 
-  return;
-}
+          // **AUTO-LOAD MORE CATEGORIES WHEN NEAR END**
+          const isNearEnd = focusedSidebarIndex >= sidebarItems.length - 3;
+          if (isNearEnd && hasMoreCats && !isLoadingMoreCategories) {
+            console.log("🔄 Near end of categories - auto-loading...");
+            loadMoreCategories();
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+      // RIGHT: Go back to channels - ALWAYS START FROM FIRST CHANNEL
+      if (isRight) {
+        inSidebar = false;
+        inChannelGrid = true;
+        sidebarItems.forEach((i) => i.classList.remove("sidebar-focused"));
+
+        // ALWAYS reset to first channel
+        focusedChannelIndex = 0;
+
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+        // Scroll channel grid to start
+        const channelGrid = qs(".channel-grid");
+        if (channelGrid) {
+          channelGrid.scrollTo({ left: 0, behavior: "smooth" });
+        }
+
+        e.preventDefault();
+        return;
+      }
+
+      // LEFT: Stay in sidebar
+      if (isLeft) {
+        e.preventDefault();
+        return;
+      }
+
+      // ENTER: Click sidebar item
+      // ENTER: Click sidebar item or unlock category
+      // ENTER: Click sidebar item or unlock category
+      if (isEnter) {
+        const sidebarItems = qsa(".sidebar-item");
+        const selectedItem = sidebarItems[focusedSidebarIndex];
+
+        if (selectedItem) {
+          const catId = selectedItem.dataset.categoryId;
+          const hasAdult = selectedItem.dataset.hasAdult === "true";
+          const isLocked = lockedCategories.has(catId);
+
+          // Re-lock previous category if switching away
+          if (previousCategoryId && previousCategoryId !== catId) {
+            relockPreviousCategory(previousCategoryId);
+          }
+
+          if (hasAdult && isLocked) {
+            // Show password modal
+            showPasswordModal(catId);
+          } else {
+            // Switch to category
+            selectedItem.click();
+          }
+        }
+
+        e.preventDefault();
+        return;
+      }
+
+      return;
+    }
 
     // EPG navigation
     if (inEPG) {
@@ -3306,11 +3429,13 @@ if (isEnter) {
         inVideoPlayer = true;
         inPlayPauseBtn = false;
         inAspectRatioBtn = false;
-          showVideoControls(); // Show controls when entering video from EPG
+        showVideoControls(); // Show controls when entering video from EPG
 
         const videoDiv = qs(".live-video-player-div");
-        const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-        const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+        const playPauseBtn =
+          qs(".play-pause-btn") || qs("#live-play-pause-btn");
+        const aspectBtn =
+          qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
         if (videoDiv) {
           videoDiv.classList.add("video-focused");
           videoDiv.style.border = "3px solid #0ea5e9"; // Blue border
@@ -3336,504 +3461,539 @@ if (isEnter) {
       return;
     }
 
- // FAVORITE BUTTON NAVIGATION
-if (inFavoriteBtn) {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  const favBtn = card ? card.querySelector(".favorite-btn") : null;
-  const rows = 3;
+    // FAVORITE BUTTON NAVIGATION
+    if (inFavoriteBtn) {
+      const channels = qsa(".channel-card");
+      const card = channels[focusedChannelIndex];
+      const favBtn = card ? card.querySelector(".favorite-btn") : null;
+      const rows = 3;
 
-  if (isLeft) {
-    // Go back to current channel card
-    inFavoriteBtn = false;
-    inChannelGrid = true;
-    if (favBtn) favBtn.style.outline = "none";
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
+      if (isLeft) {
+        // Go back to current channel card
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
 
-  if (isRight) {
-    const card = channels[focusedChannelIndex];
-    const removeBtn = card ? card.querySelector(".remove-history-btn") : null;
+      if (isRight) {
+        const card = channels[focusedChannelIndex];
+        const removeBtn = card
+          ? card.querySelector(".remove-history-btn")
+          : null;
 
-    // If remove button exists (in history view), go to it
-    if (removeBtn && selectedCategoryId === "channelHistory") {
-      inFavoriteBtn = false;
-      inRemoveHistoryBtn = true;
-      if (favBtn) favBtn.style.outline = "none";
-      setRemoveHistoryBtnFocus(true);
-      e.preventDefault();
+        // If remove button exists (in history view), go to it
+        if (removeBtn && selectedCategoryId === "channelHistory") {
+          inFavoriteBtn = false;
+          inRemoveHistoryBtn = true;
+          if (favBtn) favBtn.style.outline = "none";
+          setRemoveHistoryBtnFocus(true);
+          e.preventDefault();
+          return;
+        }
+
+        // Otherwise, move to next column's card (same row)
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+
+        const nextChannelIndex = focusedChannelIndex + rows;
+
+        if (nextChannelIndex < channels.length) {
+          focusedChannelIndex = nextChannelIndex;
+        }
+
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        // Click the favorite button
+        if (favBtn) favBtn.click();
+        e.preventDefault();
+        return;
+      }
+
+      // UP: Move to card above in same column
+      if (isUp) {
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+
+        const currentRow = focusedChannelIndex % rows;
+
+        if (currentRow > 0) {
+          focusedChannelIndex--;
+        }
+
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      // DOWN: Move to card below or go to video player
+      // DOWN: Move to card below or go to video player
+      if (isDown) {
+        inFavoriteBtn = false;
+        inChannelGrid = true;
+        if (favBtn) favBtn.style.outline = "none";
+
+        const nextIndex = focusedChannelIndex + 1;
+        const currentRow = focusedChannelIndex % rows;
+        const nextRow = nextIndex % rows;
+
+        // Check if we can move down
+        if (nextIndex < channels.length && nextRow > currentRow) {
+          focusedChannelIndex = nextIndex;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        } else {
+          // At bottom - check if channel is playing
+          const playingCard = qs(".channel-card-playing");
+
+          if (playingCard) {
+            // Channel is playing - go to video player
+            inChannelGrid = false;
+            inVideoPlayer = true;
+            inPlayPauseBtn = false;
+            inAspectRatioBtn = false;
+
+            channels.forEach((c) => c.classList.remove("channel-card-focused"));
+            showAspectRatioButton();
+
+            const videoDiv = qs(".live-video-player-div");
+            const playPauseBtn =
+              qs(".play-pause-btn") || qs("#live-play-pause-btn");
+            const aspectBtn =
+              qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+
+            if (videoDiv) {
+              videoDiv.classList.add("video-focused");
+              videoDiv.style.border = "3px solid #0ea5e9";
+              videoDiv.style.boxSizing = "border-box";
+              videoDiv.style.outline = "3px solid #0ea5e9";
+              videoDiv.style.outlineOffset = "-3px";
+            }
+            if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+            if (aspectBtn) {
+              aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+              aspectBtn.style.border = "none";
+            }
+          } else {
+            // No channel playing - return focus to card
+            setFocus(channels, focusedChannelIndex, "channel-card-focused");
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+
       return;
     }
 
-    // Otherwise, move to next column's card (same row)
-    inFavoriteBtn = false;
-    inChannelGrid = true;
-    if (favBtn) favBtn.style.outline = "none";
+    // REMOVE HISTORY BUTTON NAVIGATION
+    if (inRemoveHistoryBtn) {
+      const channels = qsa(".channel-card");
+      const card = channels[focusedChannelIndex];
+      const removeBtn = card ? card.querySelector(".remove-history-btn") : null;
+      const rows = 3;
 
-    const nextChannelIndex = focusedChannelIndex + rows;
-    
-    if (nextChannelIndex < channels.length) {
-      focusedChannelIndex = nextChannelIndex;
-    }
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    // Click the favorite button
-    if (favBtn) favBtn.click();
-    e.preventDefault();
-    return;
-  }
-
-  // UP: Move to card above in same column
-  if (isUp) {
-    inFavoriteBtn = false;
-    inChannelGrid = true;
-    if (favBtn) favBtn.style.outline = "none";
-    
-    const currentRow = focusedChannelIndex % rows;
-    
-    if (currentRow > 0) {
-      focusedChannelIndex--;
-    }
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
-  // DOWN: Move to card below or go to video player
- // DOWN: Move to card below or go to video player
-if (isDown) {
-  inFavoriteBtn = false;
-  inChannelGrid = true;
-  if (favBtn) favBtn.style.outline = "none";
-  
-  const nextIndex = focusedChannelIndex + 1;
-  const currentRow = focusedChannelIndex % rows;
-  const nextRow = nextIndex % rows;
-  
-  // Check if we can move down
-  if (nextIndex < channels.length && nextRow > currentRow) {
-    focusedChannelIndex = nextIndex;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-  } else {
-    // At bottom - check if channel is playing
-    const playingCard = qs(".channel-card-playing");
-    
-    if (playingCard) {
-      // Channel is playing - go to video player
-      inChannelGrid = false;
-      inVideoPlayer = true;
-      inPlayPauseBtn = false;
-      inAspectRatioBtn = false;
-      
-      channels.forEach((c) => c.classList.remove("channel-card-focused"));
-      showAspectRatioButton();
-
-      const videoDiv = qs(".live-video-player-div");
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-      
-      if (videoDiv) {
-        videoDiv.classList.add("video-focused");
-        videoDiv.style.border = "3px solid #0ea5e9";
-        videoDiv.style.boxSizing = "border-box";
-        videoDiv.style.outline = "3px solid #0ea5e9";
-        videoDiv.style.outlineOffset = "-3px";
+      if (isLeft) {
+        // Go back to favorite button
+        inRemoveHistoryBtn = false;
+        inFavoriteBtn = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+        setFavoriteBtnFocus(true);
+        e.preventDefault();
+        return;
       }
-      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-      if (aspectBtn) {
-        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-        aspectBtn.style.border = "none";
+
+      if (isRight) {
+        // Move to next column's card (same row)
+        inRemoveHistoryBtn = false;
+        inChannelGrid = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+
+        const nextChannelIndex = focusedChannelIndex + rows;
+
+        if (nextChannelIndex < channels.length) {
+          focusedChannelIndex = nextChannelIndex;
+        }
+
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
       }
-    } else {
-      // No channel playing - return focus to card
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    }
-  }
-  e.preventDefault();
-  return;
-}
 
-  return;
-}
-
-// REMOVE HISTORY BUTTON NAVIGATION
-if (inRemoveHistoryBtn) {
-  const channels = qsa(".channel-card");
-  const card = channels[focusedChannelIndex];
-  const removeBtn = card ? card.querySelector(".remove-history-btn") : null;
-  const rows = 3;
-
-  if (isLeft) {
-    // Go back to favorite button
-    inRemoveHistoryBtn = false;
-    inFavoriteBtn = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-    setFavoriteBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  if (isRight) {
-    // Move to next column's card (same row)
-    inRemoveHistoryBtn = false;
-    inChannelGrid = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-
-    const nextChannelIndex = focusedChannelIndex + rows;
-
-    if (nextChannelIndex < channels.length) {
-      focusedChannelIndex = nextChannelIndex;
-    }
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    // Click the remove button
-    if (removeBtn) removeBtn.click();
-    e.preventDefault();
-    return;
-  }
-
-  // UP: Move to card above
-  if (isUp) {
-    inRemoveHistoryBtn = false;
-    inChannelGrid = true;
-    if (removeBtn) removeBtn.style.outline = "none";
-    
-    const currentRow = focusedChannelIndex % rows;
-    
-    if (currentRow > 0) {
-      focusedChannelIndex--;
-    }
-    
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    e.preventDefault();
-    return;
-  }
-
-  // DOWN: Move to card below or go to video player
-// DOWN: Move to card below or go to video player
-if (isDown) {
-  inRemoveHistoryBtn = false;
-  inChannelGrid = true;
-  if (removeBtn) removeBtn.style.outline = "none";
-  
-  const nextIndex = focusedChannelIndex + 1;
-  const currentRow = focusedChannelIndex % rows;
-  const nextRow = nextIndex % rows;
-  
-  if (nextIndex < channels.length && nextRow > currentRow) {
-    focusedChannelIndex = nextIndex;
-    setFocus(channels, focusedChannelIndex, "channel-card-focused");
-  } else {
-    // At bottom - check if channel is playing
-    const playingCard = qs(".channel-card-playing");
-    
-    if (playingCard) {
-      // Channel is playing - go to video player
-      inChannelGrid = false;
-      inVideoPlayer = true;
-      inPlayPauseBtn = false;
-      inAspectRatioBtn = false;
-      
-      channels.forEach((c) => c.classList.remove("channel-card-focused"));
-      showAspectRatioButton();
-
-      const videoDiv = qs(".live-video-player-div");
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-      
-      if (videoDiv) {
-        videoDiv.classList.add("video-focused");
-        videoDiv.style.border = "3px solid #0ea5e9";
-        videoDiv.style.boxSizing = "border-box";
-        videoDiv.style.outline = "3px solid #0ea5e9";
-        videoDiv.style.outlineOffset = "-3px";
+      if (isEnter) {
+        // Click the remove button
+        if (removeBtn) removeBtn.click();
+        e.preventDefault();
+        return;
       }
-      if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-      if (aspectBtn) {
-        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-        aspectBtn.style.border = "none";
-      }
-    } else {
-      // No channel playing - return focus to card
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-    }
-  }
-  e.preventDefault();
-  return;
-}
 
-  return;
-}
+      // UP: Move to card above
+      if (isUp) {
+        inRemoveHistoryBtn = false;
+        inChannelGrid = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+
+        const currentRow = focusedChannelIndex % rows;
+
+        if (currentRow > 0) {
+          focusedChannelIndex--;
+        }
+
+        setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        e.preventDefault();
+        return;
+      }
+
+      // DOWN: Move to card below or go to video player
+      // DOWN: Move to card below or go to video player
+      if (isDown) {
+        inRemoveHistoryBtn = false;
+        inChannelGrid = true;
+        if (removeBtn) removeBtn.style.outline = "none";
+
+        const nextIndex = focusedChannelIndex + 1;
+        const currentRow = focusedChannelIndex % rows;
+        const nextRow = nextIndex % rows;
+
+        if (nextIndex < channels.length && nextRow > currentRow) {
+          focusedChannelIndex = nextIndex;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+        } else {
+          // At bottom - check if channel is playing
+          const playingCard = qs(".channel-card-playing");
+
+          if (playingCard) {
+            // Channel is playing - go to video player
+            inChannelGrid = false;
+            inVideoPlayer = true;
+            inPlayPauseBtn = false;
+            inAspectRatioBtn = false;
+
+            channels.forEach((c) => c.classList.remove("channel-card-focused"));
+            showAspectRatioButton();
+
+            const videoDiv = qs(".live-video-player-div");
+            const playPauseBtn =
+              qs(".play-pause-btn") || qs("#live-play-pause-btn");
+            const aspectBtn =
+              qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+
+            if (videoDiv) {
+              videoDiv.classList.add("video-focused");
+              videoDiv.style.border = "3px solid #0ea5e9";
+              videoDiv.style.boxSizing = "border-box";
+              videoDiv.style.outline = "3px solid #0ea5e9";
+              videoDiv.style.outlineOffset = "-3px";
+            }
+            if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+            if (aspectBtn) {
+              aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+              aspectBtn.style.border = "none";
+            }
+          } else {
+            // No channel playing - return focus to card
+            setFocus(channels, focusedChannelIndex, "channel-card-focused");
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+
+      return;
+    }
     // CHANNEL GRID NAVIGATION
-// CHANNEL GRID NAVIGATION
-// CHANNEL GRID NAVIGATION
-if (inChannelGrid) {
-  const rows = 3;
-  const totalChannels = channels.length;
-  
-  // **GET CATEGORY DATA FOR AUTO-LOADING**
-  const filtered = getFilteredCategories();
-  const selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
-  const allChannels = selectedCat ? selectedCat.channels || [] : [];
-const hasMore = hasMoreChannelsAvailable(allChannels, currentChunk, pageSize);
-  
-  // Calculate current position
-  const currentRow = focusedChannelIndex % rows;
-  const currentCol = Math.floor(focusedChannelIndex / rows);
-  
-  if (isUp) {
-    if (currentRow > 0) {
-      // Move up within same column
-      focusedChannelIndex--;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-      
-      const card = channels[focusedChannelIndex];
-      if (card) {
-        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-      }
-    } else {
-      // Already in first row - go to header search
-      inChannelGrid = false;
-      inHeaderSearch = true;
-      channels.forEach((c) => c.classList.remove("channel-card-focused"));
-      setHeaderSearchFocus(true);
-    }
-    e.preventDefault();
-    return;
-  }
+    // CHANNEL GRID NAVIGATION
+    // CHANNEL GRID NAVIGATION
+    if (inChannelGrid) {
+      const rows = 3;
+      const totalChannels = channels.length;
 
-  if (isDown) {
-    const nextIndex = focusedChannelIndex + 1;
-    const nextRow = nextIndex % rows;
-    
-    if (nextIndex < totalChannels && nextRow > currentRow) {
-      // Move down within same column
-      focusedChannelIndex = nextIndex;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-      
-      const card = channels[focusedChannelIndex];
-      if (card) {
-        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      // **GET CATEGORY DATA FOR AUTO-LOADING**
+      const filtered = getFilteredCategories();
+      const selectedCat = filtered.find(
+        (c) => c.category_id === selectedCategoryId
+      );
+      const allChannels = selectedCat ? selectedCat.channels || [] : [];
+      const hasMore = hasMoreChannelsAvailable(
+        allChannels,
+        currentChunk,
+        pageSize
+      );
+
+      // Calculate current position
+      const currentRow = focusedChannelIndex % rows;
+      const currentCol = Math.floor(focusedChannelIndex / rows);
+
+      if (isUp) {
+        if (currentRow > 0) {
+          // Move up within same column
+          focusedChannelIndex--;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+          const card = channels[focusedChannelIndex];
+          if (card) {
+            card.scrollIntoView({
+              inline: "nearest",
+              block: "nearest",
+              behavior: "smooth",
+            });
+          }
+        } else {
+          // Already in first row - go to header search
+          inChannelGrid = false;
+          inHeaderSearch = true;
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
+          setHeaderSearchFocus(true);
+        }
+        e.preventDefault();
+        return;
       }
-    } else {
-      // At bottom row - check if channel is playing
-      const playingCard = qs(".channel-card-playing");
-      
-      if (playingCard) {
-        // Channel is playing - go to video player
+
+      if (isDown) {
+        const nextIndex = focusedChannelIndex + 1;
+        const nextRow = nextIndex % rows;
+
+        if (nextIndex < totalChannels && nextRow > currentRow) {
+          // Move down within same column
+          focusedChannelIndex = nextIndex;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+          const card = channels[focusedChannelIndex];
+          if (card) {
+            card.scrollIntoView({
+              inline: "nearest",
+              block: "nearest",
+              behavior: "smooth",
+            });
+          }
+        } else {
+          // At bottom row - check if channel is playing
+          const playingCard = qs(".channel-card-playing");
+
+          if (playingCard) {
+            // Channel is playing - go to video player
+            inChannelGrid = false;
+            inVideoPlayer = true;
+            inPlayPauseBtn = false;
+            inAspectRatioBtn = false;
+
+            channels.forEach((c) => c.classList.remove("channel-card-focused"));
+            showAspectRatioButton();
+
+            const videoDiv = qs(".live-video-player-div");
+            const playPauseBtn =
+              qs(".play-pause-btn") || qs("#live-play-pause-btn");
+            const aspectBtn =
+              qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+
+            if (videoDiv) {
+              videoDiv.classList.add("video-focused");
+              videoDiv.style.border = "3px solid #0ea5e9";
+              videoDiv.style.boxSizing = "border-box";
+              videoDiv.style.outline = "3px solid #0ea5e9";
+              videoDiv.style.outlineOffset = "-3px";
+            }
+            if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
+            if (aspectBtn) {
+              aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+              aspectBtn.style.border = "none";
+            }
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isLeft) {
+        const prevIndex = focusedChannelIndex - rows;
+
+        if (prevIndex >= 0) {
+          // Move to previous column (left card in same row)
+          focusedChannelIndex = prevIndex;
+          setFocus(channels, focusedChannelIndex, "channel-card-focused");
+
+          const card = channels[focusedChannelIndex];
+          if (card) {
+            card.scrollIntoView({
+              inline: "nearest",
+              block: "nearest",
+              behavior: "smooth",
+            });
+          }
+        } else {
+          // First column - GO TO SIDEBAR SEARCH BOX
+          inChannelGrid = false;
+          inSidebarSearch = true;
+          channels.forEach((c) => c.classList.remove("channel-card-focused"));
+          setSidebarSearchFocus(true);
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (isRight) {
+        // **CHECK IF NEAR END - AUTO LOAD MORE**
+        const isNearEnd = focusedChannelIndex >= totalChannels - rows * 2;
+
+        if (isNearEnd && hasMore && !isLoadingMoreChannels) {
+          console.log("🔄 Near end - auto-loading more channels...");
+          loadMoreChannels();
+        }
+
+        // FIRST go to favorite button of current card
         inChannelGrid = false;
-        inVideoPlayer = true;
-        inPlayPauseBtn = false;
-        inAspectRatioBtn = false;
-        
-        channels.forEach((c) => c.classList.remove("channel-card-focused"));
-        showAspectRatioButton();
+        inFavoriteBtn = true;
 
-        const videoDiv = qs(".live-video-player-div");
-        const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-        const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-        
-        if (videoDiv) {
-          videoDiv.classList.add("video-focused");
-          videoDiv.style.border = "3px solid #0ea5e9";
-          videoDiv.style.boxSizing = "border-box";
-          videoDiv.style.outline = "3px solid #0ea5e9";
-          videoDiv.style.outlineOffset = "-3px";
+        // Only remove focus from the current card, not everything
+        const currentCard = channels[focusedChannelIndex];
+        if (currentCard) {
+          currentCard.classList.remove("channel-card-focused");
         }
-        if (playPauseBtn) playPauseBtn.style.border = "4px solid #0ea5e9";
-        if (aspectBtn) {
-          aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-          aspectBtn.style.border = "none";
-        }
+
+        setFavoriteBtnFocus(true);
+        e.preventDefault();
+        return;
+      }
+
+      if (isEnter) {
+        const selected = channels[focusedChannelIndex];
+        if (selected) selected.click();
+        e.preventDefault();
+        return;
       }
     }
-    e.preventDefault();
-    return;
   }
 
-  if (isLeft) {
-    const prevIndex = focusedChannelIndex - rows;
-    
-    if (prevIndex >= 0) {
-      // Move to previous column (left card in same row)
-      focusedChannelIndex = prevIndex;
-      setFocus(channels, focusedChannelIndex, "channel-card-focused");
-      
-      const card = channels[focusedChannelIndex];
-      if (card) {
-        card.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-      }
-    } else {
-      // First column - GO TO SIDEBAR SEARCH BOX
-      inChannelGrid = false;
-      inSidebarSearch = true;
-      channels.forEach((c) => c.classList.remove("channel-card-focused"));
-      setSidebarSearchFocus(true);
-    }
-    e.preventDefault();
-    return;
-  }
-
-if (isRight) {
-    // **CHECK IF NEAR END - AUTO LOAD MORE**
-    const isNearEnd = focusedChannelIndex >= totalChannels - (rows * 2);
-    
-    if (isNearEnd && hasMore && !isLoadingMoreChannels) {
-      console.log("🔄 Near end - auto-loading more channels...");
-      loadMoreChannels();
-    }
-    
-    // FIRST go to favorite button of current card
-    inChannelGrid = false;
-    inFavoriteBtn = true;
-    
-    // Only remove focus from the current card, not everything
-    const currentCard = channels[focusedChannelIndex];
-    if (currentCard) {
-      currentCard.classList.remove("channel-card-focused");
-    }
-    
-    setFavoriteBtnFocus(true);
-    e.preventDefault();
-    return;
-  }
-
-  if (isEnter) {
-    const selected = channels[focusedChannelIndex];
-    if (selected) selected.click();
-    e.preventDefault();
-    return;
-  }
-}
-  }
-
-
-
-
-
-setTimeout(() => {
+  setTimeout(() => {
     document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKeydown, true);
-
-
 
     // Progress: 10%
     updateLoadingProgress(10, "Initializing parental controls...");
 
-        const sidebarArea = qs("#sidebar-area");
-      if (sidebarArea) {
-        sidebarArea.innerHTML = SidebarLoadingOverlay();
+    const sidebarArea = qs("#sidebar-area");
+    if (sidebarArea) {
+      sidebarArea.innerHTML = SidebarLoadingOverlay();
+    }
+
+    // Add fullscreen change listener to detect exit
+    // Add fullscreen change listener to detect exit
+    // Store handler globally so cleanup can access it
+    let fullscreenExitHandler = () => {
+      const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+
+      if (
+        !isFs &&
+        window._aspectRatioWasUsed &&
+        window.liveTvPageState.inAspectRatioBtn
+      ) {
+        // Force navigation state change
+        setTimeout(() => {
+          inAspectRatioBtn = false;
+          inPlayPauseBtn = true;
+          window.liveTvPageState.inAspectRatioBtn = false;
+          window.liveTvPageState.inPlayPauseBtn = true;
+
+          const playPauseBtn =
+            qs(".play-pause-btn") || qs("#live-play-pause-btn");
+          const aspectBtn =
+            qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
+
+          if (aspectBtn) {
+            aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
+            aspectBtn.style.border = "none";
+          }
+
+          if (playPauseBtn) {
+            playPauseBtn.classList.add("focused");
+            playPauseBtn.style.display = "flex";
+            playPauseBtn.style.opacity = "1";
+            playPauseBtn.style.border = "3px solid #0ea5e9";
+          }
+
+          console.log("🎯 FORCED focus to play/pause button");
+          window._aspectRatioWasUsed = false;
+        }, 100);
       }
+    };
 
-
-
-      // Add fullscreen change listener to detect exit
-// Add fullscreen change listener to detect exit
-// Store handler globally so cleanup can access it
-let fullscreenExitHandler = () => {
-  const isFs = !!(document.fullscreenElement || 
-                  document.webkitFullscreenElement || 
-                  document.mozFullScreenElement || 
-                  document.msFullscreenElement);
-  
-  if (!isFs && window._aspectRatioWasUsed && window.liveTvPageState.inAspectRatioBtn) {
-    // Force navigation state change
-    setTimeout(() => {
-      inAspectRatioBtn = false;
-      inPlayPauseBtn = true;
-      window.liveTvPageState.inAspectRatioBtn = false;
-      window.liveTvPageState.inPlayPauseBtn = true;
-      
-      const playPauseBtn = qs(".play-pause-btn") || qs("#live-play-pause-btn");
-      const aspectBtn = qs(".aspect-ratio-btn") || qs("#videojs-aspect-ratio");
-      
-      if (aspectBtn) {
-        aspectBtn.classList.remove("videojs-aspect-ratio-btn-focused");
-        aspectBtn.style.border = "none";
-      }
-      
-      if (playPauseBtn) {
-        playPauseBtn.classList.add("focused");
-        playPauseBtn.style.display = "flex";
-        playPauseBtn.style.opacity = "1";
-        playPauseBtn.style.border = "3px solid #0ea5e9";
-      }
-      
-      console.log("🎯 FORCED focus to play/pause button");
-      window._aspectRatioWasUsed = false;
-    }, 100);
-  }
-};
-
-document.addEventListener("fullscreenchange", fullscreenExitHandler);
-document.addEventListener("webkitfullscreenchange", fullscreenExitHandler);
-document.addEventListener("mozfullscreenchange", fullscreenExitHandler);
-document.addEventListener("msfullscreenchange", fullscreenExitHandler);
-
+    document.addEventListener("fullscreenchange", fullscreenExitHandler);
+    document.addEventListener("webkitfullscreenchange", fullscreenExitHandler);
+    document.addEventListener("mozfullscreenchange", fullscreenExitHandler);
+    document.addEventListener("msfullscreenchange", fullscreenExitHandler);
 
     // ===== INITIALIZE LOCKED CATEGORIES FIRST =====
-    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-    const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+    const selectedPlaylist =
+      JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
+    const hasParentalPassword =
+      selectedPlaylist.parentalPassword &&
+      selectedPlaylist.parentalPassword.length > 0;
 
     console.log("🔒 Parental password set:", hasParentalPassword);
 
     if (hasParentalPassword) {
       const allCategories = categories || window.liveCategories || [];
-      const streams = window.currentAllStreams || allStreams || window.allLiveStreams || [];
-      
+      const streams =
+        window.currentAllStreams || allStreams || window.allLiveStreams || [];
+
       console.log("🔍 Total streams:", streams.length);
       console.log("🔍 Total categories:", allCategories.length);
-      
+
       let adultChannelsFound = 0;
-      streams.forEach(ch => {
+      streams.forEach((ch) => {
         if (isAdultContent(ch)) {
           adultChannelsFound++;
         }
       });
-      
+
       console.log("🔞 Total adult channels found:", adultChannelsFound);
-      
-      allCategories.forEach(cat => {
-        const categoryChannels = streams.filter(s => s.category_id === cat.category_id);
-        const hasAdult = categoryChannels.some(ch => isAdultContent(ch));
-        
+
+      allCategories.forEach((cat) => {
+        const categoryChannels = streams.filter(
+          (s) => s.category_id === cat.category_id
+        );
+        const hasAdult = categoryChannels.some((ch) => isAdultContent(ch));
+
         if (hasAdult) {
           lockedCategories.add(cat.category_id);
         }
       });
-      
-      const hasAdultInAll = streams.some(ch => isAdultContent(ch));
+
+      const hasAdultInAll = streams.some((ch) => isAdultContent(ch));
       if (hasAdultInAll) {
         lockedCategories.add("All");
       }
-      
-      const currentPlaylistName = JSON.parse(localStorage.getItem("selectedPlaylist")).playlistName;
-      const currentPlaylist = JSON.parse(localStorage.getItem("playlistsData")).find(
-        pl => pl.playlistName === currentPlaylistName
-      );
+
+      const currentPlaylistName = JSON.parse(
+        localStorage.getItem("selectedPlaylist")
+      ).playlistName;
+      const currentPlaylist = JSON.parse(
+        localStorage.getItem("playlistsData")
+      ).find((pl) => pl.playlistName === currentPlaylistName);
       const favoritesList = currentPlaylist.favoritesLiveTV || [];
-      
-      const favChannels = favoritesList.map(favItem => {
-        if (typeof favItem === "number") {
-          return streams.find(s => s.stream_id === favItem);
-        }
-        return favItem;
-      }).filter(Boolean);
-      
-      const hasAdultInFav = favChannels.some(ch => isAdultContent(ch));
+
+      const favChannels = favoritesList
+        .map((favItem) => {
+          if (typeof favItem === "number") {
+            return streams.find((s) => s.stream_id === favItem);
+          }
+          return favItem;
+        })
+        .filter(Boolean);
+
+      const hasAdultInFav = favChannels.some((ch) => isAdultContent(ch));
       if (hasAdultInFav) {
         lockedCategories.add("favorites");
       }
@@ -3841,12 +4001,12 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
 
     // Progress: 20%
     updateLoadingProgress(20, "Loading categories...");
-    
+
     setTimeout(() => {
       // **SHOW SIDEBAR LOADING OVERLAY**
       const sidebarArea = qs("#sidebar-area");
-    if (sidebarArea) {
-    sidebarArea.innerHTML = `
+      if (sidebarArea) {
+        sidebarArea.innerHTML = `
       <div class="sidebar-loading-overlay" id="sidebarLoading">
         <div class="sidebar-loading-content">
           <div class="loading-text-small">Preparing Categories...</div>
@@ -3854,57 +4014,71 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
         </div>
       </div>
     `;
-  }
-  
-      
+      }
+
       setTimeout(() => {
-      
-        
         // Progress: 30%
         updateLoadingProgress(30, "Preparing channels...");
-        
+
         setTimeout(() => {
           // **SHOW CHANNEL GRID LOADING OVERLAY**
           const channelGrid = qs(".channel-grid");
           if (channelGrid) {
             channelGrid.innerHTML = ChannelGridLoadingOverlay();
           }
-          
+
           // **GET CHANNELS TO PRELOAD**
           const filtered = getFilteredCategories();
-          let selectedCat = filtered.find((c) => c.category_id === selectedCategoryId);
+          let selectedCat = filtered.find(
+            (c) => c.category_id === selectedCategoryId
+          );
           if (!selectedCat) {
             selectedCat = filtered[0];
             selectedCategoryId = selectedCat.category_id;
           }
-          
+
           const allChannels = selectedCat.channels || [];
-          const channelsToPreload = getChunkedChannels(allChannels, currentChunk, pageSize);
-          
-          console.log(`🖼️ Preloading ${channelsToPreload.length} channel images...`);
-          
+          const channelsToPreload = getChunkedChannels(
+            allChannels,
+            currentChunk,
+            pageSize
+          );
+
+          console.log(
+            `🖼️ Preloading ${channelsToPreload.length} channel images...`
+          );
+
           // Progress: 40%
-          updateLoadingProgress(40, `Preloading images (0/${channelsToPreload.length})...`);
-          
+          updateLoadingProgress(
+            40,
+            `Preloading images (0/${channelsToPreload.length})...`
+          );
+
           // **UPDATE CHANNEL GRID OVERLAY PROGRESS**
           const updateChannelGridProgress = (progress, loaded, total) => {
-            const channelProgressFill = document.getElementById("channelProgressFill");
-            const channelProgressText = document.getElementById("channelProgressText");
-            const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
-            
+            const channelProgressFill = document.getElementById(
+              "channelProgressFill"
+            );
+            const channelProgressText = document.getElementById(
+              "channelProgressText"
+            );
+            const channelLoadingSubtext = document.getElementById(
+              "channelLoadingSubtext"
+            );
+
             if (channelProgressFill) {
               channelProgressFill.style.width = progress + "%";
             }
-            
+
             if (channelProgressText) {
               channelProgressText.textContent = Math.round(progress) + "%";
             }
-            
+
             if (channelLoadingSubtext) {
               // channelLoadingSubtext.textContent = `Loading images ${loaded}/${total}...`;
             }
           };
-          
+
           // **PRELOAD IMAGES BEFORE RENDERING**
           preloadChannelImages(
             channelsToPreload,
@@ -3912,60 +4086,67 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
             (progress, loaded, total) => {
               const adjustedProgress = 40 + Math.round(progress * 0.4); // 40% to 80%
               updateLoadingProgress(
-                adjustedProgress, 
+                adjustedProgress,
                 `Loading channel images (${loaded}/${total})...`
               );
-              
+
               // Also update channel grid overlay
               updateChannelGridProgress(progress, loaded, total);
             },
             // Complete callback
             () => {
               console.log("✅ All images preloaded!");
-              
+
               // Progress: 80%
               updateLoadingProgress(80, "Rendering channels...");
-              
+
               // Update channel grid overlay
-              const channelLoadingSubtext = document.getElementById("channelLoadingSubtext");
+              const channelLoadingSubtext = document.getElementById(
+                "channelLoadingSubtext"
+              );
               // if (channelLoadingSubtext) {
               //   channelLoadingSubtext.textContent = "Rendering channels...";
               // }
-              
+
               setTimeout(() => {
                 // Now render channels (images already cached)
                 renderChannels();
 
-                    setTimeout(() => {
-        renderSidebarCategories();
-        console.log("✅ Sidebar categories rendered");
-      }, 100);
+                setTimeout(() => {
+                  renderSidebarCategories();
+                  console.log("✅ Sidebar categories rendered");
+                }, 100);
 
-                
                 // **REMOVE CHANNEL GRID LOADING OVERLAY**
-                const channelGridLoadingOverlay = document.getElementById("channelGridLoading");
+                const channelGridLoadingOverlay =
+                  document.getElementById("channelGridLoading");
                 if (channelGridLoadingOverlay) {
                   channelGridLoadingOverlay.style.opacity = "0";
-                  channelGridLoadingOverlay.style.transition = "opacity 0.3s ease";
+                  channelGridLoadingOverlay.style.transition =
+                    "opacity 0.3s ease";
                   setTimeout(() => {
                     channelGridLoadingOverlay.remove();
                   }, 300);
                 }
-                
+
                 // Progress: 90%
                 updateLoadingProgress(90, "Setting up navigation...");
-                
+
                 setTimeout(() => {
                   setupScrollAutoLoad();
 
                   // Menu key handler
-                   menuKeyHandler = (e) => {
+                  menuKeyHandler = (e) => {
                     if (!isPageFullyLoaded) return;
-                    
+
                     const currentPage = localStorage.getItem("currentPage");
                     if (currentPage !== "liveTvPage") return;
 
-                    if (e.key === "Menu" || e.key === "ContextMenu" || e.key === "F2") {
+                    if (
+                      e.key === "Menu" ||
+                      e.key === "ContextMenu" ||
+                      e.key === "F2"
+                    ) {
                       openSidebar("liveTvPage");
                       e.preventDefault();
                     }
@@ -3988,16 +4169,22 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
                   setTimeout(() => {
                     const sidebarItems = qsa(".sidebar-item");
                     const channels = qsa(".channel-card");
-                    
-                    console.log("✅ Rendered:", sidebarItems.length, "categories,", channels.length, "channels");
-                    
+
+                    console.log(
+                      "✅ Rendered:",
+                      sidebarItems.length,
+                      "categories,",
+                      channels.length,
+                      "channels"
+                    );
+
                     if (sidebarItems.length > 0 || channels.length > 0) {
                       // Progress: 100%
                       updateLoadingProgress(100, "Ready!");
-                      
+
                       setTimeout(() => {
                         isPageFullyLoaded = true;
-                        
+
                         inSidebarSearch = true;
                         inChannelGrid = false;
                         inSidebar = false;
@@ -4006,16 +4193,23 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
                         inVideoPlayer = false;
                         inFavoriteBtn = false;
                         inRemoveHistoryBtn = false;
-                        
+
                         setSidebarSearchFocus(true);
-                        
+
                         hideLoading();
-                        
-                        console.log("🎮 Page fully loaded - navigation enabled");
+
+                        console.log(
+                          "🎮 Page fully loaded - navigation enabled"
+                        );
                       }, 500);
                     } else {
-                      console.error("❌ No content rendered - keeping page locked");
-                      updateLoadingProgress(100, "Error loading content. Please refresh.");
+                      console.error(
+                        "❌ No content rendered - keeping page locked"
+                      );
+                      updateLoadingProgress(
+                        100,
+                        "Error loading content. Please refresh."
+                      );
                     }
                   }, 300);
                 }, 200);
@@ -4026,266 +4220,273 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
       }, 300);
     }, 300);
 
-// ===== SEARCH INPUT HANDLER - OPTIMIZED FOR TIZEN =====
-// ===== SEARCH INPUT HANDLER =====
-const headerSearchInput = qs(".search-input");
-if (headerSearchInput) {
-  let searchTimeout = null;
-  
-  headerSearchInput.addEventListener("input", (e) => {
-    if (!isPageFullyLoaded) return;
-    
-    const value = e.target.value;
-    searchQuery = value;
-    
-    // Clear existing timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    // ===== SEARCH INPUT HANDLER - OPTIMIZED FOR TIZEN =====
+    // ===== SEARCH INPUT HANDLER =====
+    const headerSearchInput = qs(".search-input");
+    if (headerSearchInput) {
+      let searchTimeout = null;
+
+      headerSearchInput.addEventListener("input", (e) => {
+        if (!isPageFullyLoaded) return;
+
+        const value = e.target.value;
+        searchQuery = value;
+
+        // Clear existing timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+
+        // Debounce: only re-render after 300ms of no typing
+        searchTimeout = setTimeout(() => {
+          currentChunk = 1;
+          filteredCache = null;
+          renderChannels();
+        }, 300);
+      });
     }
-    
-    // Debounce: only re-render after 300ms of no typing
-    searchTimeout = setTimeout(() => {
-      currentChunk = 1;
-      filteredCache = null;
-      renderChannels();
-    }, 300);
-  });
-}
 
-// Sidebar Search Input
-// const sidebarSearchInput = qs(".sidebar-search-input");
-// if (sidebarSearchInput) {
-//   let searchTimeout = null;
-//   let isTyping = false;
-  
-//   // Immediate visual-only search
-//   sidebarSearchInput.addEventListener("input", (e) => {
-//     if (!isPageFullyLoaded) return;
-    
-//     const value = e.target.value;
-    
-//     // Clear existing timeout
-//     if (searchTimeout) {
-//       clearTimeout(searchTimeout);
-//     }
-    
-//     // INSTANT VISUAL FILTER (no heavy processing)
-//     lightweightCategorySearch(value);
-    
-//     // Only do full re-render after user stops typing (500ms)
-//     isTyping = true;
-//     searchTimeout = setTimeout(() => {
-//       isTyping = false;
-//       console.log("🔄 User stopped typing - doing full category render");
-      
-//       const allData = getFilteredCategories(); 
-//       const matchingCategories = allData.filter((c) =>
-//         c.category_name.toLowerCase().includes(value.toLowerCase())
-//       );
+    // Sidebar Search Input
+    // const sidebarSearchInput = qs(".sidebar-search-input");
+    // if (sidebarSearchInput) {
+    //   let searchTimeout = null;
+    //   let isTyping = false;
 
-//       currentCategoryChunk = 1; 
-      
-//       const sidebarItemsContainer = qs(".sidebar-items");
-//       if (sidebarItemsContainer) {
-//         const categoriesHTML = matchingCategories
-//           .slice(0, categoriesPerChunk)
-//           .map((c) => {
-//             const isActive = c.category_id === selectedCategoryId;
-//             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
-//             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-//             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-//             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-            
-//             return `
-//             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
-//                  data-category-id="${c.category_id}"
-//                  data-has-adult="${hasAdultContent}">
-//               <span class="sidebar-item-name">
-//                 <span class="sidebar-text">${c.category_name}</span>
-//                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-//               </span>
-//               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-//             </div>`;
-//           }).join("");
-        
-//         sidebarItemsContainer.innerHTML = categoriesHTML;
-//       }
-//     }, 500); // Wait 500ms after last keystroke
-//   });
-  
-//   // On blur, ensure full render happens
-//   sidebarSearchInput.addEventListener("blur", () => {
-//     if (isTyping) {
-//       clearTimeout(searchTimeout);
-//       const value = sidebarSearchInput.value;
-      
-//       const allData = getFilteredCategories(); 
-//       const matchingCategories = allData.filter((c) =>
-//         c.category_name.toLowerCase().includes(value.toLowerCase())
-//       );
+    //   // Immediate visual-only search
+    //   sidebarSearchInput.addEventListener("input", (e) => {
+    //     if (!isPageFullyLoaded) return;
 
-//       currentCategoryChunk = 1; 
-      
-//       const sidebarItemsContainer = qs(".sidebar-items");
-//       if (sidebarItemsContainer) {
-//         const categoriesHTML = matchingCategories
-//           .slice(0, categoriesPerChunk)
-//           .map((c) => {
-//             const isActive = c.category_id === selectedCategoryId;
-//             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
-//             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-//             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-//             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-            
-//             return `
-//             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
-//                  data-category-id="${c.category_id}"
-//                  data-has-adult="${hasAdultContent}">
-//               <span class="sidebar-item-name">
-//                 <span class="sidebar-text">${c.category_name}</span>
-//                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-//               </span>
-//               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-//             </div>`;
-//           }).join("");
-        
-//         sidebarItemsContainer.innerHTML = categoriesHTML;
-//       }
-//     }
-//   });
-// }
-    
- LiveTvPage.cleanup = function () {
-  isPageFullyLoaded = false;
-  document.removeEventListener("click", handleClick);
-  document.removeEventListener("keydown", handleKeydown);
+    //     const value = e.target.value;
 
-  // Remove fullscreen exit handler
-  if (fullscreenExitHandler) {
-    document.removeEventListener("fullscreenchange", fullscreenExitHandler);
-    document.removeEventListener("webkitfullscreenchange", fullscreenExitHandler);
-    document.removeEventListener("mozfullscreenchange", fullscreenExitHandler);
-    document.removeEventListener("msfullscreenchange", fullscreenExitHandler);
-    fullscreenExitHandler = null; // Clean up reference
-  }
+    //     // Clear existing timeout
+    //     if (searchTimeout) {
+    //       clearTimeout(searchTimeout);
+    //     }
 
-  window.liveTvPageState = null;
+    //     // INSTANT VISUAL FILTER (no heavy processing)
+    //     lightweightCategorySearch(value);
 
-  if (menuKeyHandler) {
-    document.removeEventListener("keydown", menuKeyHandler);
-    menuKeyHandler = null;
-  }
+    //     // Only do full re-render after user stops typing (500ms)
+    //     isTyping = true;
+    //     searchTimeout = setTimeout(() => {
+    //       isTyping = false;
+    //       console.log("🔄 User stopped typing - doing full category render");
 
-  // REMOVED: These lines referenced undefined globalFullscreenHandler
-  // document.removeEventListener("fullscreenchange", globalFullscreenHandler);
-  // document.removeEventListener("webkitfullscreenchange", globalFullscreenHandler);
-  // document.removeEventListener("mozfullscreenchange", globalFullscreenHandler);
-  // document.removeEventListener("msfullscreenchange", globalFullscreenHandler);
+    //       const allData = getFilteredCategories();
+    //       const matchingCategories = allData.filter((c) =>
+    //         c.category_name.toLowerCase().includes(value.toLowerCase())
+    //       );
 
-  const channelGrid = qs(".channel-grid");
-  if (channelGrid) {
-    channelGrid.removeEventListener("scroll", window.updateScrollArrows);
-  }
+    //       currentCategoryChunk = 1;
 
-  stopVideoControlsHideTimer();
+    //       const sidebarItemsContainer = qs(".sidebar-items");
+    //       if (sidebarItemsContainer) {
+    //         const categoriesHTML = matchingCategories
+    //           .slice(0, categoriesPerChunk)
+    //           .map((c) => {
+    //             const isActive = c.category_id === selectedCategoryId;
+    //             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
+    //             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+    //             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+    //             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
 
-  const modal = document.getElementById("passwordModalOverlay");
-  if (modal) {
-    modal.remove();
-  }
+    //             return `
+    //             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}"
+    //                  data-category-id="${c.category_id}"
+    //                  data-has-adult="${hasAdultContent}">
+    //               <span class="sidebar-item-name">
+    //                 <span class="sidebar-text">${c.category_name}</span>
+    //                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+    //               </span>
+    //               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+    //             </div>`;
+    //           }).join("");
 
-  disposeLivePlayer();
+    //         sidebarItemsContainer.innerHTML = categoriesHTML;
+    //       }
+    //     }, 500); // Wait 500ms after last keystroke
+    //   });
 
-  if (
-    typeof LiveVideoJsComponent !== "undefined" &&
-    typeof LiveVideoJsComponent.cleanup === "function"
-  ) {
-    try {
-      LiveVideoJsComponent.cleanup();
-    } catch (err) {
-      console.warn("LiveVideoJsComponent cleanup error:", err);
-    }
-  }
+    //   // On blur, ensure full render happens
+    //   sidebarSearchInput.addEventListener("blur", () => {
+    //     if (isTyping) {
+    //       clearTimeout(searchTimeout);
+    //       const value = sidebarSearchInput.value;
 
-  if (window.livePlayer) {
-    try {
-      window.livePlayer.dispose();
-    } catch {}
-    window.livePlayer = null;
-  }
-};
+    //       const allData = getFilteredCategories();
+    //       const matchingCategories = allData.filter((c) =>
+    //         c.category_name.toLowerCase().includes(value.toLowerCase())
+    //       );
+
+    //       currentCategoryChunk = 1;
+
+    //       const sidebarItemsContainer = qs(".sidebar-items");
+    //       if (sidebarItemsContainer) {
+    //         const categoriesHTML = matchingCategories
+    //           .slice(0, categoriesPerChunk)
+    //           .map((c) => {
+    //             const isActive = c.category_id === selectedCategoryId;
+    //             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
+    //             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+    //             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+    //             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+
+    //             return `
+    //             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}"
+    //                  data-category-id="${c.category_id}"
+    //                  data-has-adult="${hasAdultContent}">
+    //               <span class="sidebar-item-name">
+    //                 <span class="sidebar-text">${c.category_name}</span>
+    //                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+    //               </span>
+    //               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+    //             </div>`;
+    //           }).join("");
+
+    //         sidebarItemsContainer.innerHTML = categoriesHTML;
+    //       }
+    //     }
+    //   });
+    // }
+
+    LiveTvPage.cleanup = function () {
+      isPageFullyLoaded = false;
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("keydown", handleKeydown, true);
+
+      // Remove fullscreen exit handler
+      if (fullscreenExitHandler) {
+        document.removeEventListener("fullscreenchange", fullscreenExitHandler);
+        document.removeEventListener(
+          "webkitfullscreenchange",
+          fullscreenExitHandler
+        );
+        document.removeEventListener(
+          "mozfullscreenchange",
+          fullscreenExitHandler
+        );
+        document.removeEventListener(
+          "msfullscreenchange",
+          fullscreenExitHandler
+        );
+        fullscreenExitHandler = null; // Clean up reference
+      }
+
+      window.liveTvPageState = null;
+
+      if (menuKeyHandler) {
+        document.removeEventListener("keydown", menuKeyHandler);
+        menuKeyHandler = null;
+      }
+
+      // REMOVED: These lines referenced undefined globalFullscreenHandler
+      // document.removeEventListener("fullscreenchange", globalFullscreenHandler);
+      // document.removeEventListener("webkitfullscreenchange", globalFullscreenHandler);
+      // document.removeEventListener("mozfullscreenchange", globalFullscreenHandler);
+      // document.removeEventListener("msfullscreenchange", globalFullscreenHandler);
+
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.removeEventListener("scroll", window.updateScrollArrows);
+      }
+
+      stopVideoControlsHideTimer();
+
+      const modal = document.getElementById("passwordModalOverlay");
+      if (modal) {
+        modal.remove();
+      }
+
+      disposeLivePlayer();
+
+      if (
+        typeof LiveVideoJsComponent !== "undefined" &&
+        typeof LiveVideoJsComponent.cleanup === "function"
+      ) {
+        try {
+          LiveVideoJsComponent.cleanup();
+        } catch (err) {
+          console.warn("LiveVideoJsComponent cleanup error:", err);
+        }
+      }
+
+      if (window.livePlayer) {
+        try {
+          window.livePlayer.dispose();
+        } catch {}
+        window.livePlayer = null;
+      }
+    };
   }, 0);
 
-
   // ===== SCROLL ARROW VISIBILITY CONTROL =====
-const updateScrollArrows = () => {
+  const updateScrollArrows = () => {
+    const channelGrid = qs(".channel-grid");
+    const leftArrow = qs("#channelScrollLeft");
+    const rightArrow = qs("#channelScrollRight");
+
+    if (!channelGrid || !leftArrow || !rightArrow) return;
+
+    const scrollLeft = channelGrid.scrollLeft;
+    const maxScroll = channelGrid.scrollWidth - channelGrid.clientWidth;
+
+    // Show/hide left arrow
+    if (scrollLeft <= 0) {
+      leftArrow.classList.add("disabled");
+    } else {
+      leftArrow.classList.remove("disabled");
+    }
+
+    // Show/hide right arrow
+    if (scrollLeft >= maxScroll - 5) {
+      // -5 for threshold
+      rightArrow.classList.add("disabled");
+    } else {
+      rightArrow.classList.remove("disabled");
+    }
+  };
+
+  window.updateScrollArrows = updateScrollArrows;
+
+  // Add scroll event listener
   const channelGrid = qs(".channel-grid");
+  if (channelGrid) {
+    channelGrid.addEventListener("scroll", updateScrollArrows);
+
+    // Initial check
+    updateScrollArrows();
+  }
+
+  // Add click handlers for arrows
   const leftArrow = qs("#channelScrollLeft");
   const rightArrow = qs("#channelScrollRight");
-  
-  if (!channelGrid || !leftArrow || !rightArrow) return;
-  
-  const scrollLeft = channelGrid.scrollLeft;
-  const maxScroll = channelGrid.scrollWidth - channelGrid.clientWidth;
-  
-  // Show/hide left arrow
-  if (scrollLeft <= 0) {
-    leftArrow.classList.add("disabled");
-  } else {
-    leftArrow.classList.remove("disabled");
+
+  if (leftArrow) {
+    leftArrow.addEventListener("click", () => {
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.scrollBy({ left: -300, behavior: "smooth" });
+      }
+    });
   }
-  
-  // Show/hide right arrow
-  if (scrollLeft >= maxScroll - 5) { // -5 for threshold
-    rightArrow.classList.add("disabled");
-  } else {
-    rightArrow.classList.remove("disabled");
+
+  if (rightArrow) {
+    rightArrow.addEventListener("click", () => {
+      const channelGrid = qs(".channel-grid");
+      if (channelGrid) {
+        channelGrid.scrollBy({ left: 300, behavior: "smooth" });
+      }
+    });
   }
-};
 
-window.updateScrollArrows = updateScrollArrows;
-
-
-// Add scroll event listener
-const channelGrid = qs(".channel-grid");
-if (channelGrid) {
-  channelGrid.addEventListener("scroll", updateScrollArrows);
-  
-  // Initial check
-  updateScrollArrows();
-}
-
-// Add click handlers for arrows
-const leftArrow = qs("#channelScrollLeft");
-const rightArrow = qs("#channelScrollRight");
-
-if (leftArrow) {
-  leftArrow.addEventListener("click", () => {
-    const channelGrid = qs(".channel-grid");
-    if (channelGrid) {
-      channelGrid.scrollBy({ left: -300, behavior: "smooth" });
-    }
+  // Update arrows after rendering channels
+  const observer = new MutationObserver(() => {
+    updateScrollArrows();
   });
-}
 
-if (rightArrow) {
-  rightArrow.addEventListener("click", () => {
-    const channelGrid = qs(".channel-grid");
-    if (channelGrid) {
-      channelGrid.scrollBy({ left: 300, behavior: "smooth" });
-    }
-  });
-}
-
-// Update arrows after rendering channels
-const observer = new MutationObserver(() => {
-  updateScrollArrows();
-});
-
-if (channelGrid) {
-  observer.observe(channelGrid, { childList: true, subtree: true });
-}
-
+  if (channelGrid) {
+    observer.observe(channelGrid, { childList: true, subtree: true });
+  }
 
   // Header time
   const now = new Date();
@@ -4383,6 +4584,3 @@ ${SortingDialog()}
 </div>
 `;
 }
-
-
-
