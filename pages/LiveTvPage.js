@@ -440,6 +440,7 @@ filteredCache = result;
   
 };
 
+
 // ===== GET CHUNKED CHANNELS =====
 const getChunkedChannels = (allChannels, chunk, pageSize) => {
   const startIdx = (chunk - 1) * pageSize;
@@ -1969,26 +1970,34 @@ const setupSidebarSearchListener = () => {
   const sidebarSearchInput = document.querySelector(".sidebar-search-input");
   if (!sidebarSearchInput) return;
 
+  let searchTimeout = null;
+
   sidebarSearchInput.addEventListener("input", function(e) {
-    // We update the data, but we DON'T recreate the search box element
     currentCategoryChunk = 1;
     focusedSidebarIndex = 0;
 
-    // IMPORTANT: Only update the list of items, not the whole sidebar
-    const filtered = getFilteredCategories();
     const query = e.target.value.toLowerCase();
     
-    let displayCategories;
-    if (query !== "") {
-      displayCategories = filtered.filter(function(c) {
-        return (c.category_name || "").toLowerCase().includes(query);
-      });
-    } else {
-      displayCategories = filtered;
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
+    
+    // Debounce: only update after 300ms of no typing
+    searchTimeout = setTimeout(() => {
+      const filtered = getFilteredCategories();
+      
+      let displayCategories;
+      if (query !== "") {
+        displayCategories = filtered.filter(function(c) {
+          return (c.category_name || "").toLowerCase().includes(query);
+        });
+      } else {
+        displayCategories = filtered;
+      }
 
-    // Call a function that ONLY updates the .sidebar-items div
-    updateSidebarItemsOnly(displayCategories);
+      updateSidebarItemsOnly(displayCategories);
+    }, 300);
   });
 };
 
@@ -2529,18 +2538,28 @@ const stopVideoControlsHideTimer = () => {
   // KEY NAVIGATION
   function handleKeydown(e) {
 
-      // BLOCK ALL NAVIGATION UNTIL PAGE IS FULLY LOADED
+ const activeElement = document.activeElement;
+  const isTypingInInput = activeElement && (
+    activeElement.classList.contains('search-input') ||
+    activeElement.classList.contains('sidebar-search-input') ||
+    activeElement.id === 'passwordModalInput'
+  );
+  
+  // Allow typing without interference
+  if (isTypingInInput && !e.key.startsWith('Arrow') && e.key !== 'Enter' && e.keyCode !== 10009) {
+    return; // Let browser handle typing naturally
+  }
+
+  // BLOCK ALL NAVIGATION UNTIL PAGE IS FULLY LOADED
   if (!isPageFullyLoaded) {
     e.preventDefault();
     e.stopPropagation();
     
-    // SHOW VISUAL FEEDBACK
     const loadingSubtext = document.getElementById("loadingSubtext");
     if (loadingSubtext) {
       loadingSubtext.textContent = "Please wait - channels are still loading...";
-      loadingSubtext.style.color = "#fbbf24"; // Yellow color
+      loadingSubtext.style.color = "#fbbf24";
       
-      // Flash the text
       loadingSubtext.style.animation = "pulse 0.5s ease-in-out";
       setTimeout(() => {
         loadingSubtext.style.animation = "";
@@ -3045,74 +3064,90 @@ if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
 }
 
     // HEADER SEARCH BOX NAVIGATION
-    if (inHeaderSearch) {
-      if (isEnter) {
-        isHeaderSearchActive = !isHeaderSearchActive;
-        const searchInput = qs(".search-input");
-        if (searchInput) {
-          if (isHeaderSearchActive) {
-            searchInput.focus();
-            const textLength = searchInput.value.length;
-            searchInput.setSelectionRange(textLength, textLength);
-          } else {
-            searchInput.blur();
-                    searchInput.selectionStart = searchInput.selectionEnd = 0;
-
-          }
-        }
-        e.preventDefault();
-        return;
+  // HEADER SEARCH BOX NAVIGATION
+// HEADER SEARCH BOX NAVIGATION
+if (inHeaderSearch) {
+  const searchInput = qs(".search-input");
+  
+  if (isEnter) {
+    if (searchInput) {
+      if (!isHeaderSearchActive) {
+        // First press - open keyboard
+        isHeaderSearchActive = true;
+        
+        // Use setTimeout to ensure focus happens after state change
+        setTimeout(() => {
+          searchInput.focus();
+          const textLength = searchInput.value.length;
+          searchInput.setSelectionRange(textLength, textLength);
+        }, 50);
+      } else {
+        // Second press - close keyboard
+        isHeaderSearchActive = false;
+        searchInput.blur();
+        searchInput.selectionStart = searchInput.selectionEnd = 0;
       }
-      // DOWN: Move to channel grid
-      if (isDown) {
-        inHeaderSearch = false;
-        inSidebarSearch = true;
-        // isHeaderSearchActive = false;
-        setHeaderSearchFocus(false);
-        setSidebarSearchFocus(true);
-
-        const headerInput = qs(".search-input");
-        if (headerInput) {
-          headerInput.blur();
-          headerInput.selectionStart = headerInput.selectionEnd = 0;
-        }
-
-        e.preventDefault();
-        return;
-      }
-
-      // LEFT: Stay in header search
-      if (isLeft) {
-        e.preventDefault();
-        return;
-      }
-
-      // RIGHT: Move to menu dots
-      if (isRight) {
-        inHeaderSearch = false;
-        // isHeaderSearchActive = false;
-        setHeaderSearchFocus(false);
-
-        const headerInput = qs(".search-input");
-        if (headerInput) {
-          headerInput.blur();
-          headerInput.selectionStart = headerInput.selectionEnd = 0;
-        }
-
-        setFocusOnMenuDots();
-        e.preventDefault();
-        return;
-      }
-
-      // UP: Stay in header search
-      if (isUp) {
-        e.preventDefault();
-        return;
-      }
-
-      // Allow typing in search box
-      return;
     }
+    e.preventDefault();
+    return;
+  }
+  
+  // If user is typing, don't allow navigation with arrow keys
+  if (isHeaderSearchActive && searchInput && document.activeElement === searchInput) {
+    // Allow typing, but prevent arrow key navigation
+    if (isUp || isDown || isLeft || isRight) {
+      e.preventDefault();
+    }
+    return;
+  }
+  
+  // DOWN: Move to sidebar search
+  if (isDown) {
+    inHeaderSearch = false;
+    inSidebarSearch = true;
+    isHeaderSearchActive = false;
+    setHeaderSearchFocus(false);
+    setSidebarSearchFocus(true);
+
+    if (searchInput) {
+      searchInput.blur();
+      searchInput.selectionStart = searchInput.selectionEnd = 0;
+    }
+
+    e.preventDefault();
+    return;
+  }
+
+  // LEFT: Stay in header search
+  if (isLeft) {
+    e.preventDefault();
+    return;
+  }
+
+  // RIGHT: Move to menu dots
+  if (isRight) {
+    inHeaderSearch = false;
+    isHeaderSearchActive = false;
+    setHeaderSearchFocus(false);
+
+    if (searchInput) {
+      searchInput.blur();
+      searchInput.selectionStart = searchInput.selectionEnd = 0;
+    }
+
+    setFocusOnMenuDots();
+    e.preventDefault();
+    return;
+  }
+
+  // UP: Stay in header search
+  if (isUp) {
+    e.preventDefault();
+    return;
+  }
+
+  return;
+}
 
     // SIDEBAR SEARCH BOX NAVIGATION
   // SIDEBAR SEARCH BOX NAVIGATION
@@ -3161,12 +3196,22 @@ if (inSidebarSearch) {
   }
 
   // ENTER: Toggle typing mode
+// ENTER: Toggle typing mode
   if (isEnter) {
-    isSidebarSearchActive = !isSidebarSearchActive;
     if (searchInput) {
-      if (isSidebarSearchActive) {
-        searchInput.focus();
+      if (!isSidebarSearchActive) {
+        // First press - open keyboard
+        isSidebarSearchActive = true;
+        
+        // Use setTimeout to ensure focus happens
+        setTimeout(() => {
+          searchInput.focus();
+          const textLength = searchInput.value.length;
+          searchInput.setSelectionRange(textLength, textLength);
+        }, 50);
       } else {
+        // Second press - close keyboard
+        isSidebarSearchActive = false;
         searchInput.blur();
       }
     }
@@ -4047,65 +4092,134 @@ document.addEventListener("msfullscreenchange", fullscreenExitHandler);
       }, 300);
     }, 300);
 
-    // Rest of your code (search handlers, cleanup, etc.)...
-    // ===== SEARCH INPUT HANDLER =====
-    const headerSearchInput = qs(".search-input");
-    if (headerSearchInput) {
-      headerSearchInput.addEventListener("input", (e) => {
-        if (!isPageFullyLoaded) return;
-        searchQuery = e.target.value;
-        currentChunk = 1;
-        renderChannels();
-      });
+// ===== SEARCH INPUT HANDLER - OPTIMIZED FOR TIZEN =====
+// ===== SEARCH INPUT HANDLER =====
+const headerSearchInput = qs(".search-input");
+if (headerSearchInput) {
+  let searchTimeout = null;
+  
+  headerSearchInput.addEventListener("input", (e) => {
+    if (!isPageFullyLoaded) return;
+    
+    const value = e.target.value;
+    searchQuery = value;
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
-
-  const sidebarSearchInput = qs(".sidebar-search-input");
-if (sidebarSearchInput) {
-    sidebarSearchInput.addEventListener("input", (e) => {
-        if (!isPageFullyLoaded) return;
-        
-        const query = e.target.value.toLowerCase();
-        
-        // 1. Get the base data
-        const allData = getFilteredCategories(); 
-        
-        // 2. Filter the categories based on name
-        const matchingCategories = allData.filter((c) =>
-            c.category_name.toLowerCase().includes(query)
-        );
-
-        // 3. Reset pagination for the sidebar because the list has changed
-        currentCategoryChunk = 1; 
-        
-        // 4. Update the sidebar items container
-        const sidebarItemsContainer = qs(".sidebar-items");
-        if (sidebarItemsContainer) {
-            // We reuse your mapping logic to ensure locks and counts appear correctly
-            const categoriesHTML = matchingCategories
-                .slice(0, categoriesPerChunk) // Show first chunk of results
-                .map((c) => {
-                    const isActive = c.category_id === selectedCategoryId;
-                    const selectedPlaylist = JSON.parse(localStorage.getItem("selectedPlaylist")) || {};
-                    const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
-                    const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
-                    const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
-                    
-                    return `
-                    <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
-                         data-category-id="${c.category_id}"
-                         data-has-adult="${hasAdultContent}">
-                      <span class="sidebar-item-name">
-                        <span class="sidebar-text">${c.category_name}</span>
-                        ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
-                      </span>
-                      <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
-                    </div>`;
-                }).join("");
-            
-            sidebarItemsContainer.innerHTML = categoriesHTML;
-        }
-    });
+    
+    // Debounce: only re-render after 300ms of no typing
+    searchTimeout = setTimeout(() => {
+      currentChunk = 1;
+      filteredCache = null;
+      renderChannels();
+    }, 300);
+  });
 }
+
+// Sidebar Search Input
+// const sidebarSearchInput = qs(".sidebar-search-input");
+// if (sidebarSearchInput) {
+//   let searchTimeout = null;
+//   let isTyping = false;
+  
+//   // Immediate visual-only search
+//   sidebarSearchInput.addEventListener("input", (e) => {
+//     if (!isPageFullyLoaded) return;
+    
+//     const value = e.target.value;
+    
+//     // Clear existing timeout
+//     if (searchTimeout) {
+//       clearTimeout(searchTimeout);
+//     }
+    
+//     // INSTANT VISUAL FILTER (no heavy processing)
+//     lightweightCategorySearch(value);
+    
+//     // Only do full re-render after user stops typing (500ms)
+//     isTyping = true;
+//     searchTimeout = setTimeout(() => {
+//       isTyping = false;
+//       console.log("🔄 User stopped typing - doing full category render");
+      
+//       const allData = getFilteredCategories(); 
+//       const matchingCategories = allData.filter((c) =>
+//         c.category_name.toLowerCase().includes(value.toLowerCase())
+//       );
+
+//       currentCategoryChunk = 1; 
+      
+//       const sidebarItemsContainer = qs(".sidebar-items");
+//       if (sidebarItemsContainer) {
+//         const categoriesHTML = matchingCategories
+//           .slice(0, categoriesPerChunk)
+//           .map((c) => {
+//             const isActive = c.category_id === selectedCategoryId;
+//             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
+//             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+//             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+//             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+            
+//             return `
+//             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+//                  data-category-id="${c.category_id}"
+//                  data-has-adult="${hasAdultContent}">
+//               <span class="sidebar-item-name">
+//                 <span class="sidebar-text">${c.category_name}</span>
+//                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+//               </span>
+//               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+//             </div>`;
+//           }).join("");
+        
+//         sidebarItemsContainer.innerHTML = categoriesHTML;
+//       }
+//     }, 500); // Wait 500ms after last keystroke
+//   });
+  
+//   // On blur, ensure full render happens
+//   sidebarSearchInput.addEventListener("blur", () => {
+//     if (isTyping) {
+//       clearTimeout(searchTimeout);
+//       const value = sidebarSearchInput.value;
+      
+//       const allData = getFilteredCategories(); 
+//       const matchingCategories = allData.filter((c) =>
+//         c.category_name.toLowerCase().includes(value.toLowerCase())
+//       );
+
+//       currentCategoryChunk = 1; 
+      
+//       const sidebarItemsContainer = qs(".sidebar-items");
+//       if (sidebarItemsContainer) {
+//         const categoriesHTML = matchingCategories
+//           .slice(0, categoriesPerChunk)
+//           .map((c) => {
+//             const isActive = c.category_id === selectedCategoryId;
+//             const selectedPlaylist = window.liveTvCache.selectedPlaylist;
+//             const hasParentalPassword = selectedPlaylist.parentalPassword && selectedPlaylist.parentalPassword.length > 0;
+//             const hasAdultContent = hasParentalPassword && categoryHasAdultContent(c.category_id);
+//             const isLocked = hasAdultContent && lockedCategories.has(c.category_id);
+            
+//             return `
+//             <div class="sidebar-item ${isActive ? "sidebar-active" : ""} ${isLocked ? "sidebar-locked" : ""}" 
+//                  data-category-id="${c.category_id}"
+//                  data-has-adult="${hasAdultContent}">
+//               <span class="sidebar-item-name">
+//                 <span class="sidebar-text">${c.category_name}</span>
+//                 ${isLocked ? '<i class="fa fa-lock sidebar-lock"></i>' : ''}
+//               </span>
+//               <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
+//             </div>`;
+//           }).join("");
+        
+//         sidebarItemsContainer.innerHTML = categoriesHTML;
+//       }
+//     }
+//   });
+// }
     
  LiveTvPage.cleanup = function () {
   isPageFullyLoaded = false;
