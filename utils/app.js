@@ -1,17 +1,15 @@
-
-
 // async function navigateTo(pageId) {
 //   // Hide all pages
 //   document.querySelectorAll('.page').forEach(page => {
 //     page.style.display = 'none';
 //     page.innerHTML = '';
 //   });
-  
+
 //   // Show requested page
 //   const targetPage = document.getElementById(pageId);
 //   if (targetPage) {
 //     targetPage.style.display = 'block';
-    
+
 //     // Render the appropriate page
 //     if (pageId === 'login-page') {
 //       targetPage.innerHTML = LoginPage();
@@ -20,7 +18,7 @@
 //     } else if (pageId === 'video-player') {
 //       targetPage.innerHTML = VideoPlayerPage();
 //     }
-    
+
 //     else if (pageId === 'dashboard-page') {
 //       targetPage.innerHTML = DashboardPage();
 //     } else if (pageId === 'live-tv-page') {
@@ -64,16 +62,29 @@
 //   }
 // });
 
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   // ✅ Set flag to indicate DOMContentLoaded has run
   window._domContentLoaded = true;
-  
-  const playlistsData = JSON.parse(localStorage.getItem('playlistsData') || '[]');
+
+  // ✅ FIX: If user is logged in, DO NOT route here.
+  // Let main.js handle the loader and session restore.
+  const isLogin = localStorage.getItem("isLogin") === "true";
+  const selectedPlaylist = localStorage.getItem("selectedPlaylist");
+
+  if (isLogin && selectedPlaylist) {
+    console.log(
+      "🛑 User logged in - app.js waiting for main.js loader sequence"
+    );
+    return;
+  }
+
+  const playlistsData = JSON.parse(
+    localStorage.getItem("playlistsData") || "[]"
+  );
 
   if (playlistsData.length > 0) {
-    Router.showPage('playlist');
+    Router.showPage("playlist");
   } else {
-    Router.showPage('login');
+    Router.showPage("login");
   }
 });

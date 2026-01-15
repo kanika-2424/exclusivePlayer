@@ -2742,7 +2742,8 @@ function LiveTvPage() {
       if (isDown) {
         isMenuDotsActive = false;
         inSidebarSearch = true;
-        // isHeaderSearchActive = false;
+        isMenuDotsActive = false;
+
         setHeaderSearchFocus(false);
         setSidebarSearchFocus(true);
 
@@ -2759,7 +2760,7 @@ function LiveTvPage() {
       // DOWN: Open sidebar
       // if (isDown) {
       //     openSidebar('liveTvPage');
-      //     e.preventDefault();
+      //
       //     return;
       // }
 
@@ -3185,6 +3186,7 @@ function LiveTvPage() {
 
       // FORCE EXIT ON FIRST PRESS
       if (isDown) {
+        e.preventDefault();
         if (searchInput) {
           searchInput.blur(); // Releases the browser's hold on the input
         }
