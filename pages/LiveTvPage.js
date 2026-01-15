@@ -896,6 +896,9 @@ function LiveTvPage() {
     }
   }
 
+  // Make available globally for sidebar to call
+  window.focusLiveTvMenuDots = setFocusOnMenuDots;
+
   // ===== PASSWORD MODAL COMPONENT =====
   const PasswordModal = () => {
     return `

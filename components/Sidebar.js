@@ -10,7 +10,6 @@ let globalShowContiueButton = false;
 function cleanupLivePlayer() {
   try {
     if (window.livePlayer) {
-
       // Store player reference to avoid race conditions
       const currentPlayer = window.livePlayer;
       window.livePlayer = null;
@@ -132,7 +131,7 @@ function Sidebar({
 function SortingDialog() {
   const showTopRated = localStorage.getItem("isLivePageOpen") == "true";
   const sidebarPage = localStorage.getItem("sidebarPage");
-  
+
   // Get the appropriate sort value based on current page
   let currentSortValue = "default";
   if (sidebarPage === "moviesPage") {
@@ -144,10 +143,9 @@ function SortingDialog() {
   } else {
     currentSortValue = localStorage.getItem("movieSortValue") || "default";
   }
-  
+
   // ✅ Trim and ensure it's a string
   currentSortValue = String(currentSortValue).trim();
-
 
   return `
     <div class="sorting-overlay-dialog sorting-overlay-dialog-hidden" id="sortingDialog">
@@ -155,22 +153,32 @@ function SortingDialog() {
         <p class="sorting-title">Sorting Options</p>
         <div class="sorting-options">
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="default" ${currentSortValue === "default" ? 'checked="checked"' : ""}> Default
+            <input type="radio" name="sorting" value="default" ${
+              currentSortValue === "default" ? 'checked="checked"' : ""
+            }> Default
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="az" ${currentSortValue === "az" ? 'checked="checked"' : ""}> A - Z
+            <input type="radio" name="sorting" value="az" ${
+              currentSortValue === "az" ? 'checked="checked"' : ""
+            }> A - Z
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="za" ${currentSortValue === "za" ? 'checked="checked"' : ""}> Z - A
+            <input type="radio" name="sorting" value="za" ${
+              currentSortValue === "za" ? 'checked="checked"' : ""
+            }> Z - A
           </label>
           <label class="sorting-option">
-            <input type="radio" name="sorting" value="recent" ${currentSortValue === "recent" ? 'checked="checked"' : ""}> Recently Added
+            <input type="radio" name="sorting" value="recent" ${
+              currentSortValue === "recent" ? 'checked="checked"' : ""
+            }> Recently Added
           </label>
           ${
             !showTopRated
               ? `
             <label class="sorting-option">
-              <input type="radio" name="sorting" value="top" ${currentSortValue === "top" ? 'checked="checked"' : ""}> Top Rated
+              <input type="radio" name="sorting" value="top" ${
+                currentSortValue === "top" ? 'checked="checked"' : ""
+              }> Top Rated
             </label>
           `
               : ""
@@ -218,7 +226,7 @@ function openSortingDialog() {
   // Get the current page BEFORE updating dialog
   const currentPage = localStorage.getItem("sidebarPage");
   console.log("Opening sort dialog for page:", currentPage);
-  
+
   // Update the dialog first to reflect current PageOpen value
   updateSortingDialog();
 
@@ -231,7 +239,7 @@ function openSortingDialog() {
   // ✅ ADD THIS: Programmatically ensure the correct radio is checked
   const sidebarPage = localStorage.getItem("sidebarPage");
   let savedSortValue = "default";
-  
+
   if (sidebarPage === "moviesPage") {
     savedSortValue = localStorage.getItem("movieSortValue") || "default";
   } else if (sidebarPage === "seriesPage") {
@@ -239,12 +247,14 @@ function openSortingDialog() {
   } else if (sidebarPage === "liveTvPage") {
     savedSortValue = localStorage.getItem("liveTvSortValue") || "default";
   }
-  
+
   // Force check the correct radio button
-  const radioToCheck = dialog.querySelector(`input[type="radio"][value="${savedSortValue}"]`);
+  const radioToCheck = dialog.querySelector(
+    `input[type="radio"][value="${savedSortValue}"]`
+  );
   if (radioToCheck) {
     // Uncheck all first
-    dialog.querySelectorAll('input[type="radio"]').forEach(radio => {
+    dialog.querySelectorAll('input[type="radio"]').forEach((radio) => {
       radio.checked = false;
     });
     // Check the correct one
@@ -267,7 +277,7 @@ function closeSortingDialog() {
   if (!dialog) return;
 
   dialog.classList.add("sorting-overlay-dialog-hidden");
-  
+
   // ✅ Clean up the origin tracker
   localStorage.removeItem("sortingDialogOrigin");
 
@@ -280,12 +290,13 @@ function applySorting() {
   const checked = document.querySelector(
     '.sorting-option input[type="radio"]:checked'
   );
-  
+
   if (checked) {
     const sortValue = checked.value;
-    const currentPage = localStorage.getItem("sortingDialogOrigin") || localStorage.getItem("sidebarPage");
-    
-    
+    const currentPage =
+      localStorage.getItem("sortingDialogOrigin") ||
+      localStorage.getItem("sidebarPage");
+
     // Save to appropriate localStorage key based on page
     if (currentPage === "moviesPage") {
       localStorage.setItem("movieSortValue", sortValue);
@@ -308,12 +319,21 @@ function applySorting() {
 
   // ✅ Call appropriate render function based on page
   const currentPage = localStorage.getItem("sidebarPage");
-  
-  if (currentPage === "moviesPage" && typeof window.renderMovies === "function") {
+
+  if (
+    currentPage === "moviesPage" &&
+    typeof window.renderMovies === "function"
+  ) {
     window.renderMovies();
-  } else if (currentPage === "seriesPage" && typeof window.renderSeries === "function") {
+  } else if (
+    currentPage === "seriesPage" &&
+    typeof window.renderSeries === "function"
+  ) {
     window.renderSeries();
-  } else if (currentPage === "liveTvPage" && typeof window.renderLiveTv === "function") {
+  } else if (
+    currentPage === "liveTvPage" &&
+    typeof window.renderLiveTv === "function"
+  ) {
     window.renderLiveTv();
   }
 }
@@ -538,7 +558,7 @@ function sortingKeyHandler(e) {
 /* -------- Sidebar Open/Close -------- */
 function openSidebar(from = "") {
   console.log("🔓 Opening sidebar from:", from); // Debug log
-  
+
   const sidebar =
     from === "moviesPage"
       ? document.querySelector(".sidebar-container-movie")
@@ -560,7 +580,7 @@ function openSidebar(from = "") {
   // Force display and trigger reflow for animation
   sidebar.style.display = "block";
   sidebar.style.transform = "translateX(100%)"; // Start from right
-  
+
   // Use requestAnimationFrame for smooth animation on TV
   requestAnimationFrame(() => {
     sidebar.style.transform = "translateX(0)"; // Slide in
@@ -601,9 +621,9 @@ function closeSidebar(from = "") {
   if (!sidebar) return;
 
   sidebar.style.transform = "translateX(100%)";
-setTimeout(() => {
+  setTimeout(() => {
     sidebar.style.display = "none";
-}, 300);
+  }, 300);
 
   sidebar.style.display = "none";
   if (from) localStorage.setItem("currentPage", from);
@@ -611,6 +631,16 @@ setTimeout(() => {
   document.removeEventListener("keydown", sidebarKeyHandler);
   sidebarLinks = [];
   selectedIndex = 0;
+
+  // ✅ Restore focus to menu dots if on Live TV Page
+  if (
+    from === "liveTvPage" &&
+    typeof window.focusLiveTvMenuDots === "function"
+  ) {
+    setTimeout(() => {
+      window.focusLiveTvMenuDots();
+    }, 100);
+  }
 }
 
 function setPageOpen(value) {
