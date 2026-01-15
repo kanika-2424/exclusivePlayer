@@ -537,6 +537,8 @@ function sortingKeyHandler(e) {
 
 /* -------- Sidebar Open/Close -------- */
 function openSidebar(from = "") {
+  console.log("🔓 Opening sidebar from:", from); // Debug log
+  
   const sidebar =
     from === "moviesPage"
       ? document.querySelector(".sidebar-container-movie")
@@ -550,9 +552,19 @@ function openSidebar(from = "") {
       ? document.querySelector(".sidebar-container-series-detail")
       : null;
 
-  if (!sidebar) return;
+  if (!sidebar) {
+    console.error("❌ Sidebar not found for:", from);
+    return;
+  }
+
+  // Force display and trigger reflow for animation
   sidebar.style.display = "block";
-  sidebar.style.transform = "translateX(0)"; // Add this line
+  sidebar.style.transform = "translateX(100%)"; // Start from right
+  
+  // Use requestAnimationFrame for smooth animation on TV
+  requestAnimationFrame(() => {
+    sidebar.style.transform = "translateX(0)"; // Slide in
+  });
 
   localStorage.setItem("currentPage", "sidebar");
   localStorage.setItem("sidebarPage", from);
