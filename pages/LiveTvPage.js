@@ -3063,114 +3063,71 @@ if (inAspectRatioBtn || window.liveTvPageState.inAspectRatioBtn) {
 }
 }
 
-    // HEADER SEARCH BOX NAVIGATION
-  // HEADER SEARCH BOX NAVIGATION
-// HEADER SEARCH BOX NAVIGATION
 if (inHeaderSearch) {
   const searchInput = qs(".search-input");
-  
-  if (isEnter) {
-    if (searchInput) {
-      if (!isHeaderSearchActive) {
-        // First press - open keyboard
-        isHeaderSearchActive = true;
-        
-        // Use setTimeout to ensure focus happens after state change
-        setTimeout(() => {
-          searchInput.focus();
-          const textLength = searchInput.value.length;
-          searchInput.setSelectionRange(textLength, textLength);
-        }, 50);
-      } else {
-        // Second press - close keyboard
-        isHeaderSearchActive = false;
-        searchInput.blur();
-        searchInput.selectionStart = searchInput.selectionEnd = 0;
-      }
-    }
-    e.preventDefault();
-    return;
-  }
-  
-  // If user is typing, don't allow navigation with arrow keys
-  if (isHeaderSearchActive && searchInput && document.activeElement === searchInput) {
-    // Allow typing, but prevent arrow key navigation
-    if (isUp || isDown || isLeft || isRight) {
-      e.preventDefault();
-    }
-    return;
-  }
-  
-  // DOWN: Move to sidebar search
+
+  // FORCE EXIT ON FIRST PRESS
   if (isDown) {
+    if (searchInput) {
+      searchInput.blur(); // Releases the browser's hold on the input
+    }
+    isHeaderSearchActive = false; // Reset the state
     inHeaderSearch = false;
     inSidebarSearch = true;
-    isHeaderSearchActive = false;
+    
     setHeaderSearchFocus(false);
     setSidebarSearchFocus(true);
-
-    if (searchInput) {
-      searchInput.blur();
-      searchInput.selectionStart = searchInput.selectionEnd = 0;
-    }
-
-    e.preventDefault();
+    
+    e.preventDefault(); // Prevents the browser from using the 'Down' key
     return;
   }
 
-  // LEFT: Stay in header search
-  if (isLeft) {
-    e.preventDefault();
-    return;
-  }
-
-  // RIGHT: Move to menu dots
   if (isRight) {
-    inHeaderSearch = false;
-    isHeaderSearchActive = false;
-    setHeaderSearchFocus(false);
-
     if (searchInput) {
       searchInput.blur();
-      searchInput.selectionStart = searchInput.selectionEnd = 0;
     }
-
+    isHeaderSearchActive = false;
+    inHeaderSearch = false;
+    setHeaderSearchFocus(false);
     setFocusOnMenuDots();
     e.preventDefault();
     return;
   }
 
-  // UP: Stay in header search
-  if (isUp) {
+  // Handle Enter to toggle keyboard
+  if (isEnter) {
+    if (searchInput) {
+      if (!isHeaderSearchActive) {
+        isHeaderSearchActive = true;
+        setTimeout(function() { searchInput.focus(); }, 50);
+      } else {
+        isHeaderSearchActive = false;
+        searchInput.blur();
+      }
+    }
     e.preventDefault();
     return;
   }
-
-  return;
 }
 
     // SIDEBAR SEARCH BOX NAVIGATION
   // SIDEBAR SEARCH BOX NAVIGATION
 if (inSidebarSearch) {
-  const searchInput = document.querySelector(".sidebar-search-input");
+  const sidebarInput = document.querySelector(".sidebar-search-input");
 
-  // DOWN: Exit search and go to the first item in the filtered list
+  // FORCE EXIT ON FIRST PRESS
   if (isDown) {
-    // 1. Force the input to release focus
-    if (searchInput) {
-      searchInput.blur();
+    if (sidebarInput) {
+      sidebarInput.blur(); // Kill focus immediately
     }
-    // 2. Set states
     isSidebarSearchActive = false;
     inSidebarSearch = false;
     inSidebar = true;
     
-    // 3. Visual cleanup
     setSidebarSearchFocus(false);
     
-    // 4. Focus first sidebar item
     focusedSidebarIndex = 0;
-    const sidebarItems = document.querySelectorAll(".sidebar-item");
+    const sidebarItems = qsa(".sidebar-item");
     if (sidebarItems.length > 0) {
       setSidebarFocus(0);
     }
@@ -3179,54 +3136,31 @@ if (inSidebarSearch) {
     return;
   }
 
-  // UP: Exit search and go to the Top Channel Search
   if (isUp) {
-    if (searchInput) {
-      searchInput.blur();
+    if (sidebarInput) {
+      sidebarInput.blur();
     }
     isSidebarSearchActive = false;
     inSidebarSearch = false;
     inHeaderSearch = true;
-    
     setSidebarSearchFocus(false);
     setHeaderSearchFocus(true);
-    
     e.preventDefault();
     return;
   }
 
-  // ENTER: Toggle typing mode
-// ENTER: Toggle typing mode
   if (isEnter) {
-    if (searchInput) {
+    if (sidebarInput) {
       if (!isSidebarSearchActive) {
-        // First press - open keyboard
         isSidebarSearchActive = true;
-        
-        // Use setTimeout to ensure focus happens
-        setTimeout(() => {
-          searchInput.focus();
-          const textLength = searchInput.value.length;
-          searchInput.setSelectionRange(textLength, textLength);
-        }, 50);
+        setTimeout(function() { sidebarInput.focus(); }, 50);
       } else {
-        // Second press - close keyboard
         isSidebarSearchActive = false;
-        searchInput.blur();
+        sidebarInput.blur();
       }
     }
     e.preventDefault();
     return;
-  }
-
-  // If the user is currently typing (cursor in box), 
-  // we let the browser handle characters, but NOT Up/Down 
-  // (which we already handled above)
-  if (isSidebarSearchActive) {
-    // Allow Left/Right to move cursor inside text, but stop other navigation
-    if (isLeft || isRight) {
-       return; 
-    }
   }
 }
 
@@ -3792,7 +3726,7 @@ if (isRight) {
 
 setTimeout(() => {
     document.addEventListener("click", handleClick);
-    document.addEventListener("keydown", handleKeydown);
+    document.addEventListener("keydown", handleKeydown, true);
 
 
 
