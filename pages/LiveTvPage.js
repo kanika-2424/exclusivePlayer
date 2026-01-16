@@ -280,14 +280,39 @@ let sidebarSearchQuery = ""; // Search text for sidebar
   let isLoadingMoreCategories = false;
 
   let menuKeyHandler = null;
-  let filteredCache = null;
+let filteredCache = null; // Cache for normal navigation
+let searchResultCache = {}; // Cache for search results by query
+let lastSearchQuery = ""; // Track last search to avoid re-filtering
+let renderedChannelsCache = []; // Cache the actual rendered channel elements
+let lastRenderedCategory = null; // Track which category was last rendered
+let lastRenderedChunk = 0; // Track which chunk was last rendered
+
+// Debug mode toggle - set to false for TV to reduce lag
+const DEBUG_MODE = false;
+const debugLog = (...args) => {
+  if (DEBUG_MODE) console.log(...args);
+};
+
 const getFilteredCategories = () => {
-  // Don't use cache if there's an active search query
-  if (filteredCache && !searchQuery.trim() && !sidebarSearchQuery.trim()) {
+  const hasHeaderSearch = searchQuery.trim();
+  const hasSidebarSearch = sidebarSearchQuery.trim();
+  
+  // If no search active, use navigation cache
+  if (!hasHeaderSearch && !hasSidebarSearch && filteredCache) {
+    console.log("✅ Using navigation cache");
     return filteredCache;
   }
+  
+  // If searching, check search cache
+  if (hasHeaderSearch) {
+    const cacheKey = `header_${searchQuery}`;
+    if (searchResultCache[cacheKey] && lastSearchQuery === searchQuery) {
+      console.log("✅ Using search cache for:", searchQuery);
+      return searchResultCache[cacheKey];
+    }
+  }
 
-  console.log("🔍 getFilteredCategories called");
+  console.log("🔍 getFilteredCategories called - generating new data");
     console.log(
       "📊 Current chunks - Categories:",
       currentCategoryChunk,
@@ -434,12 +459,23 @@ if (searchQuery.trim()) {
         })),
       ];
 
-   // STORE ALL CATEGORIES
+// STORE ALL CATEGORIES
 allCategoriesData = result;
 
-// Only cache if no search is active
-if (!searchQuery.trim() && !sidebarSearchQuery.trim()) {
+const hasHeaderSearch = searchQuery.trim();
+const hasSidebarSearch = sidebarSearchQuery.trim();
+
+// Cache based on context
+if (!hasHeaderSearch && !hasSidebarSearch) {
+  // No search - cache for navigation
   filteredCache = result;
+  console.log("💾 Cached for navigation");
+} else if (hasHeaderSearch) {
+  // Header search - cache search results
+  const cacheKey = `header_${searchQuery}`;
+  searchResultCache[cacheKey] = result;
+  lastSearchQuery = searchQuery;
+  console.log("💾 Cached search results for:", searchQuery);
 }
 
 console.log(
@@ -745,13 +781,27 @@ return result;
   const qs = (s) => document.querySelector(s);
 
   // Helper to set focus on channel cards
-  const setFocus = (list, idx, cls) => {
-    list.forEach((el) => el.classList.remove(cls));
-    if (list[idx]) {
-      list[idx].classList.add(cls);
-      list[idx].scrollIntoView({ block: "nearest", inline: "nearest" });
-    }
-  };
+// Helper to set focus on channel cards - OPTIMIZED
+const setFocus = (list, idx, cls) => {
+  // Only remove class from previously focused element (not all)
+  const previousFocused = document.querySelector(`.${cls}`);
+  if (previousFocused) {
+    previousFocused.classList.remove(cls);
+  }
+  
+  if (list[idx]) {
+    list[idx].classList.add(cls);
+    
+    // Use passive scrolling for better TV performance
+    requestAnimationFrame(() => {
+      list[idx].scrollIntoView({ 
+        block: "nearest", 
+        inline: "nearest",
+        behavior: "auto" // Changed from smooth to auto for TV
+      });
+    });
+  }
+};
 
   // Helper to set focus on sidebar
   const setSidebarFocus = (idx) => {
@@ -1744,8 +1794,10 @@ return result;
 
   // ===== TOGGLE FAVORITE =====
   // ===== TOGGLE FAVORITE =====
-  const toggleFavorite = (channelData) => {
-    filteredCache = null; // Add this line here
+const toggleFavorite = (channelData) => {
+  // Clear all caches when favorites change
+  filteredCache = null;
+  searchResultCache = {};
     console.log("toggleFavorite called with:", channelData);
 
     const result = window.toggleFavoriteItem(channelData, "favoritesLiveTV");
@@ -1835,8 +1887,11 @@ return result;
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
   // ===== RENDER CHANNELS =====
-  const renderChannels = () => {
-    const filtered = getFilteredCategories();
+const renderChannels = () => {
+  console.log("📺 renderChannels called");
+  const filtered = getFilteredCategories(); // This now uses smart caching
+
+  
 
     let selectedCat = filtered.find(
       (c) => c.category_id === selectedCategoryId
@@ -1950,12 +2005,17 @@ return result;
       })
       .join("");
 
-    // Use requestAnimationFrame for smoother rendering on Tizen
-    requestAnimationFrame(() => {
-      channelGrid.innerHTML = channelCardsHTML;
+ // Use requestAnimationFrame for smoother rendering on Tizen
+  requestAnimationFrame(() => {
+    channelGrid.innerHTML = channelCardsHTML;
+    
+    // Invalidate DOM cache after render
+    if (window._liveTvDomCache) {
+      window._liveTvDomCache = {};
+    }
 
-      // Update scroll arrows after render
-      setTimeout(() => {
+    // Update scroll arrows after render
+    setTimeout(() => {
         const updateScrollArrows = window.updateScrollArrows;
         if (typeof updateScrollArrows === "function") {
           updateScrollArrows();
@@ -2086,14 +2146,22 @@ const setupSidebarSearchListener = () => {
   }, true); // Capture phase is key
 
 // 2. THE FILTERING LOGIC (Sidebar ONLY)
+// 2. THE FILTERING LOGIC (Sidebar ONLY) - Debounced
+let sidebarSearchDebounceTimer = null;
+
 sidebarSearchInput.addEventListener("input", (e) => {
-  sidebarSearchQuery = e.target.value; // Update sidebar search query
+  sidebarSearchQuery = e.target.value;
   
-  // Use the function that ONLY updates sidebar items
-  const filtered = getFilteredCategories();
+  // Clear previous timer
+  if (sidebarSearchDebounceTimer) {
+    clearTimeout(sidebarSearchDebounceTimer);
+  }
   
-  // Update ONLY the list, not the search box itself
-  updateSidebarItemsOnly(filtered); 
+  // Only search after user stops typing for 200ms
+  sidebarSearchDebounceTimer = setTimeout(() => {
+    const filtered = getFilteredCategories();
+    updateSidebarItemsOnly(filtered);
+  }, 200);
 });
 };
 const updateSidebarItemsOnly = (displayCategories) => {
@@ -2467,8 +2535,10 @@ const renderSidebarCategories = () => {
       previousCategoryId = catId;
       currentChunk = 1;
 
-      // Clear search query when switching categories
+// Clear search query and cache when switching categories
 searchQuery = "";
+searchResultCache = {}; // Clear search cache
+lastSearchQuery = "";
 const headerInput = qs(".search-input");
 if (headerInput) {
   headerInput.value = "";
@@ -2686,6 +2756,25 @@ if (headerInput) {
     // CRITICAL: Safety check - only run if on liveTvPage
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
+      const now = Date.now();
+  if (window._lastKeyTime && now - window._lastKeyTime < 50) {
+    return; // Ignore keys pressed faster than 50ms apart
+  }
+  window._lastKeyTime = now;
+
+    // Cache DOM queries to avoid repeated lookups
+  if (!window._liveTvDomCache) {
+    window._liveTvDomCache = {};
+  }
+  
+  // Helper to get cached query
+  const getCached = (selector, key) => {
+    if (!window._liveTvDomCache[key]) {
+      window._liveTvDomCache[key] = document.querySelectorAll(selector);
+    }
+    return window._liveTvDomCache[key];
+  };
+
 
     const isUp = e.key === "ArrowUp" || e.keyCode === 38;
   const isDown = e.key === "ArrowDown" || e.keyCode === 40;
@@ -2775,13 +2864,15 @@ if (headerInput) {
 
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
-    const channels = qsa(".channel-card");
-    const sidebarItems = qsa(".sidebar-item");
-    const epgItems = qsa(".epg-item");
+  // Use live NodeList for channels (updates automatically)
+const channels = document.querySelectorAll(".channel-card");
+const sidebarItems = document.querySelectorAll(".sidebar-item");
+const epgItems = document.querySelectorAll(".epg-item");
 
     const isLeft = e.key === "ArrowLeft" || e.keyCode === 37;
     const isRight = e.key === "ArrowRight" || e.keyCode === 39;
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
+    
 
     // In handleKeydown, after password modal checks, add:
 
@@ -3862,18 +3953,6 @@ if (headerInput) {
       const rows = 3;
       const totalChannels = channels.length;
 
-      // **GET CATEGORY DATA FOR AUTO-LOADING**
-      const filtered = getFilteredCategories();
-      const selectedCat = filtered.find(
-        (c) => c.category_id === selectedCategoryId
-      );
-      const allChannels = selectedCat ? selectedCat.channels || [] : [];
-      const hasMore = hasMoreChannelsAvailable(
-        allChannels,
-        currentChunk,
-        pageSize
-      );
-
       // Calculate current position
       const currentRow = focusedChannelIndex % rows;
       const currentCol = Math.floor(focusedChannelIndex / rows);
@@ -3985,14 +4064,28 @@ if (headerInput) {
         return;
       }
 
-      if (isRight) {
-        // **CHECK IF NEAR END - AUTO LOAD MORE**
-        const isNearEnd = focusedChannelIndex >= totalChannels - rows * 2;
+  if (isRight) {
+  // **OPTIMIZED: Only check for auto-load when actually near the end**
+  const isNearEnd = focusedChannelIndex >= totalChannels - rows * 2;
 
-        if (isNearEnd && hasMore && !isLoadingMoreChannels) {
-          console.log("🔄 Near end - auto-loading more channels...");
-          loadMoreChannels();
-        }
+  if (isNearEnd && !isLoadingMoreChannels) {
+    // Only call getFilteredCategories when we need to check if more exist
+    const filtered = getFilteredCategories();
+    const selectedCat = filtered.find(
+      (c) => c.category_id === selectedCategoryId
+    );
+    const allChannels = selectedCat ? selectedCat.channels || [] : [];
+    const hasMore = hasMoreChannelsAvailable(
+      allChannels,
+      currentChunk,
+      pageSize
+    );
+    
+    if (hasMore) {
+      console.log("🔄 Near end - auto-loading more channels...");
+      loadMoreChannels();
+    }
+  }
 
         // FIRST go to favorite button of current card
         inChannelGrid = false;
@@ -4413,15 +4506,32 @@ if (headerSearchInput) {
   }, true); // Capture phase to beat the Virtual Keyboard
     // ⬇️ ADD THIS NEW BLOCK HERE ⬇️
   // Add input listener for header search filtering
-// Add input listener for header search filtering
+// Add debounced search with requestAnimationFrame for smooth rendering
+let searchDebounceTimer = null;
+let searchAnimationFrame = null;
+
 headerSearchInput.addEventListener("input", (e) => {
-  searchQuery = e.target.value; // Update header search query
+  searchQuery = e.target.value;
   
-  // ALWAYS clear cache when search query changes
-  filteredCache = null;
+  // Clear previous timer and animation frame
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  if (searchAnimationFrame) cancelAnimationFrame(searchAnimationFrame);
   
-  // Re-render channels to apply filter
-  renderChannels();
+  // Only search after user stops typing for 300ms
+searchDebounceTimer = setTimeout(() => {
+  // Use idle callback for non-blocking search on TV
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => {
+      debugLog("🔍 Searching for:", searchQuery);
+      renderChannels();
+    }, { timeout: 500 });
+  } else {
+    requestAnimationFrame(() => {
+      debugLog("🔍 Searching for:", searchQuery);
+      renderChannels();
+    });
+  }
+}, 300);
 });
 
 }
