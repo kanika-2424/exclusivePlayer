@@ -281,10 +281,13 @@ let sidebarSearchQuery = ""; // Search text for sidebar
 
   let menuKeyHandler = null;
   let filteredCache = null;
-  const getFilteredCategories = () => {
-    if (filteredCache && !searchQuery) return filteredCache;
+const getFilteredCategories = () => {
+  // Don't use cache if there's an active search query
+  if (filteredCache && !searchQuery.trim() && !sidebarSearchQuery.trim()) {
+    return filteredCache;
+  }
 
-    console.log("🔍 getFilteredCategories called");
+  console.log("🔍 getFilteredCategories called");
     console.log(
       "📊 Current chunks - Categories:",
       currentCategoryChunk,
@@ -336,18 +339,21 @@ let sidebarSearchQuery = ""; // Search text for sidebar
       ).map((c) => {
         let categoryChannels = [];
 
-        try {
-          categoryChannels =
-            streams.filter((s) => s.category_id === c.category_id) || [];
+       try {
+    // Get all channels for this category
+    categoryChannels =
+      streams.filter((s) => s.category_id === c.category_id) || [];
 
-        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-  categoryChannels = categoryChannels.filter((ch) =>
-    (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
-}
-        } catch (err) {
-          console.error("Error filtering category channels:", err);
-        }
+    // Apply search filter if search query exists
+    if (searchQuery.trim()) {
+      categoryChannels = categoryChannels.filter((ch) =>
+        (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+  } catch (err) {
+    console.error("Error filtering category channels:", err);
+  }
+
 
         return {
           ...c,
@@ -355,12 +361,13 @@ let sidebarSearchQuery = ""; // Search text for sidebar
         };
       });
 
-      const allLiveStreams =
-        searchQuery.trim() && selectedCategoryId === "All"
-          ? streams.filter((ch) =>
-              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          : streams;
+     // Apply search filter to all streams
+let allLiveStreams = streams;
+if (searchQuery.trim()) {
+  allLiveStreams = streams.filter((ch) =>
+    (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+}
 
       console.log("🔍 Processing favorites:", updatedFavorites.length);
 
@@ -427,15 +434,20 @@ let sidebarSearchQuery = ""; // Search text for sidebar
         })),
       ];
 
-      // STORE ALL CATEGORIES
-      allCategoriesData = result;
-      filteredCache = result;
-      console.log(
-        "✅ getFilteredCategories result:",
-        result.length,
-        "categories"
-      );
-      return result;
+   // STORE ALL CATEGORIES
+allCategoriesData = result;
+
+// Only cache if no search is active
+if (!searchQuery.trim() && !sidebarSearchQuery.trim()) {
+  filteredCache = result;
+}
+
+console.log(
+  "✅ getFilteredCategories result:",
+  result.length,
+  "categories"
+);
+return result;
     } catch (error) {
       console.error("❌ ERROR in getFilteredCategories:", error);
       console.error("Stack:", error.stack);
@@ -2455,6 +2467,13 @@ const renderSidebarCategories = () => {
       previousCategoryId = catId;
       currentChunk = 1;
 
+      // Clear search query when switching categories
+searchQuery = "";
+const headerInput = qs(".search-input");
+if (headerInput) {
+  headerInput.value = "";
+}
+
       // **SHOW CHANNEL GRID LOADING OVERLAY**
       const channelGrid = qs(".channel-grid");
       if (channelGrid) {
@@ -4394,15 +4413,16 @@ if (headerSearchInput) {
   }, true); // Capture phase to beat the Virtual Keyboard
     // ⬇️ ADD THIS NEW BLOCK HERE ⬇️
   // Add input listener for header search filtering
-  headerSearchInput.addEventListener("input", (e) => {
-    searchQuery = e.target.value; // Update header search query
-    
-    // If currently viewing a category, re-render channels with filter
-    if (selectedCategoryId && inChannelGrid) {
-      filteredCache = null; // Clear cache
-      renderChannels();
-    }
-  });
+// Add input listener for header search filtering
+headerSearchInput.addEventListener("input", (e) => {
+  searchQuery = e.target.value; // Update header search query
+  
+  // ALWAYS clear cache when search query changes
+  filteredCache = null;
+  
+  // Re-render channels to apply filter
+  renderChannels();
+});
 
 }
 
