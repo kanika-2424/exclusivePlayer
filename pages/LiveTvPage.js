@@ -244,7 +244,9 @@ function LiveTvPage() {
   let focusedCategoryIndex = 0;
   let currentChunk = 1; // For lazy loading channels
   const pageSize = 20; // Channels per load
-  let searchQuery = ""; // Search text
+ let searchQuery = ""; // Search text for header
+let sidebarSearchQuery = ""; // Search text for sidebar
+  
   let liveTvSortValue = localStorage.getItem("liveTvSortValue") || "default";
 
   let inChannelGrid = true;
@@ -338,11 +340,11 @@ function LiveTvPage() {
           categoryChannels =
             streams.filter((s) => s.category_id === c.category_id) || [];
 
-          if (searchQuery.trim() && selectedCategoryId === c.category_id) {
-            categoryChannels = categoryChannels.filter((ch) =>
-              (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-            );
-          }
+        if (searchQuery.trim() && selectedCategoryId === c.category_id) {
+  categoryChannels = categoryChannels.filter((ch) =>
+    (ch.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+}
         } catch (err) {
           console.error("Error filtering category channels:", err);
         }
@@ -2044,81 +2046,77 @@ function LiveTvPage() {
   };
 
   // 1. ADD THIS DEFINITION HERE
-  const setupSidebarSearchListener = () => {
-    const sidebarSearchInput = document.querySelector(".sidebar-search-input");
-    if (!sidebarSearchInput) return;
+const setupSidebarSearchListener = () => {
+  const sidebarSearchInput = document.querySelector(".sidebar-search-input");
+  if (!sidebarSearchInput) return;
 
-    let searchTimeout = null;
+  // 1. THE FOCUS TRAP FIX (1-Click Move)
+  sidebarSearchInput.addEventListener("keydown", (e) => {
+    const isDown = e.key === "ArrowDown" || e.keyCode === 40;
+    const isUp = e.key === "ArrowUp" || e.keyCode === 38;
 
-    sidebarSearchInput.addEventListener("input", function (e) {
-      currentCategoryChunk = 1;
-      focusedSidebarIndex = 0;
-
-      const query = e.target.value.toLowerCase();
-
-      // Clear existing timeout
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
+    if (isDown || isUp) {
+      e.stopImmediatePropagation(); // Stops Tizen from capturing the key
+      sidebarSearchInput.blur();    // Closes Virtual Keyboard immediately
+      
+      if (isDown) {
+        inSidebarSearch = false;
+        inSidebar = true;
+        setSidebarSearchFocus(false);
+        setSidebarFocus(0); 
+      } else if (isUp) {
+        inSidebarSearch = false;
+        inHeaderSearch = true;
+        setSidebarSearchFocus(false);
+        setHeaderSearchFocus(true);
       }
+    }
+  }, true); // Capture phase is key
 
-      // Debounce: only update after 300ms of no typing
-      searchTimeout = setTimeout(() => {
-        const filtered = getFilteredCategories();
+// 2. THE FILTERING LOGIC (Sidebar ONLY)
+sidebarSearchInput.addEventListener("input", (e) => {
+  sidebarSearchQuery = e.target.value; // Update sidebar search query
+  
+  // Use the function that ONLY updates sidebar items
+  const filtered = getFilteredCategories();
+  
+  // Update ONLY the list, not the search box itself
+  updateSidebarItemsOnly(filtered); 
+});
+};
+const updateSidebarItemsOnly = (displayCategories) => {
+  const sidebarItemsContainer = document.querySelector(".sidebar-items");
+  if (!sidebarItemsContainer) return;
 
-        let displayCategories;
-        if (query !== "") {
-          displayCategories = filtered.filter(function (c) {
-            return (c.category_name || "").toLowerCase().includes(query);
-          });
-        } else {
-          displayCategories = filtered;
-        }
+  // Apply sidebar search filter
+  const filteredBySearch = sidebarSearchQuery.trim()
+    ? displayCategories.filter(c => 
+        (c.category_name || "").toLowerCase().includes(sidebarSearchQuery.toLowerCase())
+      )
+    : displayCategories;
 
-        updateSidebarItemsOnly(displayCategories);
-      }, 300);
-    });
-  };
-
-  const updateSidebarItemsOnly = (displayCategories) => {
-    const sidebarItemsContainer = document.querySelector(".sidebar-items");
-    if (!sidebarItemsContainer) return;
-
-    const categoriesToShow = getChunkedCategories(
-      displayCategories,
-      currentCategoryChunk,
-      categoriesPerChunk
-    );
-
-    const categoriesHTML = categoriesToShow
-      .map((c) => {
-        const isActive = c.category_id === selectedCategoryId;
-        return `
-      <div class="sidebar-item ${
-        isActive ? "sidebar-active" : ""
-      }" data-category-id="${c.category_id}">
-        <span class="sidebar-item-name">${c.category_name}</span>
-        <span class="sidebar-item-count">${
-          c.channels ? c.channels.length : 0
-        }</span>
+  const categoriesToShow = getChunkedCategories(filteredBySearch, 1, categoriesPerChunk);
+  const categoriesHTML = categoriesToShow.map(c => {
+      const isActive = c.category_id === selectedCategoryId;
+      return `<div class="sidebar-item ${isActive ? "sidebar-active" : ""}" data-category-id="${c.category_id}">
+          <span class="sidebar-item-name">${c.category_name}</span>
+          <span class="sidebar-item-count">${c.channels ? c.channels.length : 0}</span>
       </div>`;
-      })
-      .join("");
+  }).join("");
 
-    sidebarItemsContainer.innerHTML = categoriesHTML;
-  };
+  sidebarItemsContainer.innerHTML = categoriesHTML;
+};
 
   // ===== RENDER SIDEBAR CATEGORIES =====
-  const renderSidebarCategories = () => {
-    const filtered = getFilteredCategories();
+const renderSidebarCategories = () => {
+  const filtered = getFilteredCategories();
 
-    // Use current search query if present
-    const query = qs(".sidebar-search-input")
-      ? qs(".sidebar-search-input").value.toLowerCase()
-      : "";
-
-    const displayCategories = query
-      ? filtered.filter((c) => c.category_name.toLowerCase().includes(query))
-      : filtered;
+  // Use sidebar search query variable
+  const displayCategories = sidebarSearchQuery.trim()
+    ? filtered.filter((c) => 
+        (c.category_name || "").toLowerCase().includes(sidebarSearchQuery.toLowerCase())
+      )
+    : filtered;
 
     const categoriesToShow = getChunkedCategories(
       displayCategories,
@@ -2669,6 +2667,55 @@ function LiveTvPage() {
     // CRITICAL: Safety check - only run if on liveTvPage
     if (localStorage.getItem("currentPage") !== "liveTvPage") return;
 
+
+    const isUp = e.key === "ArrowUp" || e.keyCode === 38;
+  const isDown = e.key === "ArrowDown" || e.keyCode === 40;
+  const isEnter = e.key === "Enter" || e.keyCode === 13;
+
+  if (isUp || isDown) {
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.tagName === "INPUT") {
+      
+      console.log("Input trap detected! Forcing escape...");
+      
+      // 1. Prevent the browser from moving the text cursor
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      // 2. Force the Virtual Keyboard to close and input to drop focus
+      activeEl.blur();
+      window.blur(); // Double blur to ensure focus leaves the DOM tree
+      
+      // 3. Manually trigger the transition based on WHICH input it was
+      if (activeEl.classList.contains("search-input")) {
+        // Header -> Sidebar Search
+        if (isDown) {
+          inHeaderSearch = false;
+          inSidebarSearch = true;
+          setHeaderSearchFocus(false);
+          setSidebarSearchFocus(true);
+        }
+      } else if (activeEl.classList.contains("sidebar-search-input")) {
+        // Sidebar Search -> Sidebar Categories
+        if (isDown) {
+          inSidebarSearch = false;
+          inSidebar = true;
+          setSidebarSearchFocus(false);
+          focusedSidebarIndex = 0;
+          setSidebarFocus(0);
+        } else if (isUp) {
+          // Sidebar Search -> Header Search
+          inSidebarSearch = false;
+          inHeaderSearch = true;
+          setSidebarSearchFocus(false);
+          setHeaderSearchFocus(true);
+        }
+      }
+      return; // Stop processing handleKeydown here
+    }
+  }
+    const activeEl = document.activeElement;
+
     const activeElement = document.activeElement;
     const isTypingInInput =
       activeElement &&
@@ -2713,11 +2760,8 @@ function LiveTvPage() {
     const sidebarItems = qsa(".sidebar-item");
     const epgItems = qsa(".epg-item");
 
-    const isUp = e.key === "ArrowUp" || e.keyCode === 38;
-    const isDown = e.key === "ArrowDown" || e.keyCode === 40;
     const isLeft = e.key === "ArrowLeft" || e.keyCode === 37;
     const isRight = e.key === "ArrowRight" || e.keyCode === 39;
-    const isEnter = e.key === "Enter" || e.keyCode === 13;
     const backKeys = [10009, "Escape", "Back", "BrowserBack", "XF86Back"];
 
     // In handleKeydown, after password modal checks, add:
@@ -3227,21 +3271,32 @@ function LiveTvPage() {
       const searchInput = qs(".search-input");
 
       // FORCE EXIT ON FIRST PRESS
-      if (isDown) {
-        e.preventDefault();
-        if (searchInput) {
-          searchInput.blur(); // Releases the browser's hold on the input
-        }
-        isHeaderSearchActive = false; // Reset the state
-        inHeaderSearch = false;
-        inSidebarSearch = true;
+  if (isDown) {
+    e.preventDefault();
+    e.stopPropagation();
 
-        setHeaderSearchFocus(false);
-        setSidebarSearchFocus(true);
+    // 1. Force the browser to release the input immediately
+    if (searchInput) {
+      searchInput.blur();
+      // Ensure the cursor/selection is cleared to prevent "sticky" focus
+      searchInput.selectionStart = searchInput.selectionEnd = 0;
+    }
 
-        e.preventDefault(); // Prevents the browser from using the 'Down' key
-        return;
-      }
+    // 2. Update states
+    isHeaderSearchActive = false;
+    inHeaderSearch = false;
+    inSidebarSearch = true;
+
+    // 3. Clear all visual highlights before moving
+    removeAllFocus();
+
+    // 4. Move to Sidebar Search
+    setHeaderSearchFocus(false);
+    setSidebarSearchFocus(true);
+
+    console.log("⬇️ Header -> Sidebar Search (Forced)");
+    return;
+  }
 
       if (isRight) {
         if (searchInput) {
@@ -3276,41 +3331,47 @@ function LiveTvPage() {
     // SIDEBAR SEARCH BOX NAVIGATION
     // SIDEBAR SEARCH BOX NAVIGATION
     if (inSidebarSearch) {
-      const sidebarInput = document.querySelector(".sidebar-search-input");
+   const sidebarInput = document.querySelector(".sidebar-search-input");
 
-      // FORCE EXIT ON FIRST PRESS
-      if (isDown) {
-        if (sidebarInput) {
-          sidebarInput.blur(); // Kill focus immediately
-        }
-        isSidebarSearchActive = false;
-        inSidebarSearch = false;
-        inSidebar = true;
+  if (isDown) {
+    e.preventDefault();
+    e.stopPropagation();
 
-        setSidebarSearchFocus(false);
+    if (sidebarInput) {
+      sidebarInput.blur();
+    }
+    
+    isSidebarSearchActive = false;
+    inSidebarSearch = false;
+    inSidebar = true; // Move to category list
 
-        focusedSidebarIndex = 0;
-        const sidebarItems = qsa(".sidebar-item");
-        if (sidebarItems.length > 0) {
-          setSidebarFocus(0);
-        }
+    setSidebarSearchFocus(false);
+    
+    // Reset to top of sidebar
+    focusedSidebarIndex = 0;
+    const sidebarItems = qsa(".sidebar-item");
+    if (sidebarItems.length > 0) {
+      setSidebarFocus(0);
+    }
+    return;
+  }
 
-        e.preventDefault();
-        return;
-      }
+  if (isUp) {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (isUp) {
-        if (sidebarInput) {
-          sidebarInput.blur();
-        }
-        isSidebarSearchActive = false;
-        inSidebarSearch = false;
-        inHeaderSearch = true;
-        setSidebarSearchFocus(false);
-        setHeaderSearchFocus(true);
-        e.preventDefault();
-        return;
-      }
+    if (sidebarInput) {
+      sidebarInput.blur();
+    }
+
+    isSidebarSearchActive = false;
+    inSidebarSearch = false;
+    inHeaderSearch = true; // Move back to top search
+
+    setSidebarSearchFocus(false);
+    setHeaderSearchFocus(true);
+    return;
+  }
 
       if (isEnter) {
         if (sidebarInput) {
@@ -4315,29 +4376,36 @@ function LiveTvPage() {
 
     // ===== SEARCH INPUT HANDLER - OPTIMIZED FOR TIZEN =====
     // ===== SEARCH INPUT HANDLER =====
-    const headerSearchInput = qs(".search-input");
-    if (headerSearchInput) {
-      let searchTimeout = null;
+const headerSearchInput = qs(".search-input");
+if (headerSearchInput) {
+  headerSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.keyCode === 40) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
 
-      headerSearchInput.addEventListener("input", (e) => {
-        if (!isPageFullyLoaded) return;
+      headerSearchInput.blur();
+      window.focus();
 
-        const value = e.target.value;
-        searchQuery = value;
-
-        // Clear existing timeout
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-        }
-
-        // Debounce: only re-render after 300ms of no typing
-        searchTimeout = setTimeout(() => {
-          currentChunk = 1;
-          filteredCache = null;
-          renderChannels();
-        }, 300);
-      });
+      inHeaderSearch = false;
+      inSidebarSearch = true;
+      setHeaderSearchFocus(false);
+      setSidebarSearchFocus(true);
     }
+  }, true); // Capture phase to beat the Virtual Keyboard
+    // ⬇️ ADD THIS NEW BLOCK HERE ⬇️
+  // Add input listener for header search filtering
+  headerSearchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value; // Update header search query
+    
+    // If currently viewing a category, re-render channels with filter
+    if (selectedCategoryId && inChannelGrid) {
+      filteredCache = null; // Clear cache
+      renderChannels();
+    }
+  });
+
+}
+
 
     LiveTvPage.cleanup = function () {
       isPageFullyLoaded = false;

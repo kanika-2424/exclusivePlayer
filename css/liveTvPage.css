@@ -2095,3 +2095,14 @@ video {
   will-change: transform; /* GPU acceleration hint */
   transform: translateZ(0); /* Force GPU rendering */
 }
+
+input:focus {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* If you are using Tizen/Samsung TV specifically */
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
