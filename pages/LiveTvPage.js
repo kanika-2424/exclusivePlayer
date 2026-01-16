@@ -984,7 +984,7 @@ function setFocusOnMenuDots() {
       <div class="password-modal">
         <div class="password-modal-header">
           <h2>Parental Control</h2>
-          <p>This content is restricted. Please enter your password.</p>
+         <p>Please enter your password.</p>
         </div>
         
         <div class="password-modal-body">
@@ -1013,41 +1013,91 @@ function setFocusOnMenuDots() {
   };
 
   // ===== SHOW PASSWORD MODAL =====
-  const showPasswordModal = (channelData) => {
-    pendingChannel = channelData;
-    inPasswordModal = true;
-    inChannelGrid = false;
-    passwordModalFocusIndex = 0;
+const showPasswordModal = (channelData) => {
+  pendingChannel = channelData;
+  inPasswordModal = true;
+  inChannelGrid = false;
+  passwordModalFocusIndex = 0;
 
-    const previousSidebarIndex = focusedSidebarIndex;
-    inSidebar = false;
+  inSidebar = false;
 
-    // Add modal to page
-    const modalContainer = document.createElement("div");
-    modalContainer.innerHTML = PasswordModal();
-    document.body.appendChild(modalContainer.firstElementChild);
+  // Add modal to page
+  const modalContainer = document.createElement("div");
+  modalContainer.innerHTML = PasswordModal();
+  document.body.appendChild(modalContainer.firstElementChild);
 
-    // CRITICAL: Use requestAnimationFrame for better performance on Tizen
-    requestAnimationFrame(() => {
-      const input = document.getElementById("passwordModalInput");
-      if (input) {
-        // Set type to text initially for faster rendering on TV
-        input.type = "password";
+  setTimeout(() => {
+    const input = document.getElementById("passwordModalInput");
+    const submitBtn = document.querySelector(".password-submit-btn");
+    const cancelBtn = document.querySelector(".password-cancel-btn");
+    
+    if (input) {
+      input.type = "password";
 
-        // Add input event listener for immediate feedback
-        input.addEventListener("input", (e) => {
-          // Force immediate update on Tizen
-          e.target.value = e.target.value;
-        });
+      // **CRITICAL: Add keydown listener directly on input with capture**
+      input.addEventListener("keydown", (e) => {
+        console.log("Input keydown:", e.key, "Current index:", passwordModalFocusIndex);
+        
+        if (e.key === "ArrowDown" || e.keyCode === 40) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          console.log("Down arrow pressed on input!");
+          
+          // Blur input immediately
+          input.blur();
+          
+          // Move to submit button
+          passwordModalFocusIndex = 1;
+          
+          // Update focus immediately
+          input.classList.remove("password-input-focused");
+          if (submitBtn) {
+            submitBtn.classList.add("password-btn-focused");
+          }
+          
+          console.log("Moved to index:", passwordModalFocusIndex);
+          return false;
+        }
+        
+        if (e.key === "Enter" || e.keyCode === 13) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          if (document.activeElement === input) {
+            input.blur();
+          } else {
+            setTimeout(() => {
+              input.focus();
+            }, 50);
+          }
+          return false;
+        }
+      }, true); // Use capture phase
 
-        // Focus after a small delay for Tizen stability
-        setTimeout(() => {
-          input.focus();
-          updatePasswordModalFocus();
-        }, 50);
-      }
-    });
-  };
+      input.addEventListener("input", (e) => {
+        e.target.value = e.target.value;
+      });
+    }
+    
+    // Add click handlers for buttons
+    if (submitBtn) {
+      submitBtn.addEventListener("click", () => {
+        verifyPasswordForCategory();
+      });
+    }
+    
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        hidePasswordModal();
+      });
+    }
+    
+    // Set initial visual focus
+    updatePasswordModalFocus();
+  }, 100);
+};
 
   // ===== HIDE PASSWORD MODAL =====
   // ===== HIDE PASSWORD MODAL (UPDATED) =====
@@ -1089,37 +1139,34 @@ function setFocusOnMenuDots() {
   };
 
   // ===== UPDATE PASSWORD MODAL FOCUS =====
-  const updatePasswordModalFocus = () => {
-    const input = document.getElementById("passwordModalInput");
-    const submitBtn = document.querySelector(".password-submit-btn");
-    const cancelBtn = document.querySelector(".password-cancel-btn");
+const updatePasswordModalFocus = () => {
+  const input = document.getElementById("passwordModalInput");
+  const submitBtn = document.querySelector(".password-submit-btn");
+  const cancelBtn = document.querySelector(".password-cancel-btn");
 
-    // Use requestAnimationFrame for smoother updates on Tizen
-    requestAnimationFrame(() => {
-      // Remove all focus
-      if (input) {
-        input.classList.remove("password-input-focused");
-        if (passwordModalFocusIndex !== 0) {
-          input.blur();
-        }
-      }
-      if (submitBtn) submitBtn.classList.remove("password-btn-focused");
-      if (cancelBtn) cancelBtn.classList.remove("password-btn-focused");
+  // Remove all focus classes
+  if (input) {
+    input.classList.remove("password-input-focused");
+  }
+  if (submitBtn) {
+    submitBtn.classList.remove("password-btn-focused");
+  }
+  if (cancelBtn) {
+    cancelBtn.classList.remove("password-btn-focused");
+  }
 
-      // Add focus to current element
-      if (passwordModalFocusIndex === 0 && input) {
-        input.classList.add("password-input-focused");
-        // Small delay for Tizen keyboard
-        setTimeout(() => {
-          input.focus();
-        }, 50);
-      } else if (passwordModalFocusIndex === 1 && submitBtn) {
-        submitBtn.classList.add("password-btn-focused");
-      } else if (passwordModalFocusIndex === 2 && cancelBtn) {
-        cancelBtn.classList.add("password-btn-focused");
-      }
-    });
-  };
+  // Add focus to current element
+  if (passwordModalFocusIndex === 0 && input) {
+    input.classList.add("password-input-focused");
+    // Don't auto-focus - user must press Enter
+  } else if (passwordModalFocusIndex === 1 && submitBtn) {
+    submitBtn.classList.add("password-btn-focused");
+    submitBtn.scrollIntoView({ block: "nearest" });
+  } else if (passwordModalFocusIndex === 2 && cancelBtn) {
+    cancelBtn.classList.add("password-btn-focused");
+    cancelBtn.scrollIntoView({ block: "nearest" });
+  }
+};
 
   // ===== VERIFY PASSWORD =====
   const verifyPasswordForCategory = () => {
@@ -2818,48 +2865,54 @@ if (headerInput) {
   const isDown = e.key === "ArrowDown" || e.keyCode === 40;
   const isEnter = e.key === "Enter" || e.keyCode === 13;
 
-  if (isUp || isDown) {
-    const activeEl = document.activeElement;
-    if (activeEl && activeEl.tagName === "INPUT") {
-      
-      console.log("Input trap detected! Forcing escape...");
-      
-      // 1. Prevent the browser from moving the text cursor
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      // 2. Force the Virtual Keyboard to close and input to drop focus
-      activeEl.blur();
-      window.blur(); // Double blur to ensure focus leaves the DOM tree
-      
-      // 3. Manually trigger the transition based on WHICH input it was
-      if (activeEl.classList.contains("search-input")) {
-        // Header -> Sidebar Search
-        if (isDown) {
-          inHeaderSearch = false;
-          inSidebarSearch = true;
-          setHeaderSearchFocus(false);
-          setSidebarSearchFocus(true);
-        }
-      } else if (activeEl.classList.contains("sidebar-search-input")) {
-        // Sidebar Search -> Sidebar Categories
-        if (isDown) {
-          inSidebarSearch = false;
-          inSidebar = true;
-          setSidebarSearchFocus(false);
-          focusedSidebarIndex = 0;
-          setSidebarFocus(0);
-        } else if (isUp) {
-          // Sidebar Search -> Header Search
-          inSidebarSearch = false;
-          inHeaderSearch = true;
-          setSidebarSearchFocus(false);
-          setHeaderSearchFocus(true);
-        }
-      }
-      return; // Stop processing handleKeydown here
+if (isUp || isDown) {
+  const activeEl = document.activeElement;
+  if (activeEl && activeEl.tagName === "INPUT") {
+    
+    // **CRITICAL: Skip this trap if we're in password modal**
+    if (inPasswordModal) {
+      // Let the password modal handler deal with it
+      return;
     }
+    
+    console.log("Input trap detected! Forcing escape...");
+    
+    // 1. Prevent the browser from moving the text cursor
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    // 2. Force the Virtual Keyboard to close and input to drop focus
+    activeEl.blur();
+    window.blur(); // Double blur to ensure focus leaves the DOM tree
+    
+    // 3. Manually trigger the transition based on WHICH input it was
+    if (activeEl.classList.contains("search-input")) {
+      // Header -> Sidebar Search
+      if (isDown) {
+        inHeaderSearch = false;
+        inSidebarSearch = true;
+        setHeaderSearchFocus(false);
+        setSidebarSearchFocus(true);
+      }
+    } else if (activeEl.classList.contains("sidebar-search-input")) {
+      // Sidebar Search -> Sidebar Categories
+      if (isDown) {
+        inSidebarSearch = false;
+        inSidebar = true;
+        setSidebarSearchFocus(false);
+        focusedSidebarIndex = 0;
+        setSidebarFocus(0);
+      } else if (isUp) {
+        // Sidebar Search -> Header Search
+        inSidebarSearch = false;
+        inHeaderSearch = true;
+        setSidebarSearchFocus(false);
+        setHeaderSearchFocus(true);
+      }
+    }
+    return; // Stop processing handleKeydown here
   }
+}
     const activeEl = document.activeElement;
 
     const activeElement = document.activeElement;
@@ -3031,96 +3084,120 @@ const epgItems = document.querySelectorAll(".epg-item");
       return; // Block other keys when menu dots focused
     }
 
-    if (inPasswordModal) {
-      // Debounce rapid key presses on Tizen
-      if (window.passwordModalDebounce) {
-        return;
+if (inPasswordModal) {
+  console.log("Modal keydown:", e.key, "Index:", passwordModalFocusIndex);
+  
+  // **DOWN ARROW**
+  if (e.key === "ArrowDown" || e.keyCode === 40) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (passwordModalFocusIndex === 0) {
+      console.log("Moving from input to submit");
+      const input = document.getElementById("passwordModalInput");
+      if (input) {
+        input.blur();
       }
-
-      window.passwordModalDebounce = true;
-      setTimeout(() => {
-        window.passwordModalDebounce = false;
-      }, 100);
-
-      if (e.key === "ArrowDown") {
-        passwordModalFocusIndex++;
-        if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
-
-        // Blur input when moving away
-        const input = document.getElementById("passwordModalInput");
-        if (input && passwordModalFocusIndex > 0) {
-          input.blur();
-        }
-
-        updatePasswordModalFocus();
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === "ArrowRight") {
-        passwordModalFocusIndex++;
-        if (passwordModalFocusIndex > 2) passwordModalFocusIndex = 2;
-
-        updatePasswordModalFocus();
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === "ArrowLeft") {
-        passwordModalFocusIndex--;
-        if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
-
-        // Focus input if we moved back to it
-        if (passwordModalFocusIndex === 0) {
-          const input = document.getElementById("passwordModalInput");
-          if (input) input.focus();
-        }
-
-        updatePasswordModalFocus();
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === "ArrowUp") {
-        passwordModalFocusIndex--;
-        if (passwordModalFocusIndex < 0) passwordModalFocusIndex = 0;
-        updatePasswordModalFocus();
-        e.preventDefault();
-        return;
-      }
-
-      if (e.key === "Enter") {
-        // Blur input before any action
-        const input = document.getElementById("passwordModalInput");
-        if (input) {
-          input.blur();
-        }
-
-        if (passwordModalFocusIndex === 1) {
-          // Submit
-          verifyPasswordForCategory(); // Changed function name
-        } else if (passwordModalFocusIndex === 2) {
-          // Cancel
-          hidePasswordModal();
-        } else if (passwordModalFocusIndex === 0) {
-          // Move from input to submit button
-          passwordModalFocusIndex = 1;
-          updatePasswordModalFocus();
-        }
-        e.preventDefault();
-        return;
-      }
-
-      // Back button closes modal
-      if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
-        hidePasswordModal();
-        e.preventDefault();
-        return;
-      }
-
-      return;
+      passwordModalFocusIndex = 1;
+    } else if (passwordModalFocusIndex === 1) {
+      console.log("Moving from submit to cancel");
+      passwordModalFocusIndex = 2;
     }
+    
+    updatePasswordModalFocus();
+    return;
+  }
 
+  // **UP ARROW**
+// **UP ARROW**
+// **UP ARROW**
+if (e.key === "ArrowUp" || e.keyCode === 38) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (passwordModalFocusIndex === 2) {
+    // Cancel -> Input (skip Submit)
+    passwordModalFocusIndex = 0;
+    const input = document.getElementById("passwordModalInput");
+    if (input) {
+      input.blur();
+    }
+  } else if (passwordModalFocusIndex === 1) {
+    // Submit -> Input
+    passwordModalFocusIndex = 0;
+    const input = document.getElementById("passwordModalInput");
+    if (input) {
+      input.blur();
+    }
+  }
+  // If already at Input (0), stay there
+  
+  updatePasswordModalFocus();
+  return;
+}
+
+  // **RIGHT ARROW**
+  if (e.key === "ArrowRight" || e.keyCode === 39) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (passwordModalFocusIndex === 1) {
+      passwordModalFocusIndex = 2;
+      updatePasswordModalFocus();
+    }
+    return;
+  }
+
+  // **LEFT ARROW**
+  if (e.key === "ArrowLeft" || e.keyCode === 37) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (passwordModalFocusIndex === 2) {
+      passwordModalFocusIndex = 1;
+      updatePasswordModalFocus();
+    }
+    return;
+  }
+
+  // **ENTER KEY**
+  if (e.key === "Enter" || e.keyCode === 13) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const input = document.getElementById("passwordModalInput");
+    
+    if (passwordModalFocusIndex === 0) {
+      // Toggle keyboard on input
+      if (input) {
+        if (document.activeElement === input) {
+          input.blur();
+        } else {
+          setTimeout(() => {
+            input.focus();
+          }, 50);
+        }
+      }
+    } else if (passwordModalFocusIndex === 1) {
+      if (input) input.blur();
+      verifyPasswordForCategory();
+    } else if (passwordModalFocusIndex === 2) {
+      if (input) input.blur();
+      hidePasswordModal();
+    }
+    return;
+  }
+
+  // **BACK BUTTON**
+  if (e.keyCode === 10009 || e.key === "Escape" || e.key === "Back") {
+    e.preventDefault();
+    e.stopPropagation();
+    hidePasswordModal();
+    return;
+  }
+
+  return;
+}
     // Handle back button
     // Handle back button
     if (backKeys.includes(e.key) || backKeys.includes(e.keyCode)) {
