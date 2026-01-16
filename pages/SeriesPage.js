@@ -1495,6 +1495,7 @@ else if (currentSection === "categories") {
   
   if (isLeftmostColumn) {
     // Already at leftmost column - don't move
+    setFocusOnSearch();
     e.preventDefault();
     return;
   } else {
