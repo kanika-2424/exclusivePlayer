@@ -126,6 +126,7 @@
   cursor: pointer;
   display: flex;
   justify-content: space-between;
+  margin-bottom: 5px;
   /* transition: background .15s ease, transform .12s ease; */
 }
 

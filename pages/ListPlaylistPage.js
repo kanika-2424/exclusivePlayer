@@ -302,22 +302,27 @@ async function listPlaylistClick(targetIndex = null) {
     updateFocus();
   }
 
-  function removePlaylist() {
-    if (focusIndex >= 0 && focusIndex < playlistsData.length) {
-      playlistsData.splice(focusIndex, 1);
-      localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
-      
-      // Adjust focus index if needed
-      if (focusIndex >= playlistsData.length && playlistsData.length > 0) {
-        focusIndex = playlistsData.length - 1;
-      } else if (playlistsData.length === 0) {
-        focusIndex = -1;
-      }
-      
-      closeModal();
+function removePlaylist() {
+  if (focusIndex >= 0 && focusIndex < playlistsData.length) {
+    playlistsData.splice(focusIndex, 1);
+    localStorage.setItem("playlistsData", JSON.stringify(playlistsData));
+    
+    // 1. Cleanup the current listeners before moving
+    ListPlaylistPage.cleanup();
+    closeModal();
+
+    // 2. Explicitly check if we should go to login
+    if (playlistsData.length === 0) {
+    localStorage.removeItem("selectedPlaylist"); // Clear stale data
+            localStorage.removeItem("currentPage");
+            ListPlaylistPage.cleanup(); 
+            Router.showPage("login");
+    } else {
+      // Refresh the current page if there are still playlists
       Router.showPage("playlist");
     }
   }
+}
 
   // ---------- Keyboard ----------
   function keydownHandler(e) {

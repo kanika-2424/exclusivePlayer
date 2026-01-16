@@ -112,8 +112,8 @@ css/movieDetailPage.css__DEL__7uD6Nc79k51DIDRcaxj6gP35iGtwaZjxHu2r9yMQ8Wg1cvjJdY
 gd6S/8DXLg==
 css/moviesPage.css__DEL__BsQ506VPjNQrCEQD3rkjywUJgy+O6FXcp/zKnvd3XvW3Kaj3RDrgGiObvrIUJ2A7j4dLZpkdISA4
 SRaQ6j6Lgg==
-css/seriesDetailPage.css__DEL__05KW9vG2+0VTuEmFln+3SlenUvF9Uha75EOI9q1bqyS4iPmCqiRUnSoyWW283BkMm+oWFOsqergq
-5XYTZJPFtQ==
+css/seriesDetailPage.css__DEL__Y7iWyRC6tBoeLVbxuapH+FFdLiemJMt0ThcqRqRxvPyAjGM7wZ76IgARYgsvyx0wrjPOR9iFOegF
+bF66rCbDIg==
 css/seriesPage.css__DEL__WbV0r3jKN7U/fOKjiWHI+Lif4PmiNKQpBpEz+49f61X1srhbO5plIbDwNdnWrjOgpAcd8F7ukxkH
 44NQmbOTXg==
 css/settingsPage.css__DEL__BYlXlaYBecSuphHbdxt1eNgz7x2F+LUWBx4eFM7trJuZDstl9BxFV7HprZM17MUXbSIQOV7WJ9tC
@@ -142,8 +142,8 @@ pages/ChannelGrid.js__DEL__hBuU4+VwL10ktNgQ7iMdqHFmW+93QnGEXNiwR6NBCB8I10kfqdxNs
 S3UToRpFNg==
 pages/DashboardPage.js__DEL__vPa1lnFw2Tx+MzX/2a+oNfH4VU9U05QKhHDl/J4PAlOGjtvpAIUdqCGNetkd4DOsVsZAZdhuefQ4
 NaEoCdZUzA==
-pages/ListPlaylistPage.js__DEL__f0CyWwx62e+hS0ukGyMTJTN3JjOzXijC8+/vWtZoDznjCoxZCSctyASW04EUhuYqvcl0HEfI8t4e
-u0AR2/5qWw==
+pages/ListPlaylistPage.js__DEL__5gicIbrr/ZQggfjg4KYENHQl97AjUfH7nMpFRR9e5+zKVV6lNrztZ39QdHWICBUvy++WA4tIH/b9
++vojGonLxw==
 pages/LiveTvPage.js__DEL__NIB2rdkoYQ8bJr9fh5VV/iPsra86mox2a0vmfdtfiXadUwGD/MmZQotrz0BpciX0HcxjEzjZPn4t
 kXk+DlpxrQ==
 pages/LiveVideoJsComponent.js__DEL__fdMune9EigDgQMSsEFqxLdO7mppjlvPVtnymlbXI5MEfG/dtenhYA21LQ6ecG8am5erIaJ+ORjBM
@@ -152,12 +152,12 @@ pages/LoginPage.js__DEL__6ziPxqAut4Wc8Yt0vI7b3H2GNENjN5gPn4dwDFvJ9aAQXg4LCeJ/yJT
 RBYUqkbSDQ==
 pages/MovieDetailPage.js__DEL__2dFRW+hB3gxxoXij/k5iGQjsaMgAoPxc0jRj3HC0OZ2QgmTO/Kl3w2iQpELIxW2fTm3RHEfhGmOu
 LdOojgrDDg==
-pages/MoviesPage.js__DEL__CqtKY5VTgIBUEsdgKhltr8hIdD8NG3ZTcp7kNITK4R23sdS4ZSN9Icjp3n+mcIeYqDpUFPwSsqqn
-/O/mH0akeA==
+pages/MoviesPage.js__DEL__w3rUTUO+XTpiBSidJ6/cf6JDGWIBbhq/ttNACPnrlRiND2Ok4h0K0gqksHgQunRrG2YWTNvV8B3X
+Bx3NtLHiuQ==
 pages/SeriesDetailPage.js__DEL__/TwCaS9B6xFzLCqqYrk8drAyp24UtQR2aDqCrkiJ+U64yLV63z4AhyR9HhDrSas+LT2GYHKsYbfM
 pNoFLQpATQ==
-pages/SeriesPage.js__DEL__ZQia/CYjWU/2uUStzGcvKf/aNyh6/J5n+1+zScKCqLAPjtLS4vSa14t8yo1b4UrouCSl4SxEvbAq
-E2vKl7uvFQ==
+pages/SeriesPage.js__DEL__s8R9QSGGLBLOMBnIOymuzRk8i7i0czJEAzr8ULw9mY1BAABLxComjX43sheDvTZsN71T0hDETbBe
+v/Qd0btT+Q==
 pages/SettingsPage.js__DEL__ByVZgOMDdXq1oBmDweZHpdGI32a1dABE94OdtyuL3HmW10W3ceFkZ+pz4QDZ360Y/d/JAjX/yKQk
 7mA0TpxRJw==
 pages/SidebarCategories.js__DEL__kRgrdgpEYS+jxDgvBAkqv4dmjLsxhYBxvxGX/7UnGNp40rFfgvsCvABUbiKh26JscvKKEBswWczW
@@ -170,5 +170,5 @@ utils/router.js__DEL__36o+Be8pjnEhvq6I/B4Xet6kjS1GB2mwnt+tqYdMGIknNdD9dJC0ifGI79
 KaF6VU5b7g==
 utils/utils.js__DEL__wELP7ZmGe8V4A2bHyyZW7nYLbN+NmhcxO7irJHI/8gPDoTWz6q/wQiZX4hlS8JO65R3tg0TYk13Y
 L8m4rvKTsQ==
-author-signature.xml__DEL__dtyn/cztR8A9G+Nvq3ePaDi2brPfYerDmruOwVvBUoGcbxi4aJmiGHqKhOxdljxAwuzf37daZtwS
-zW39Y7X8qg==
+author-signature.xml__DEL__OOiaRWUfVxQImbAVoCbEOZCuy8kvbys2LqB/GxlXkg3IHIM03hD6/zwAtTRzEBEUDO9KZJI+d7Nr
+6NwGQ2gumw==
