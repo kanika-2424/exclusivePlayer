@@ -883,12 +883,14 @@ const setFocus = (list, idx, cls) => {
     }
   };
   // Add this function after setRemoveHistoryBtnFocus or other focus helpers
-  const removeAllFocus = () => {
-    // Remove focus from all channel cards
-    const channels = qsa(".channel-card");
-    channels.forEach((c) =>
-      c.classList.remove("channel-card-focused", "channel-card-selected")
-    );
+const removeAllFocus = () => {
+  debugLog("🧹 removeAllFocus called");
+  
+  // Remove focus from all channel cards
+  const channels = document.querySelectorAll(".channel-card");
+  channels.forEach((c) =>
+    c.classList.remove("channel-card-focused", "channel-card-selected")
+  );
 
     // Remove focus from EPG items
     const epgItems = qsa(".epg-item");
@@ -930,35 +932,47 @@ const setFocus = (list, idx, cls) => {
   };
 
   // After setRemoveHistoryBtnFocus function
-  function setFocusOnMenuDots() {
-    console.log("🎯 Setting focus on menu dots");
-
-    removeAllFocus();
-
-    const menuDots = document.querySelector(".menu-dots");
-    if (menuDots) {
-      menuDots.classList.add("focused");
-    }
-
-    // Update all navigation states
-    isMenuDotsActive = true;
-    inChannelGrid = false;
-    inHeaderSearch = false;
-    inSidebarSearch = false;
-    inSidebar = false;
-    inEPG = false;
-    inVideoPlayer = false;
-    inFavoriteBtn = false;
-    inRemoveHistoryBtn = false;
-    inPlayPauseBtn = false;
-    inAspectRatioBtn = false;
-
-    // Also update global state
-    if (window.liveTvPageState) {
-      window.liveTvPageState.isMenuDotsActive = true;
-      window.liveTvPageState.inChannelGrid = false;
-    }
+function setFocusOnMenuDots() {
+  // Prevent this from running if we're in the middle of rendering/sorting
+  if (window._isRenderingLiveTv) {
+    debugLog("⚠️ Prevented menu dots focus during render");
+    return;
   }
+
+  // Also prevent if the flag is set (from sorting)
+  if (window._preventMenuDotsFocus) {
+    debugLog("⚠️ Prevented menu dots focus - sorting in progress");
+    return;
+  }
+
+  debugLog("🎯 Setting focus on menu dots");
+
+  removeAllFocus();
+
+  const menuDots = document.querySelector(".menu-dots");
+  if (menuDots) {
+    menuDots.classList.add("focused");
+  }
+
+  // Update all navigation states
+  isMenuDotsActive = true;
+  inChannelGrid = false;
+  inHeaderSearch = false;
+  inSidebarSearch = false;
+  inSidebar = false;
+  inEPG = false;
+  inVideoPlayer = false;
+  inFavoriteBtn = false;
+  inRemoveHistoryBtn = false;
+  inPlayPauseBtn = false;
+  inAspectRatioBtn = false;
+
+  // Also update global state
+  if (window.liveTvPageState) {
+    window.liveTvPageState.isMenuDotsActive = true;
+    window.liveTvPageState.inChannelGrid = false;
+  }
+}
 
   // Make available globally for sidebar to call
   window.focusLiveTvMenuDots = setFocusOnMenuDots;
@@ -2309,46 +2323,70 @@ const renderSidebarCategories = () => {
 
   // ===== GLOBAL RENDER FUNCTION FOR SORTING =====
   // ===== GLOBAL RENDER FUNCTION FOR SORTING =====
-  window.renderLiveTv = () => {
-    console.log("🔄 Refreshing Live TV page after sorting");
+window.renderLiveTv = () => {
+    window._isRenderingLiveTv = true;
 
-    // Clear cache to enforce re-filtering and sorting
-    filteredCache = null;
+  debugLog("🔄 Refreshing Live TV page after sorting");
 
-    // Reset navigation state
-    inChannelGrid = true;
-    inSidebar = false;
-    inSidebarSearch = false;
-    inHeaderSearch = false;
-    inEPG = false;
-    inVideoPlayer = false;
-    inFavoriteBtn = false;
-    inRemoveHistoryBtn = false;
-    inAspectRatioBtn = false;
-    isMenuDotsActive = false;
+  // Clear ALL caches to enforce re-filtering and sorting
+  filteredCache = null;
+  searchResultCache = {};
+  lastSearchQuery = "";
+  if (window._liveTvDomCache) {
+    window._liveTvDomCache = {};
+  }
 
-    // Reset focus index
-    focusedChannelIndex = 0;
+  // CRITICAL: Reset menu dots state FIRST
+  isMenuDotsActive = false;
+  const menuDots = document.querySelector(".menu-dots");
+  if (menuDots) {
+    menuDots.classList.remove("focused");
+  }
 
-    // Re-render channels with new sort order
-    renderChannels();
-    renderSidebarCategories();
+  // Reset ALL navigation states
+  inChannelGrid = false; // Start as false
+  inSidebar = false;
+  inSidebarSearch = false;
+  inHeaderSearch = false;
+  inEPG = false;
+  inVideoPlayer = false;
+  inFavoriteBtn = false;
+  inRemoveHistoryBtn = false;
+  inAspectRatioBtn = false;
 
-    // Restore focus to first channel
+  // Reset focus index
+  focusedChannelIndex = 0;
+
+  // Remove all existing focus BEFORE rendering
+  removeAllFocus();
+
+  // Re-render channels with new sort order
+  renderChannels();
+  renderSidebarCategories();
+
+  // Restore focus to first channel after render completes
+  requestAnimationFrame(() => {
     setTimeout(() => {
-      const channels = qsa(".channel-card");
+      const channels = document.querySelectorAll(".channel-card");
       if (channels.length > 0) {
-        // Remove all existing focus
-        removeAllFocus();
-
+        // NOW enable channel grid navigation
+        inChannelGrid = true;
+        
         // Set focus on first channel
         focusedChannelIndex = 0;
         setFocus(channels, focusedChannelIndex, "channel-card-focused");
 
-        console.log("✅ Focus restored to channel grid");
+        debugLog("✅ Focus restored to channel grid");
+                window._isRenderingLiveTv = false;
+
+      } else {
+        debugLog("❌ No channels found after sorting");
+                window._isRenderingLiveTv = false;
+
       }
-    }, 100);
-  };
+    }, 150);
+  });
+};
 
   // CLICK HANDLER
   // ===== CLICK HANDLER (UPDATED) =====

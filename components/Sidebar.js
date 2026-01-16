@@ -303,7 +303,7 @@ function applySorting() {
     } else if (currentPage === "seriesPage") {
       localStorage.setItem("seriesSortValue", sortValue);
     } else if (currentPage === "liveTvPage") {
-      localStorage.setItem("liveTvSortValue", sortValue); // ✅ CORRECT
+      localStorage.setItem("liveTvSortValue", sortValue);
     }
   }
 
@@ -313,29 +313,41 @@ function applySorting() {
     dialog.classList.add("sorting-overlay-dialog-hidden");
   }
 
-  // ✅ Always close sidebar too
+  // Get current page before closing sidebar
+  const currentPage = localStorage.getItem("sidebarPage");
+
+  // ✅ CRITICAL: Prevent closeSidebar from triggering focusLiveTvMenuDots
+  if (currentPage === "liveTvPage") {
+    window._preventMenuDotsFocus = true;
+  }
+
+  // Close sidebar
   const fromClosed = localStorage.getItem("sidebarPage");
   closeSidebar(fromClosed);
 
-  // ✅ Call appropriate render function based on page
-  const currentPage = localStorage.getItem("sidebarPage");
-
-  if (
-    currentPage === "moviesPage" &&
-    typeof window.renderMovies === "function"
-  ) {
-    window.renderMovies();
-  } else if (
-    currentPage === "seriesPage" &&
-    typeof window.renderSeries === "function"
-  ) {
-    window.renderSeries();
-  } else if (
-    currentPage === "liveTvPage" &&
-    typeof window.renderLiveTv === "function"
-  ) {
-    window.renderLiveTv();
-  }
+  // ✅ Small delay to ensure sidebar is fully closed before rendering
+  setTimeout(() => {
+    // Call appropriate render function based on page
+    if (
+      currentPage === "moviesPage" &&
+      typeof window.renderMovies === "function"
+    ) {
+      window.renderMovies();
+    } else if (
+      currentPage === "seriesPage" &&
+      typeof window.renderSeries === "function"
+    ) {
+      window.renderSeries();
+    } else if (
+      currentPage === "liveTvPage" &&
+      typeof window.renderLiveTv === "function"
+    ) {
+      window.renderLiveTv();
+    }
+    
+    // Reset the flag after render
+    window._preventMenuDotsFocus = false;
+  }, 150);
 }
 
 const disposeLivePlayer = () => {
@@ -635,7 +647,8 @@ function closeSidebar(from = "") {
   // ✅ Restore focus to menu dots if on Live TV Page
   if (
     from === "liveTvPage" &&
-    typeof window.focusLiveTvMenuDots === "function"
+    typeof window.focusLiveTvMenuDots === "function" &&
+    !window._preventMenuDotsFocus
   ) {
     setTimeout(() => {
       window.focusLiveTvMenuDots();
