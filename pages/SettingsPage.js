@@ -792,25 +792,19 @@ if (e.key === "ArrowLeft") {
         }
       }
 
-   if (e.key === "Enter") {
+if (e.key === "Enter") {
   if (settingsFocusableItems[settingsFocusIndex]) {
     const focusedEl = settingsFocusableItems[settingsFocusIndex];
     
     // If Add User button is focused, check playlists and navigate
     if (focusedEl.classList.contains('playlist-add-user')) {
-      const playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
+      // Log out user
+      localStorage.setItem("isLogin", "false");
       
-      if (playlistsData.length > 0) {
-        // If playlists exist, go to playlist page
-        localStorage.setItem("currentPage", "login");
+      
+      localStorage.removeItem("currentPage");
         if (SettingsPage.cleanup) SettingsPage.cleanup();
         Router.showPage("login");
-      } else {
-        // If no playlists, go to login page
-        localStorage.removeItem("currentPage");
-        if (SettingsPage.cleanup) SettingsPage.cleanup();
-        Router.showPage("login");
-      }
       e.preventDefault();
       return;
     }
@@ -835,22 +829,18 @@ if (e.key === "ArrowLeft") {
 
 
 
-  const addPlaylistBtn = document.querySelector(".playlist-add-user");
+const addPlaylistBtn = document.querySelector(".playlist-add-user");
 if (addPlaylistBtn) {
   addPlaylistBtn.onclick = () => {
-    const playlistsData = JSON.parse(localStorage.getItem("playlistsData")) || [];
+    // Log out user
+    localStorage.setItem("isLogin", "false");
     
-    if (playlistsData.length > 0) {
-      // If playlists exist, go to playlist page
-      localStorage.setItem("currentPage", "login");
+
+       localStorage.removeItem("currentPage");
       if (SettingsPage.cleanup) SettingsPage.cleanup();
       Router.showPage("login");
-    } else {
-      // If no playlists, go to login page
-      localStorage.removeItem("currentPage");
-      if (SettingsPage.cleanup) SettingsPage.cleanup();
-      Router.showPage("login");
-    }
+    
+  
   };
 }
 
