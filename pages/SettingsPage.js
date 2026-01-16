@@ -802,9 +802,9 @@ if (e.key === "ArrowLeft") {
       
       if (playlistsData.length > 0) {
         // If playlists exist, go to playlist page
-        localStorage.setItem("currentPage", "dashboard");
+        localStorage.setItem("currentPage", "login");
         if (SettingsPage.cleanup) SettingsPage.cleanup();
-        Router.showPage("dashboard");
+        Router.showPage("login");
       } else {
         // If no playlists, go to login page
         localStorage.removeItem("currentPage");
@@ -842,9 +842,9 @@ if (addPlaylistBtn) {
     
     if (playlistsData.length > 0) {
       // If playlists exist, go to playlist page
-      localStorage.setItem("currentPage", "dashboard");
+      localStorage.setItem("currentPage", "login");
       if (SettingsPage.cleanup) SettingsPage.cleanup();
-      Router.showPage("dashboard");
+      Router.showPage("login");
     } else {
       // If no playlists, go to login page
       localStorage.removeItem("currentPage");
