@@ -179,7 +179,6 @@
 .sidebar-search-box.search-focused {
     background: rgba(55, 155, 254, 0.2);
     border: 2px solid rgba(55, 155, 254, 1);
-    box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2);
 }
 
 .sidebar-search-box i {
@@ -792,8 +791,6 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  /* transition: all 0.3s ease !important; */
-  /* box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important; */
 }
 
 .play-pause-btn:focus,
@@ -801,7 +798,6 @@
 #live-play-pause-btn:focus,
 #live-play-pause-btn.focused {
   border: 2px solid #0ea5e9 !important;
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
 
   /* z-index: 100000 !important; */
 }
@@ -827,8 +823,6 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  /* transition: all 0.3s ease !important; */
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important;
 }
 
 .video-aspect-235{
@@ -1007,7 +1001,6 @@
   border-radius: 16px;
   padding: 40px;
   min-width: 500px;
-  box-shadow: 0 10px 50px rgba(14, 165, 233, 0.3);
   display: flex;
   flex-direction: column;
   /* justify-content: center; */text-align: center;
@@ -1091,7 +1084,6 @@
 .password-submit-btn.password-btn-focused {
   background: #0284c7;
   transform: scale(1.05);
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
   border: white 2px solid;
 }
 
@@ -1298,8 +1290,7 @@ video,
 .search-container.search-focused {
   background: rgba(55, 155, 254, 0.2);
   border: 2px solid rgba(55, 155, 254, 1);
-  box-shadow: 0 0 0 4px rgba(55, 155, 254, 0.2),
-              0 4px 16px rgba(55, 155, 254, 0.3);
+
   /* transform: scale(1.05); */ /* REMOVE */
 }
 
@@ -1726,7 +1717,6 @@ video {
 .blur-overlay i {
   font-size: 48px;
   color: #ef4444;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* Locked category overlay - Tizen Compatible */

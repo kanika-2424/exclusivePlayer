@@ -697,7 +697,6 @@ return result;
       z-index: 10000;
       pointer-events: none;
       border: 4px solid #0ea5e9;
-      box-shadow: 0 0 30px rgba(14, 165, 233, 0.5);
     `;
 
       document.body.appendChild(overlay);
