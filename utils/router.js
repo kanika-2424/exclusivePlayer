@@ -2,9 +2,18 @@ const Router = {
   currentPage: null,
   _isNavigating: false,
 
-  async showPage(pageName) {
-    console.log("🔄 Router.showPage called with:", pageName);
-    
+async showPage(pageName) {
+  console.log("🔄 Router.showPage called with:", pageName);
+  
+  // ✅ Prevent concurrent navigation
+  if (this._isNavigating) {
+    console.log("⏸️ Already navigating, skipping...");
+    return;
+  }
+  
+  this._isNavigating = true;
+  
+  try {
     // ✅ CHECK: If user is logged in and trying to go to playlist, redirect to dashboard instead
     const isLogin = localStorage.getItem('isLogin') === 'true';
     const selectedPlaylist = localStorage.getItem('selectedPlaylist');
@@ -220,7 +229,14 @@ const Router = {
     } else {
       console.error("❌ Page element not found for:", pageName);
     }
+    
+  } finally {
+    // ✅ Always reset the navigation flag after a short delay
+    setTimeout(() => {
+      this._isNavigating = false;
+    }, 100);
   }
+}
 };
 
 // Global navigation helper

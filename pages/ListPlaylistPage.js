@@ -16,12 +16,12 @@ function ListPlaylistPage() {
 
   
   // ✅ PREVENT REDIRECT during initial app load - let main.js handle it
-  if (isLogin && selectedPlaylist && !isInitialLoad && !isLoading) {
-    console.log("✅ User already logged in, redirecting to dashboard...");
-    localStorage.setItem("currentPage", "dashboard");
-    Router.showPage("dashboard");
-    return "";
-  }
+  // if (isLogin && selectedPlaylist && !isInitialLoad && !isLoading) {
+  //   console.log("✅ User already logged in, redirecting to dashboard...");
+  //   localStorage.setItem("currentPage", "dashboard");
+  //   Router.showPage("dashboard");
+  //   return "";
+  // }
 
   // ✅ If we're in initial load, just return empty - main.js will handle navigation
   if ( isLoading) {
@@ -223,59 +223,66 @@ if (addPlaylistBtn) {
   updateFocus();
 
   // ---------- Click ----------
-  async function listPlaylistClick(targetIndex = null) {
-      console.log("🎯 listPlaylistClick called with index:", targetIndex, "isLoggingIn:", isLoggingIn);
+async function listPlaylistClick(targetIndex = null) {
+  console.log("🎯 listPlaylistClick called with index:", targetIndex, "isLoggingIn:", isLoggingIn);
 
-    if (modalOpen || isLoggingIn) {
-      console.log("❌ listPlaylistClick blocked - modalOpen:", modalOpen, "isLoggingIn:", isLoggingIn);
-      return;
-    }
+  if (modalOpen || isLoggingIn) {
+    console.log("❌ listPlaylistClick blocked - modalOpen:", modalOpen, "isLoggingIn:", isLoggingIn);
+    return;
+  }
 
-    if (targetIndex === -1) {
-      // Add Playlist button - go to login page
-      console.log("➕ Going to login page");
-      isLoggingIn = true; // Prevent double clicks
-      localStorage.removeItem("currentPage");
-      ListPlaylistPage.cleanup();
-      Router.showPage("login");
-      return;
-    }
+  if (targetIndex === -1) {
+    console.log("➕ Going to login page");
+    isLoggingIn = true;
+    localStorage.removeItem("currentPage");
+    ListPlaylistPage.cleanup();
+    Router.showPage("login");
+    return;
+  }
 
-    if (targetIndex >= 0 && targetIndex < playlistsData.length) {
-      const playlist = playlistsData[targetIndex];
-      if (!playlist) return;
-      console.log("🔐 Starting login for:", playlist.playlistName);
+  if (targetIndex >= 0 && targetIndex < playlistsData.length) {
+    const playlist = playlistsData[targetIndex];
+    if (!playlist) return;
+    console.log("🔐 Starting login for:", playlist.playlistName);
 
-      isLoggingIn = true; // Set flag before login
+    isLoggingIn = true;
 
-      try {
-        const response = await loginApi("", "", playlist.playlistName, true, playlist.playlistUrl);
-        console.log("✅ Login response received:", response);
+    try {
+      // ✅ Set flag BEFORE login to prevent app.js from routing
+      // localStorage.setItem("isLoading", "true");
+      
+      const response = await loginApi("", "", playlist.playlistName, true, playlist.playlistUrl);
+      console.log("✅ Login response received:", response);
 
-        if (response) {
-          localStorage.setItem("selectedPlaylist", JSON.stringify(playlist));
-          ListPlaylistPage.cleanup();
-          console.log("📍 Navigating to dashboard...");
+      if (response) {
+        localStorage.setItem("selectedPlaylist", JSON.stringify(playlist));
+        ListPlaylistPage.cleanup();
+        
+        // ✅ Clear the loading flag AFTER cleanup
+        localStorage.removeItem("isLoading");
+        
+        console.log("📍 Navigating to dashboard...");
+        // Router.showPage("dashboard");
+      } else {
+        isLoggingIn = false;
+        localStorage.removeItem("isLoading"); // ✅ Clear on failure too
+        console.log("❌ Login returned null");
 
-          Router.showPage("dashboard");
-        } else {
-          isLoggingIn = false; // Reset on failure
-          console.log("❌ Login returned null");
-
-          if (window.disableKeyBlock) {
-            window.disableKeyBlock();
-          }
-          console.log("Login failed or was cancelled");
-        }
-      } catch (error) {
-        isLoggingIn = false; // Reset on error
-        console.error("Error during login:", error);
         if (window.disableKeyBlock) {
           window.disableKeyBlock();
         }
+        console.log("Login failed or was cancelled");
+      }
+    } catch (error) {
+      isLoggingIn = false;
+      localStorage.removeItem("isLoading"); // ✅ Clear on error
+      console.error("Error during login:", error);
+      if (window.disableKeyBlock) {
+        window.disableKeyBlock();
       }
     }
   }
+}
 
   // ---------- Modal ----------
   function openModal() {
